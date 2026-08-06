@@ -36,6 +36,14 @@ jobs:
           npm test
           npm run validate
 
+      - name: Verify push token identity
+        env:
+          PUSH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          LOGIN=$(curl -sS -H "Authorization: Bearer ${PUSH_TOKEN}" https://api.github.com/user | jq -r '.login // "INVALID"')
+          echo "push token belongs to: ${LOGIN}"
+          echo "secret present: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}"
+
       - name: Commit and tag
         id: release
         env:
