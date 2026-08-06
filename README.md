@@ -8,7 +8,7 @@
 
 - Codex 插件包：`plugins/huaweicloud-core`
 - OpenCode 集成资源：`integrations/opencode`
-- **26 个技能**：6 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错）+ 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）
+- **27 个技能**：7 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错、市场发现）+ 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）
 - 零依赖 Node.js MCP 服务器：安全规划 + 只读 CLI 执行 + 4 个知识发现工具
 - PreToolUse 安全钩子层
 - 共享安全策略：自动脱敏 + 阻断危险操作
@@ -65,6 +65,16 @@ npm run validate
 
 从 https://support.huaweicloud.com/qs-hcli/hcli_02_003.html 安装华为云 KooCLI，执行 `hcloud version` 验证，然后在 Agent 会话之外配置凭证。如果 Codex 或 OpenCode 找不到可执行文件，设置 `HCLOUD_BIN` 为 `hcloud` 的完整路径。
 
+### MCP 不可用时的降级
+
+当 MCP 服务器不可用时（连接失败、502 错误等），Agent 会自动降级到本地 `hcloud` CLI：
+
+1. 使用 `huaweicloud_check_cli` 确认 hcloud 可用
+2. 使用 `hcloud <Service> --help` 发现操作名称
+3. 安全策略仍由 `safety-policy.mjs` 分类和拦截，写操作仍需用户审批
+
+如果本地 hcloud 也找不到，Agent 将只能提供文档指引，无法执行任何云操作。
+
 ## 安全模型
 
 三层防御：
@@ -81,12 +91,13 @@ npm run validate
 
 | 技能 | 用途 |
 |------|------|
-| huaweicloud-core | 路由中枢，Sub-skill registry 表，18 个路由入口 |
+| huaweicloud-core | 路由中枢，Sub-skill registry 表，含 marketplace 市场路由 |
 | huaweicloud-capability-discovery | 能力发现，场景→服务映射 |
 | huaweicloud-cli-and-auth | KooCLI 安装、认证、安全用法 |
 | huaweicloud-api-and-sdk | API/SDK 应用集成指导 |
 | huaweicloud-safety | 安全策略、审批关卡、写操作边界 |
 | huaweicloud-troubleshooting | 排错诊断工作流 |
+| huawei-cloud-find-skills | 官方技能市场搜索与安装（需 Python 3.6+，联网） |
 
 ### 服务技能
 

@@ -1,23 +1,28 @@
-# ECS Flavor Specs
-> Verify live: hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
+# ECS Flavor Selection
 
-## General-Purpose (s-series)
-| Flavor | vCPU | RAM | Use Case |
-|--------|------|-----|----------|
-| s6.small.1 | 1 | 1GB | Dev/test |
-| s6.large.2 | 2 | 4GB | Web app |
-| s6.xlarge.2 | 4 | 8GB | App server |
-| s6.2xlarge.2 | 8 | 16GB | Production |
+**Always discover flavors dynamically before recommending a specific flavor name.** Flavor availability varies by region and changes over time.
 
-## Memory-Optimized (m-series)
-| Flavor | vCPU | RAM | Use Case |
-|--------|------|-----|----------|
-| m6.large.8 | 2 | 16GB | Small DB |
-| m6.xlarge.8 | 4 | 32GB | MySQL/PG |
-| m6.2xlarge.8 | 8 | 64GB | Enterprise DB |
+## Step 1: List available flavors
+hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 
-## GPU (g-series)
-| Flavor | vCPU | RAM | GPU | Use |
-|--------|------|-----|-----|-----|
-| g6.2xlarge.8 | 8 | 64GB | 1xT4 | Inference |
-| g6.4xlarge.8 | 16 | 128GB | 1xT4 | Training |
+## Step 2: Filter by scenario
+
+| Scenario | Look for | Preference |
+|----------|----------|------------|
+| Web app / microservices | General-purpose families (ac, s, sn) | 2-4 vCPU, 4-8 GB RAM |
+| Database / big data | Memory-optimized families (m, r) | 4-8 vCPU, 16-64 GB RAM |
+| AI inference / training | GPU families (g, p) | 8+ vCPU, 64+ GB RAM |
+| HPC / high throughput | High-IO families (h, ir, i) | 8+ vCPU, local SSD |
+
+## Step 3: Match spec from ListFlavors output
+
+Common naming pattern: `<family><gen>.<type>x<ratio>`
+- `ac6.2xlarge.2` = ac6 family, 2xlarge (8 vCPU), ratio 2 (vCPU:RAM = 1:2 → 16 GB)
+
+## Do Not Hardcode
+
+Flavor family names are region-dependent. Example discrepancies seen in testing:
+- cn-south-1: ac6/ac7/kc/r-c7e (s6/m6/g6 NOT available)
+- Other regions may have s6/m6/g6 families
+
+Always run ListFlavors and pick from actual results.

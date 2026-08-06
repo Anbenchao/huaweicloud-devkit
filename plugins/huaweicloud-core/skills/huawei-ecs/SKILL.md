@@ -36,10 +36,29 @@ Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance li
 | Task | Command | Steps |
 |------|---------|-------|
 | List flavors | hcloud ECS ListFlavors --cli-region=<region> | references/flavors.md |
-| Create instance | hcloud ECS CreateServers --server.name=<n> --server.flavorRef=<id> --server.imageRef=<id> --server.nics.1.subnet_id=<id> | references/create-instance.md |
+| Create instance | hcloud ECS CreateServers --server.name=<n> --server.flavorRef=<id> --server.imageRef=<id> --server.nics.1.subnet_id=<id> --server.availability_zone=<az> | references/create-instance.md |
+| Find by name | See "How to search for instances" below | |
 | Bind EIP | hcloud EIP BindPublicIp --publicip_id=<id> | references/eip.md |
 | Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=ingress --protocol=tcp | references/sg.md |
 | Attach disk | hcloud EVS AttachVolume --volume_id=<id> --server_id=<id> | references/evs.md |
+| Delete instance | hcloud ECS DeleteServers --servers.1.id=<id> --delete_publicip=true --delete_volume=true | references/create-instance.md |
+
+## How to Search for Instances
+
+`ListServersDetails` supports `--name` for exact match only. For fuzzy search:
+
+1. List all instances: `hcloud ECS ListServersDetails --cli-region=<region> --limit=100`
+2. Filter client-side by name substring, tag, or status
+3. Use `--server_tags` filter if instances are tagged: `hcloud ECS ListServersDetails --server_tags.1.key=Project`
+
+Abort if the result set is larger than `--limit` and ask the user to narrow the search.
+
+## Deleting Instances
+
+- Show the user the exact command and get explicit approval before running
+- By default, `--delete_publicip` and `--delete_volume` are **false** — public IP and system disk survive deletion
+- Set both to `true` to avoid orphaned resources and unexpected billing
+- Data disks ARE deleted by default (unlike system disk)
 
 ## Troubleshooting
 

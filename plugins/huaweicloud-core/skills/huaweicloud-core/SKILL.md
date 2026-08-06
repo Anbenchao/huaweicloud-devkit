@@ -41,6 +41,7 @@ Do not rely on training data for facts. Huawei Cloud services, pricing, quotas, 
 | safety | Safety Routing | is this safe, approve command, risk review | Handoff to huaweicloud-safety |
 | troubleshoot | Troubleshooting Routing | error, bug, failed, AccessDenied, quota | Handoff to huaweicloud-troubleshooting |
 | api-sdk | API/SDK Routing | API call, SDK, REST, integration, code example | Handoff to huaweicloud-api-and-sdk |
+| marketplace | Skill Marketplace | find skills, discover skills, skill market, what skills exist, install skill, search skill | Handoff to huawei-cloud-find-skills |
 | report-issue | Issue Reporting | wrong service, you picked wrong, incorrect | Read references/report-issue.md |
 
 ## Service Map
@@ -72,6 +73,7 @@ Do not rely on training data for facts. Huawei Cloud services, pricing, quotas, 
 ## Capability Sources
 
 - Huawei Cloud Skills: scenario workflows and recipes (check first)
+- Skill Marketplace: huawei-cloud-find-skills for searching/installing community skills from the official market
 - KooCLI hcloud: local inspection and reviewed command execution
 - API documentation: exact endpoint, request body, pagination, project_id
 - SDK documentation: application integration
@@ -82,6 +84,7 @@ Do not rely on training data for facts. Huawei Cloud services, pricing, quotas, 
 
 - Use huaweicloud_search_docs to discover skills covering a topic
 - Use huaweicloud_retrieve_skill to load a full SKILL.md after routing
+- If no built-in skill matches, load huawei-cloud-find-skills to search the official marketplace
 - Use huaweicloud_list_regions before creating regional resources
 - Use huaweicloud_get_regional_availability when unsure about service-region pairs
 - Use huaweicloud_run_readonly_command for read-only inspection
