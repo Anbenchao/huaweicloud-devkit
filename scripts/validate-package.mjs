@@ -28,6 +28,21 @@ assert.equal(manifest.skills, './skills/');
 assert.equal(manifest.mcpServers, './.mcp.json');
 assert.ok(!Object.hasOwn(manifest, 'hooks'), 'Codex manifest should not include hooks until supported by validator');
 
+const pkg = readJson(join(root, 'package.json'));
+const pluginManifests = [
+  join(pluginRoot, '.codex-plugin', 'plugin.json'),
+  join(pluginRoot, '.claude-plugin', 'plugin.json'),
+  join(pluginRoot, '.cursor-plugin', 'plugin.json'),
+];
+for (const path of pluginManifests) {
+  const manifest = readJson(path);
+  assert.equal(
+    pkg.version,
+    manifest.version,
+    `package.json version must match ${path}`,
+  );
+}
+
 const skills = readdirSync(join(pluginRoot, 'skills')).filter((name) =>
   existsSync(join(pluginRoot, 'skills', name, 'SKILL.md')),
 );

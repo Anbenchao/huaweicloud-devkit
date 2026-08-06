@@ -1,28 +1,40 @@
 {
-    "name":  "huaweicloud-devkit",
-    "version":  "0.1.0",
-    "description":  "Agent toolkit that helps coding agents use Huawei Cloud Skills, KooCLI, APIs, SDKs, and future MCP capabilities safely and accurately.",
-    "type":  "module",
-    "private":  false,
-    "bin":  {
-                "huaweicloud-devkit-mcp":  "./plugins/huaweicloud-core/src/mcp-server.mjs"
-            },
-    "scripts":  {
-                    "test":  "node --test",
-                    "validate":  "node ./scripts/validate-package.mjs"
-                },
-    "keywords":  [
-                     "huaweicloud",
-                     "huawei-cloud",
-                     "agent",
-                     "codex",
-                     "opencode",
-                     "mcp",
-                     "koocli",
-                     "hcloud"
-                 ],
-    "license":  "Apache-2.0",
-    "engines":  {
-                    "node":  "\u003e=20"
-                }
+  "name": "huaweicloud-devkit",
+  "version": "0.1.0",
+  "description": "Agent toolkit that helps coding agents use Huawei Cloud Skills, KooCLI, APIs, SDKs, and future MCP capabilities safely and accurately.",
+  "type": "module",
+  "private": false,
+  "files": [
+    "plugins/huaweicloud-core/src"
+  ],
+  "bin": {
+    "huaweicloud-devkit-mcp": "./plugins/huaweicloud-core/src/mcp-server.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huaweicloud-mate/huaweicloud-devkit.git"
+  },
+  "scripts": {
+    "test": "node --test",
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.git\" \"#test/**\" \"#docs/**\"",
+    "lint": "npm run lint:md",
+    "validate": "node ./scripts/validate-package.mjs"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.23.2"
+  },
+  "keywords": [
+    "huaweicloud",
+    "huawei-cloud",
+    "agent",
+    "codex",
+    "opencode",
+    "mcp",
+    "koocli",
+    "hcloud"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  }
 }

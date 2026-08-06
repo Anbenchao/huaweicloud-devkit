@@ -16,7 +16,7 @@ hcloud CSMS ListSecretVersions --secret_name=prod-db-password
 data "huaweicloud_csms_secret" "db" {
   secret_name = "prod-db-password"
 }
-# Use: data.huaweicloud_csms_secret.db.secret_string
+Use: data.huaweicloud_csms_secret.db.secret_string
 
 ## Rotation
 - Enable auto-rotation: hcloud CSMS EnableSecretRotation --secret_name=<name> --rotation_interval=30
