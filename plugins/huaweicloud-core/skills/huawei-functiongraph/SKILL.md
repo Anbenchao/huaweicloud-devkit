@@ -20,7 +20,7 @@ Domain expertise for Huawei Cloud FunctionGraph. Covers function lifecycle, code
 | Max execution 900s | Timeout after 15 min. Use ECS/CCE for long tasks |
 | Env vars plaintext | Use DEW for secrets |
 | Service name is `FunctionGraph` | NOT `FGS`. KooCLI 7.x uses the full service name |
-| CLI requires `project_id` | Get it: `hcloud IAM ListProjects` or extract from URN `urn:fss:<region>:<project_id>:...` |
+| CLI requires `project_id` | Get it: `hcloud IAM KeystoneListProjects` (or `KeystoneListProjectsForUser`) or extract from URN `urn:fss:<region>:<project_id>:...` |
 
 ## Prerequisites
 
@@ -56,9 +56,13 @@ Python 2.7/3.6/3.9/3.10/3.11, Node.js 6.10–18.15, Java 8/11/17, Go 1.x/1.8, C#
 | `缺少必填参数` on Create | Ensure `--memory_size`, `--package`, `--timeout`, `--cli-region`, `--project_id` |
 | `event_data` parse error | Use dotted format: `--event_data.key=value`, NOT JSON |
 | Function times out | Increase `--timeout` or optimize code |
+| DeleteFunction with `:latest` fails | Strip `:latest` version suffix from URN before deleting |
 | Code too large | Inline limit 10KB → use `zip`/`obs` `--code_type` |
 | Cold start slow | Set reserved instances for critical functions |
 | Auth failure | Run `hcloud configure init` |
+
+> **Note**: references/ files contain authoritative command formats and detailed parameters.
+> When SKILL.md and references/ differ, trust the reference files.
 
 ## Security Considerations
 
