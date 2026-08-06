@@ -17,28 +17,36 @@ This is an **agent guidance + safety package**, not a service encyclopedia. Six 
 
 ```
 plugins/huaweicloud-core/
-  skills/           ← 6 meta-skills (*not* per-service)
-  src/              ← Node.js MCP server (stdio JSON-RPC)
+  skills/           ← 6 meta-skills + service skills
+  src/              ← Node.js MCP server (stdio JSON-RPC, 12 tools)
   safety/           ← shared policy.json
   hooks/            ← Python PreToolUse hook
   .codex-plugin/    ← Codex plugin manifest
+  .claude-plugin/   ← Claude Code plugin manifest
+  .cursor-plugin/   ← Cursor plugin manifest
   .mcp.json         ← MCP server config for agents
 ```
 
 Safety is 3-layer: **skills teach → hooks block → MCP/CLI wrappers enforce**.
 
+## Skill Naming: Meta vs Service
+
+- **Meta-skills** (`huaweicloud-*`, 6 required): horizontal capability skills such as routing, discovery, CLI/auth, API/SDK, safety, troubleshooting. Agent always starts here.
+- **Service skills** (`huawei-*`): vertical domain knowledge for specific Huawei Cloud services (ecs, obs, vpc, iam, dew, etc.). Loaded via `huaweicloud_retrieve_skill` after routing by the core meta-skill.
+
+Required meta-skills (tethered to `test/structure.test.mjs`):
+`huaweicloud-api-and-sdk`, `huaweicloud-capability-discovery`, `huaweicloud-cli-and-auth`, `huaweicloud-core`, `huaweicloud-safety`, `huaweicloud-troubleshooting`
+
 ## File Naming: Design Docs vs Implementation
 
-Design docs in `docs/` use `huawei-*` and plan 20+ service skills. The **actual implementation** uses `huaweicloud-*` and has 6 skills. Design docs are planning artifacts; trust the filesystem.
-
-Exact skill list (tethered to `test/structure.test.mjs`):
-`huaweicloud-api-and-sdk`, `huaweicloud-capability-discovery`, `huaweicloud-cli-and-auth`, `huaweicloud-core`, `huaweicloud-safety`, `huaweicloud-troubleshooting`
+Design docs in `docs/` use `huawei-*` and plan 20+ service skills. The **actual implementation** uses `huaweicloud-*` for meta-skills and `huawei-*` for service skills. Design docs are planning artifacts; trust the filesystem.
 
 ## Creating or Editing Skills
 
-- Every `SKILL.md` must start with `---\nname: huaweicloud-<name>` YAML frontmatter (validated by both `npm run validate` and `structure.test.mjs`)
+- Every `SKILL.md` must start with `---\nname: huaweicloud-<name>` or `---\nname: huawei-<name>` YAML frontmatter (validated by both `npm run validate` and `structure.test.mjs`)
 - No `TODO` or `[TODO]` markers in committed files (also validated)
-- Skill count must remain exactly 6 — update `test/structure.test.mjs` when adding/removing
+- The 6 meta-skills must always exist. Service skills can be added freely — `test/structure.test.mjs` enforces a minimum of 6, not an exact count.
+- Update `test/structure.test.mjs` if introducing new testable invariants (e.g., new required sections in SKILL.md)
 - Add `node --test` tests if introducing new measurable invariants
 
 ## Safety Model
