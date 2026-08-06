@@ -22,6 +22,23 @@ Domain expertise for Huawei Cloud FunctionGraph. Covers function lifecycle, code
 | Service name is `FunctionGraph` | NOT `FGS`. KooCLI 7.x uses the full service name |
 | CLI requires `project_id` | All FunctionGraph CLI ops need `--cli-region` and `--project_id` |
 
+## Project ID
+
+The `--project_id` parameter is required for every FunctionGraph CLI command. Get your project ID:
+
+```bash
+# List all projects accessible to your account
+hcloud IAM ListProjects --cli-region=<region> --cli-profile=<profile>
+```
+
+Or extract from an existing function's URN (`urn:fss:<region>:<project_id>:function:...`):
+
+```bash
+hcloud FunctionGraph ListFunctions --cli-region=<region> --cli-profile=<profile>
+```
+
+> Store the `--project_id` once and reuse for all subsequent commands.
+
 ## Prerequisites
 
 Before any FunctionGraph operation, verify:
@@ -55,7 +72,7 @@ Verify current supported runtimes with: `hcloud FunctionGraph ListRuntimes --cli
 | List runtimes | `hcloud FunctionGraph ListRuntimes --cli-region=<r> --project_id=<p>` |
 | Show function detail | `hcloud FunctionGraph ShowFunctionConfig --function_urn=<urn> --cli-region=<r> --project_id=<p>` |
 | Delete function | `hcloud FunctionGraph DeleteFunction --function_urn=<urn> --cli-region=<r> --project_id=<p>` |
-| Invoke function | `hcloud FunctionGraph InvokeFunction --function_urn=<urn> --cli-region=<r> --project_id=<p>` |
+| Invoke function | `hcloud FunctionGraph InvokeFunction --function_urn=<urn> --cli-region=<r> --project_id=<p> --name=<test-event>` |
 
 ## Create Function — Required Parameters
 
@@ -174,6 +191,18 @@ exports.handler = async (event, context) => {
 
 ## Triggers
 
+### KooCLI event_data Format
+
+**CRITICAL**: KooCLI uses **dotted key-value format**, NOT JSON strings. Always use `--event_data.<key>=<value>`.
+
+```bash
+# CORRECT: dotted format
+--event_data.name=my-api --event_data.auth=IAM --event_data.req_uri=/test
+
+# WRONG: JSON string format (will fail in KooCLI)
+--event_data='{"name":"my-api","auth":"IAM","req_uri":"/test"}'
+```
+
 ### Create Function Trigger
 
 ```bash
@@ -182,22 +211,77 @@ hcloud FunctionGraph CreateFunctionTrigger \
   --trigger_type_code=<type> \
   --event_type_code=<event> \
   --trigger_status=ACTIVE \
-  --event_data=<json> \
+  --event_data.<key>=<value> \
   --cli-region=<region> \
   --project_id=<project_id>
 ```
 
-| Trigger Type | `--trigger_type_code` | Typical `--event_type_code` |
-|--------------|----------------------|-----------------------------|
-| APIG | `APIG` | `APICreated` |
-| OBS | `OBS` | `ObjectCreated` |
-| Timer | `TIMER` | `MessageCreated` |
-| SMN | `SMN` | `MessageCreated` |
-| DIS | `DIS` | `MessageCreated` |
-| LTS | `LTS` | `MessageCreated` |
-| CTS | `CTS` | `MessageCreated` |
-| DDS | `DDS` | `MessageCreated` |
-| Kafka | `KAFKA` | `MessageCreated` |
+### Trigger Types and event_data Parameters
+
+#### APIG (HTTP API Gateway)
+
+```bash
+hcloud FunctionGraph CreateFunctionTrigger \
+  --function_urn=<urn> \
+  --trigger_type_code=APIG \
+  --event_type_code=APICreated \
+  --trigger_status=ACTIVE \
+  --event_data.name=<api-name> \
+  --event_data.auth=IAM \
+  --event_data.req_uri=/path \
+  --event_data.match_mode=SWA \
+  --event_data.type=1 \
+  --event_data.request_protocol=HTTPS \
+  --event_data.request_method=ANY \
+  --event_data.func_info.timeout=5000 \
+  --event_data.group_id=<api-group-id> \
+  --event_data.env_name=RELEASE \
+  --cli-region=<region> \
+  --project_id=<project_id>
+```
+
+APIG trigger event_data fields:
+
+| Key | Example | Description |
+|-----|---------|-------------|
+| `--event_data.name` | `my-api` | API name (required) |
+| `--event_data.auth` | `IAM` or `NONE` or `APP` | Auth type (required) |
+| `--event_data.req_uri` | `/my-backend` | Request path (required) |
+| `--event_data.match_mode` | `SWA` or `NORMAL` | Match mode (required) |
+| `--event_data.type` | `1` | API type: 1=public, 2=private (required) |
+| `--event_data.request_protocol` | `HTTPS` or `HTTP` or `BOTH` | Protocol (required) |
+| `--event_data.request_method` | `GET` / `POST` / `ANY` | HTTP method (required) |
+| `--event_data.func_info.timeout` | `5000` | Backend timeout in ms (required) |
+| `--event_data.group_id` | `<api-group-id>` | API group ID (required for existing groups) |
+| `--event_data.env_name` | `RELEASE` | Environment name (required) |
+| `--event_data.env_id` | `<env-id>` | Environment ID (optional, ENV-declaration projects) |
+| `--event_data.sl_domain` | `<domain>` | Subdomain (optional) |
+
+> **APIG group/env prerequisites**: Use `huawei-apig` skill to create an API group and environment. Or use `TIMER` trigger for simpler testing without APIG dependency.
+
+#### TIMER (Cron Scheduled)
+
+```bash
+hcloud FunctionGraph CreateFunctionTrigger \
+  --function_urn=<urn> \
+  --trigger_type_code=TIMER \
+  --event_type_code=MessageCreated \
+  --trigger_status=ACTIVE \
+  --event_data.name=<trigger-name> \
+  --event_data.schedule_type=Rate \
+  --event_data.schedule="1m" \
+  --cli-region=<region> \
+  --project_id=<project_id>
+```
+
+Timer event_data fields:
+
+| Key | Example | Description |
+|-----|---------|-------------|
+| `--event_data.name` | `my-timer` | Trigger name (required) |
+| `--event_data.schedule_type` | `Rate` or `Cron` | Schedule type (required) |
+| `--event_data.schedule` | `1m` or `0 */1 * * *` | Rate value or Cron expression (required) |
+| `--event_data.user_event` | `{"key":"val"}` | Custom event payload (optional) |
 
 ### List Triggers
 
@@ -263,9 +347,10 @@ hcloud FunctionGraph CreateFunction \
   --cli-region=cn-north-4 \
   --project_id=<your-project-id>
 
-# 4. Verify (store URN from step 3)
+# 4. Verify deployment (see InvokeFunction section below)
 hcloud FunctionGraph InvokeFunction \
   --function_urn=<urn-from-step-3> \
+  --name=test-event \
   --cli-region=cn-north-4 \
   --project_id=<your-project-id>
 
@@ -275,10 +360,55 @@ hcloud FunctionGraph CreateFunctionTrigger \
   --trigger_type_code=APIG \
   --event_type_code=APICreated \
   --trigger_status=ACTIVE \
-  --event_data='{"group_id":"<api-group-id>","env_name":"RELEASE","env_id":"<env-id>"}' \
+  --event_data.name=<api-name> \
+  --event_data.auth=IAM \
+  --event_data.req_uri=/my-backend \
+  --event_data.match_mode=SWA \
+  --event_data.type=1 \
+  --event_data.request_protocol=HTTPS \
+  --event_data.request_method=ANY \
+  --event_data.func_info.timeout=5000 \
+  --event_data.group_id=<api-group-id> \
+  --event_data.env_name=RELEASE \
   --cli-region=cn-north-4 \
   --project_id=<your-project-id>
 ```
+
+## InvokeFunction
+
+### Required Body Parameter
+
+KooCLI requires a body for `InvokeFunction`. Use `--name=<value>` to send a simple test event:
+
+```bash
+hcloud FunctionGraph InvokeFunction \
+  --function_urn=<urn> \
+  --name=test-event \
+  --cli-region=<region> \
+  --project_id=<project_id>
+```
+
+For specific event payloads:
+
+```bash
+hcloud FunctionGraph InvokeFunction \
+  --function_urn=<urn> \
+  --name=my-event \
+  --x_cff_request_version=v0 \
+  --cli-region=<region> \
+  --project_id=<project_id>
+```
+
+### X-CFF-Request-Version
+
+Controls response format behavior:
+
+| Header Value | Behavior |
+|--------------|----------|
+| `v0` (default) | Returns raw handler output (e.g. `{"statusCode": 200, "body": "..."}`). Use for direct debugging. |
+| `v1` | Wraps response in APIG-compatible format. Use when testing through API Gateway. |
+
+Pass via `--x_cff_request_version=<v0|v1>` CLI parameter.
 
 ## Troubleshooting
 
@@ -286,7 +416,9 @@ hcloud FunctionGraph CreateFunctionTrigger \
 |-------|------------------|
 | `不支持的服务名称:FGS` | Wrong service name -> Use `FunctionGraph`, not `FGS` |
 | `不支持的operation:CreateTrigger` | Wrong operation name -> Use `CreateFunctionTrigger` |
-| `缺少必填参数` | Missing required params -> Ensure `--memory_size`, `--package`, `--timeout`, `--cli-region`, `--project_id` |
+| `缺少必填参数:{*}` on InvokeFunction | Missing body -> Add `--name=<value>` to command |
+| `缺少必填参数` on CreateFunction | Missing required params -> Ensure `--memory_size`, `--package`, `--timeout`, `--cli-region`, `--project_id` |
+| `event_data` parse error | Wrong format -> Use dotted format: `--event_data.key=value`, NOT JSON `'{"key":"val"}'` |
 | Function times out | Exceeded `--timeout` -> Increase timeout or optimize code |
 | Memory exceeded | `--memory_size` too low -> Increase to next tier |
 | Code too large | Inline limited to 10KB -> Use zip/obs code type |
