@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "huaweicloud": {
+      "command": "node",
+      "args": [
+        "./src/mcp-server.mjs"
+      ],
+      "env": {
+        "HUAWEICLOUD_AGENT_TOOLKIT_MODE": "local"
+      }
+    }
+  }
+}

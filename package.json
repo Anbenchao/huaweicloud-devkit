@@ -1,0 +1,28 @@
+{
+  "name": "huaweicloud-agent-toolkit",
+  "version": "0.1.0",
+  "description": "Agent toolkit that helps coding agents use Huawei Cloud Skills, KooCLI, APIs, SDKs, and future MCP capabilities safely and accurately.",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "huaweicloud-agent-toolkit-mcp": "./plugins/huaweicloud-core/src/mcp-server.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate": "node ./scripts/validate-package.mjs"
+  },
+  "keywords": [
+    "huaweicloud",
+    "huawei-cloud",
+    "agent",
+    "codex",
+    "opencode",
+    "mcp",
+    "koocli",
+    "hcloud"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "huaweicloud-agent-toolkit",
+  "interface": {
+    "displayName": "Huawei Cloud Agent Toolkit"
+  },
+  "plugins": [
+    {
+      "name": "huaweicloud-core",
+      "source": {
+        "source": "local",
+        "path": "./plugins/huaweicloud-core"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Cloud"
+    }
+  ]
+}
