@@ -1,21 +1,54 @@
-name: Release Please
+name: Release
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'patch | minor | major'
+        required: true
+        default: patch
 
 permissions: {}
 
 jobs:
-  release-please:
+  release:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
-      pull-requests: write
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          config-file: .release-please-config.json
-          manifest-file: .release-please-manifest.json
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump version
+        run: npm version ${{ github.event.inputs.release_type }} --no-git-tag-version
+
+      - name: Sync plugin versions
+        run: node ./scripts/sync-version.mjs
+
+      - name: Quality gates
+        run: |
+          npm ci
+          npm test
+          npm run validate
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          VERSION=$(node -p "require('./package.json').version")
+          git add -A
+          git commit -m "chore(release): v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v$(node -p "require('./package.json').version")"
+          generate_release_notes: true
