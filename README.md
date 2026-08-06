@@ -8,7 +8,7 @@
 
 - Codex 插件包：`plugins/huaweicloud-core`
 - OpenCode 集成资源：`integrations/opencode`
-- **11 个技能**：6 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错）+ 5 个 P0 服务技能（ECS、OBS、VPC、IAM、DEW）
+- **26 个技能**：6 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错）+ 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）
 - 零依赖 Node.js MCP 服务器：安全规划 + 只读 CLI 执行 + 4 个知识发现工具
 - PreToolUse 安全钩子层
 - 共享安全策略：自动脱敏 + 阻断危险操作
@@ -88,7 +88,7 @@ npm run validate
 | huaweicloud-safety | 安全策略、审批关卡、写操作边界 |
 | huaweicloud-troubleshooting | 排错诊断工作流 |
 
-### 服务技能（第一批 P0）
+### 服务技能
 
 | 技能 | 华为云服务 |
 |------|-----------|
@@ -96,7 +96,22 @@ npm run validate
 | huawei-obs | 对象存储服务 OBS |
 | huawei-vpc | 虚拟私有云 VPC |
 | huawei-iam | 统一身份认证 IAM |
+| huawei-rds | 关系型数据库 RDS |
+| huawei-gaussdb | 分布式数据库 GaussDB |
+| huawei-functiongraph | 函数工作流 FunctionGraph |
+| huawei-apig | API 网关 APIG |
+| huawei-cce | 云容器引擎 CCE |
+| huawei-smn-dms | 消息通知 SMN + 分布式消息 DMS |
+| huawei-modelarts | AI 开发平台 ModelArts |
+| huawei-cloud-eye | 云监控 Cloud Eye |
+| huawei-cts | 云审计服务 CTS |
 | huawei-dew | 数据加密服务 DEW (CSMS + KMS) |
+| huawei-billing | 费用中心 Billing |
+| huawei-cbr | 云备份 CBR |
+| huawei-waf-aad | Web 应用防火墙 WAF + Anti-DDoS |
+| huawei-dds-dcs | 文档数据库 DDS + 分布式缓存 DCS |
+| huawei-deployment | 部署服务 CloudDeploy |
+| huawei-getting-started | 入门引导 |
 
 ## MCP 工具
 
