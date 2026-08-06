@@ -1,4 +1,4 @@
-﻿# Security Group Rules
+# Security Group Rules
 
 ## Common Rules
 | Direction | Protocol | Port | Source | Purpose |

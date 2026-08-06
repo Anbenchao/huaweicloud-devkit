@@ -1,48 +1,73 @@
-# Installation
+# HuaweiCloud Devkit 安装指南
 
-## Requirements
+## 前置条件
 
-- Node.js 20 or newer
-- Git
-- Codex or OpenCode
-- Huawei Cloud KooCLI `hcloud` for live CLI inspection
+- Node.js >= 20
+- 华为云账号
+- KooCLI (hcloud) 已安装并配置
 
-Credentials must be configured outside the agent conversation. Do not paste AK/SK, SK, passwords, tokens, or credential files into an agent chat.
+## 安装 KooCLI
 
-KooCLI install guide: `https://support.huaweicloud.com/qs-hcli/hcli_02_003.html`.
+参考官方文档：https://support.huaweicloud.com/qs-hcli/hcli_02_003.html
 
-- Windows: unzip KooCLI to a user directory such as `%USERPROFILE%\hcloud`, add it to the user `PATH`, then restart Codex/OpenCode.
-- Linux: prefer a user-local path such as `~/.local/bin/hcloud`; make sure that directory is visible in the agent process `PATH`.
-- If the agent cannot find `hcloud`, set `HCLOUD_BIN` to the full executable path.
-- Verify with `hcloud version`.
+```bash
+hcloud version  # 验证安装
+hcloud configure init  # 配置 AK/SK 和区域
+```
 
-## Codex
+## 安装插件 (Codex)
 
 ```powershell
 .\scripts\install-codex-local.ps1
 ```
 
-This registers the repository as a local marketplace and installs `huaweicloud-core`.
+新建 Codex 会话，输入 `@HuaweiCloud-Devkit` 加载插件。
 
-## OpenCode
+## 安装插件 (OpenCode)
 
 ```powershell
 .\scripts\install-opencode-local.ps1
 ```
 
-This copies the plugin skills and slash commands into the OpenCode config directory.
+将 `integrations/opencode/opencode.json` 中的 MCP 配置合并到你的 OpenCode 配置中。
 
-To enable local MCP tools, copy the MCP section from:
-
-```text
-integrations/opencode/opencode.json
-```
-
-into your OpenCode config, adjusting the relative path if your config lives outside the repository.
-
-## Verify
+## 验证
 
 ```bash
 npm test
 npm run validate
+```
+
+预期输出：
+- 16 个测试全部通过
+- "Validated HuaweiCloud Devkit with 11 skills."
+
+## 开发环境
+
+```bash
+npm install    # 项目零 npm 运行时依赖，此步仅安装 dev 依赖
+npm test       # 运行测试套件
+npm run validate  # 校验插件包结构
+```
+
+## 目录结构
+
+```
+huaweicloud-devkit/
+├── .agents/plugins/marketplace.json    # Codex 市场清单
+├── .claude-plugin/plugins/marketplace.json  # Claude 市场
+├── .cursor-plugin/plugins/marketplace.json  # Cursor 市场
+├── plugins/huaweicloud-core/           # 插件主体
+│   ├── .codex-plugin/plugin.json
+│   ├── .claude-plugin/plugin.json
+│   ├── .cursor-plugin/plugin.json
+│   ├── .mcp.json                       # MCP 服务器配置
+│   ├── hooks/                          # 安全钩子
+│   ├── safety/policy.json              # 安全策略
+│   ├── skills/                         # 11 个技能
+│   └── src/                            # MCP 服务器源码
+├── integrations/opencode/              # OpenCode 集成
+├── scripts/                            # 安装与校验脚本
+├── test/                               # 测试套件
+└── docs/                               # 设计文档
 ```

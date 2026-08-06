@@ -2,7 +2,7 @@
 description: Check Huawei Cloud agent readiness without exposing credentials.
 ---
 
-Use Huawei Cloud Agent Toolkit to perform a safe local readiness check:
+Use HuaweiCloud Devkit to perform a safe local readiness check:
 
 1. Use the `huaweicloud-core` skill to classify my goal.
 2. Use `huaweicloud-cli-and-auth` to check whether KooCLI `hcloud` is installed.

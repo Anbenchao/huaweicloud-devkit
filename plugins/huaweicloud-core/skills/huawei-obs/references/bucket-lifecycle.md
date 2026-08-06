@@ -1,4 +1,4 @@
-﻿# OBS Bucket Lifecycle
+# OBS Bucket Lifecycle
 
 ## Create Bucket
 hcloud OBS CreateBucket --bucket=<unique-name> --location=cn-south-1

@@ -65,7 +65,7 @@ test('MCP server initializes, lists tools, and plans CLI commands', async () => 
       capabilities: {},
       clientInfo: { name: 'test-client', version: '0.0.0' },
     });
-    assert.equal(initialized.result.serverInfo.name, 'huaweicloud-agent-toolkit');
+    assert.equal(initialized.result.serverInfo.name, 'huaweicloud-devkit');
 
     const listed = await client.request('tools/list');
     const toolNames = listed.result.tools.map((tool) => tool.name);

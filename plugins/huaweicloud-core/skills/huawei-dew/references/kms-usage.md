@@ -1,4 +1,4 @@
-﻿# KMS Usage Guide
+# KMS Usage Guide
 
 ## Create Key
 hcloud KMS CreateKey --key_alias=app-encryption-key --key_description="Application data encryption"

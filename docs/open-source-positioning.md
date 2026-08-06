@@ -1,6 +1,6 @@
 # Open Source Positioning
 
-Huawei Cloud Agent Toolkit should make developers more effective with Huawei Cloud open capabilities.
+HuaweiCloud Devkit should make developers more effective with Huawei Cloud open capabilities.
 
 The project should optimize for:
 

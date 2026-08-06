@@ -1,4 +1,4 @@
-﻿# VPC Subnet Guide
+# VPC Subnet Guide
 
 ## Create VPC
 hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=192.168.0.0/16

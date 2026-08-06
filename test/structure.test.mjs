@@ -19,7 +19,7 @@ test('Codex plugin manifest and marketplace are installable', () => {
   assert.ok(!Object.hasOwn(manifest, 'hooks'), 'Codex manifest keeps hooks out for schema compatibility');
 
   const marketplace = readJson(join(root, '.agents', 'plugins', 'marketplace.json'));
-  assert.equal(marketplace.name, 'huaweicloud-agent-toolkit');
+  assert.equal(marketplace.name, 'huaweicloud-devkit');
   assert.equal(marketplace.plugins[0].name, 'huaweicloud-core');
   assert.equal(marketplace.plugins[0].source.path, './plugins/huaweicloud-core');
 });

@@ -1,6 +1,6 @@
 # Architecture
 
-Huawei Cloud Agent Toolkit is an agent guidance and safety package, not a service encyclopedia.
+HuaweiCloud Devkit is an agent guidance and safety package, not a service encyclopedia.
 
 ## Layers
 

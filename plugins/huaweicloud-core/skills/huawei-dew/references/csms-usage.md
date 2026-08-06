@@ -1,4 +1,4 @@
-﻿# CSMS Usage Guide
+# CSMS Usage Guide
 
 ## Create Secret
 hcloud CSMS CreateSecret --secret_name=prod-db-password --secret_string='{"password":"CHANGE_ME"}'

@@ -1,4 +1,4 @@
-﻿# IAM Policy Examples
+# IAM Policy Examples
 
 ## ECS Read-Only
 {"Version":"1.1","Statement":[{"Effect":"Allow","Action":["ecs:List*","ecs:Get*","ecs:Describe*"],"Resource":["*"]}]}

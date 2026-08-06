@@ -1,4 +1,4 @@
-﻿# Create ECS Instance SOP
+# Create ECS Instance SOP
 
 ## 1. Discover flavors
 hcloud ECS ListFlavors --cli-region=<region> --cli-output=json

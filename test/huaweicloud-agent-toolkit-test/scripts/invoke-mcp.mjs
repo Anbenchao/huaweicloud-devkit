@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Driver for huaweicloud-agent-toolkit MCP server (plugin's own code path).
+// Driver for huaweicloud-devkit MCP server (plugin's own code path).
 // Usage: node invoke-mcp.mjs <toolName> '<jsonArgs>'
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

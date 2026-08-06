@@ -1,15 +1,15 @@
 {
     "interface":  {
-                      "displayName":  "Huawei Cloud Core",
-                      "shortDescription":  "Huawei Cloud guidance, CLI/API/SDK routing, and safety tools for coding agents.",
-                      "longDescription":  "Huawei Cloud Core helps coding agents choose and use Huawei Cloud Skills, KooCLI, APIs, SDKs, and future MCP tools with less context, safer command execution, and more accurate cloud implementation decisions.",
+                      "displayName":  "HuaweiCloud Devkit",
+                      "shortDescription":  "HuaweiCloud Devkit - Huawei Cloud guidance, CLI/API/SDK routing, MCP tools, and safety for coding agents.",
+                      "longDescription":  "HuaweiCloud Devkit helps coding agents choose and use Huawei Cloud Skills, KooCLI, APIs, SDKs, and MCP tools with less context, safer command execution, and more accurate cloud implementation decisions.",
                       "developerName":  "HuaweiCloud Mate",
                       "category":  "Cloud",
                       "capabilities":  [
                                            "Read",
                                            "Interactive"
                                        ],
-                      "websiteURL":  "https://github.com/huaweicloud-mate/huaweicloud-agent-toolkit",
+                      "websiteURL":  "https://github.com/huaweicloud-mate/huaweicloud-devkit",
                       "brandColor":  "#C7000B",
                       "defaultPrompt":  [
                                             "Help me choose the right Huawei Cloud capability.",
@@ -27,8 +27,8 @@
                },
     "hooks":  "./hooks/",
     "name":  "huaweicloud-core",
-    "homepage":  "https://github.com/huaweicloud-mate/huaweicloud-agent-toolkit",
-    "repository":  "https://github.com/huaweicloud-mate/huaweicloud-agent-toolkit",
+    "homepage":  "https://github.com/huaweicloud-mate/huaweicloud-devkit",
+    "repository":  "https://github.com/huaweicloud-mate/huaweicloud-devkit",
     "license":  "Apache-2.0",
     "keywords":  [
                      "huaweicloud",

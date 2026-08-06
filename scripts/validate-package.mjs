@@ -40,4 +40,4 @@ for (const name of skills) {
   assert.doesNotMatch(skill, /TODO|\[TODO/i);
 }
 
-console.log(`Validated Huawei Cloud Agent Toolkit with ${skills.length} skills.`);
+console.log(`Validated HuaweiCloud Devkit with ${skills.length} skills.`);

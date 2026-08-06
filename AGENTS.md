@@ -1,4 +1,4 @@
-# AGENTS.md — Huawei Cloud Agent Toolkit
+# AGENTS.md — HuaweiCloud Devkit
 
 ## Commands
 

@@ -54,7 +54,7 @@ async function dispatch(method, params) {
         tools: {},
       },
       serverInfo: {
-        name: 'huaweicloud-agent-toolkit',
+        name: 'huaweicloud-devkit',
         version: '0.1.0',
       },
     };

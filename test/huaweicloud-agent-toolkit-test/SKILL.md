@@ -1,16 +1,16 @@
 ---
-name: huaweicloud-agent-toolkit-test
-description: 每晚自动回归测试 huaweicloud-agent-toolkit 插件的指引能力。使用条件：需要本地凭证文件、需要真实华为云账号、任务为插件能力回归验证时。
+name: huaweicloud-devkit-test
+description: 每晚自动回归测试 huaweicloud-devkit 插件的指引能力。使用条件：需要本地凭证文件、需要真实华为云账号、任务为插件能力回归验证时。
 ---
 
-# Huawei Cloud Agent Toolkit 每晚回归测试
+# HuaweiCloud Devkit 每晚回归测试
 
 ## 目标
 
 验证插件（skills + MCP 工具 + 安全策略）能否**指导代理完成真实云操作**。测试对象是"插件的指引能力"，不是云平台本身。
 
-- 插件路径：本仓库根目录（本机：`/mnt/c/Users/ssy/.agents/huaweicloud-agent-toolkit`；如 git 有更新先 `git pull`）
-- 测试报告目录：`~/.agents/huaweicloud-agent-toolkit-test-report/nightly/`
+- 插件路径：本仓库根目录（本机：`/mnt/c/Users/ssy/.agents/huaweicloud-devkit`；如 git 有更新先 `git pull`）
+- 测试报告目录：`~/.agents/huaweicloud-devkit-test-report/nightly/`
 - MCP 驱动脚本：`<本skill目录>/scripts/invoke-mcp.mjs`（驱动插件自带 `plugins/huaweicloud-core/src/mcp-server.mjs`，无需重启 opencode）
 
 ## 铁律（测试约束）
@@ -76,7 +76,7 @@ description: 每晚自动回归测试 huaweicloud-agent-toolkit 插件的指引�
 
 ### 阶段 5：报告
 - 生成 `<日期>.md` 到报告目录，结构见"报告模板"
-- 汇总新增缺口，**追加**到 `~/.agents/huaweicloud-agent-toolkit-test-report/插件修复提示词.md`（P0-5 等编号续接），供下一迭代修复
+- 汇总新增缺口，**追加**到 `~/.agents/huaweicloud-devkit-test-report/插件修复提示词.md`（P0-5 等编号续接），供下一迭代修复
 
 ## 报告模板
 
@@ -129,6 +129,6 @@ harness 只读该文件并用于 `configure set` 与 `~/.obsutilconfig`，严禁
 ## 每晚调度建议
 
 ```bash
-opencode run --model zhipuai-coding-plan/glm-5.2 "执行 huaweicloud-agent-toolkit 每晚回归测试"
+opencode run --model zhipuai-coding-plan/glm-5.2 "执行 huaweicloud-devkit 每晚回归测试"
 ```
 配合 cron（如 02:00 每天）。首次使用需确认 opencode 无头模式可加载本 skill；若 MCP 工具未注册，用 `<本skill目录>/scripts/invoke-mcp.mjs` 驱动（同插件代码路径）。

@@ -1,4 +1,4 @@
-﻿# ECS Flavor Specs
+# ECS Flavor Specs
 > Verify live: hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 
 ## General-Purpose (s-series)
