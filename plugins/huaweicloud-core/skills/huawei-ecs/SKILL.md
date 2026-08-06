@@ -1,0 +1,74 @@
+---
+name: huawei-ecs
+description: "Use when creating, configuring, managing, or troubleshooting ECS instances on Huawei Cloud. Covers instance creation (hcloud ECS CreateServers), flavor selection, image management, security groups, EIP binding, disk attachment, auto-scaling (AS), and troubleshooting. Triggers on: ECS, instance, flavor, image, security group, EIP, EVS, auto-scaling. NOT for: CCE container workloads (use huawei-cce), BMS bare metal servers."
+version: 1
+---
+
+# Huawei Cloud ECS
+
+**STOP - Do not answer from general knowledge.** Follow the procedure below.
+
+## Overview
+
+Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance lifecycle, flavor selection, image management, networking, storage attachment, auto-scaling, and troubleshooting.
+
+## Critical Warnings
+
+| Trap | Why |
+|------|-----|
+| Flavor not in region | Not all flavors available everywhere. Check with ECS ListFlavors first |
+| Security group denies all | New SGs deny ALL inbound. Must explicitly add rules |
+| EIP bills when idle | Unattached EIP still incurs charges |
+| Stopped instance still bills | Pay-per-use instances bill when stopped (unless shutdown-no-billing flavor) |
+| Disk survives instance delete | Deleting instance does NOT delete system disk by default |
+
+## Flavor Selection Guide
+
+| Scenario | Family | Example |
+|----------|--------|---------|
+| Web app / microservices | s6 (general) | s6.large.2 (2vCPU/4GB) |
+| Database / big data | m6 (memory) | m6.xlarge.8 (4vCPU/32GB) |
+| AI inference | g6 (GPU) | g6.2xlarge.8 (8vCPU/64GB+1xT4) |
+| HPC | h6 (high-IO) | h6.2xlarge.8 (8vCPU/64GB+local SSD) |
+
+## Common Workflows
+
+| Task | Command | Steps |
+|------|---------|-------|
+| List flavors | hcloud ECS ListFlavors --cli-region=<region> | references/flavors.md |
+| Create instance | hcloud ECS CreateServers --server.name=<n> --server.flavorRef=<id> --server.imageRef=<id> --server.nics.1.subnet_id=<id> | references/create-instance.md |
+| Bind EIP | hcloud EIP BindPublicIp --publicip_id=<id> | references/eip.md |
+| Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=ingress --protocol=tcp | references/sg.md |
+| Attach disk | hcloud EVS AttachVolume --volume_id=<id> --server_id=<id> | references/evs.md |
+
+## Troubleshooting
+
+| Error | Root Cause -> Fix |
+|-------|------------------|
+| Cannot SSH | SG missing port 22 or no EIP -> Add ingress rule / Bind EIP |
+| Flavor unavailable | Region limitation -> ListFlavors in target region |
+| Insufficient resources | Stock depleted -> Change flavor or AZ |
+| AuthFailure | Expired AK/SK -> hcloud configure init |
+
+## Security Considerations
+
+- MUST use security groups, not iptables
+- MUST store SSH keys in DEW, never in user-data
+- SHOULD enable CTS audit logging
+- MUST NOT open 0.0.0.0/0 for SSH
+
+## MCP Tools
+
+- huaweicloud_list_operations service=ECS
+- huaweicloud_run_readonly_command for discovery
+- huaweicloud_run_approved_command for writes
+
+## Without MCP
+
+Fall back to hcloud CLI. State: "MCP unavailable, using local hcloud CLI."
+
+## References
+
+- ECS Docs: https://support.huaweicloud.com/ecs/
+- Flavor specs: references/flavors.md
+- Create instance: references/create-instance.md

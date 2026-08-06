@@ -1,5 +1,11 @@
 import { planHcloudCommand, runHcloud } from './hcloud-cli.mjs';
 import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SKILLS_ROOT = join(__dirname, '..', 'skills');
 
 export const TOOL_DEFINITIONS = [
   {
@@ -139,6 +145,49 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_search_docs',
+    description: 'Search across Huawei Cloud SKILL.md files and local documentation. Returns top 10 relevant results with source, name, snippet, and relevance score. Use when the agent needs to discover which skill covers a topic, or when uncertain about API parameters, quotas, or limitations.',
+    inputSchema: {
+      type: 'object',
+      required: ['query'],
+      properties: {
+        query: { type: 'string', description: 'Search query across skill descriptions and documentation.' },
+        topic: { type: 'string', description: 'Optional filter: all | ecs | obs | vpc | iam | rds | cce | modelarts | dew. Defaults to all.' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_retrieve_skill',
+    description: 'Retrieve a full SKILL.md by skill name. Returns the complete skill content plus list of reference files. Use when the agent has identified which skill to load and needs the full procedure.',
+    inputSchema: {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', description: 'Skill name, e.g., huaweicloud-core, huawei-ecs, huawei-obs.' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_list_regions',
+    description: 'List available Huawei Cloud regions. Returns region IDs, display names, and endpoints. Use when the agent needs to discover available regions before creating resources.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'huaweicloud_get_regional_availability',
+    description: 'Check if a specific Huawei Cloud service is available in a target region. Use before creating resources to prevent failures from regional unavailability.',
+    inputSchema: {
+      type: 'object',
+      required: ['service', 'region'],
+      properties: {
+        service: { type: 'string', description: 'Service name: ecs, obs, rds, gaussdb, cce, modelarts, functiongraph, etc.' },
+        region: { type: 'string', description: 'Region ID: cn-south-1, cn-north-4, ap-southeast-3, etc.' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -160,7 +209,15 @@ export async function callTool(name, args = {}) {
       return showProfileRedacted(args.profile);
     case 'huaweicloud_service_catalog':
       return serviceCatalog(args.intent);
-    case 'huaweicloud_explain_error':
+    case 'huaweicloud_search_docs':
+      return searchDocs(args.query || '', args.topic || 'all');
+    case 'huaweicloud_retrieve_skill':
+      return retrieveSkill(args.name || '');
+    case 'huaweicloud_list_regions':
+      return listRegions();
+    case 'huaweicloud_get_regional_availability':
+      return getRegionalAvailability(args.service || '', args.region || '');
+        case 'huaweicloud_explain_error':
       return explainError(args);
     default:
       throw new Error(`Unknown tool: ${name}`);
@@ -290,6 +347,132 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
     errorCode,
     requestId,
     suggestions,
+  };
+}
+
+async function searchDocs(query, topic = 'all') {
+  const q = String(query || '').toLowerCase();
+  const results = [];
+  try {
+    if (existsSync(SKILLS_ROOT)) {
+      const dirs = readdirSync(SKILLS_ROOT, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+      for (const dir of dirs) {
+        const skillPath = join(SKILLS_ROOT, dir, 'SKILL.md');
+        if (!existsSync(skillPath)) continue;
+        const content = readFileSync(skillPath, 'utf8');
+        const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+        let description = '';
+        let name = dir;
+        if (frontmatter) {
+          const fm = frontmatter[1];
+          const nameMatch = fm.match(/^name:\s*(.+)$/m);
+          if (nameMatch) name = nameMatch[1].trim();
+          const descMatch = fm.match(/^description:\s*(.+)$/m);
+          if (descMatch) description = descMatch[1].trim();
+        }
+        if (topic !== 'all' && !name.includes(topic) && !description.toLowerCase().includes(topic)) continue;
+        const relevance =
+          (description.toLowerCase().includes(q) ? 3 : 0) +
+          (name.toLowerCase().includes(q) ? 2 : 0) +
+          (content.toLowerCase().includes(q) ? 1 : 0);
+        if (relevance > 0) {
+          results.push({
+            source: "skills/" + dir + "/SKILL.md",
+            name,
+            snippet: description.substring(0, 200),
+            relevance,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    return { ok: false, error: err.message, results: [] };
+  }
+  results.sort((a, b) => b.relevance - a.relevance);
+  return { ok: true, query: q, topic, count: results.length, results: results.slice(0, 10) };
+}
+
+async function retrieveSkill(name) {
+  const skillName = String(name || '').trim();
+  if (!skillName) return { ok: false, error: 'Skill name is required.' };
+  const skillPath = join(SKILLS_ROOT, skillName, 'SKILL.md');
+  if (!existsSync(skillPath)) {
+    const dirs = existsSync(SKILLS_ROOT)
+      ? readdirSync(SKILLS_ROOT, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)
+      : [];
+    return { ok: false, error: 'Skill "' + skillName + '" not found. Available: ' + dirs.join(', ') };
+  }
+  const content = readFileSync(skillPath, 'utf8');
+  const references = [];
+  const refDir = join(SKILLS_ROOT, skillName, 'references');
+  if (existsSync(refDir)) readdirSync(refDir).forEach((f) => references.push(f));
+  const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  let version = 1, description = '';
+  if (frontmatter) {
+    const fm = frontmatter[1];
+    const vm = fm.match(/^version:\s*(.+)$/m);
+    if (vm) version = vm[1].trim();
+    const dm = fm.match(/^description:\s*(.+)$/m);
+    if (dm) description = dm[1].trim();
+  }
+  return { ok: true, name: skillName, version, description, content, references };
+}
+
+async function listRegions() {
+  const result = await runHcloud(['iam', 'list-regions'], { timeoutMs: 30000, maxRetries: 0 })
+    .catch((err) => ({ ok: false, error: err.message }));
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.error || 'Failed to list regions.',
+      fallback: 'Check https://developer.huaweicloud.com/endpoint for available regions.',
+    };
+  }
+  let regions = [];
+  try {
+    const parsed = typeof result.stdout === 'string' ? JSON.parse(result.stdout) : result.stdout;
+    const rawRegions = parsed.regions || [];
+    regions = rawRegions.map((r) => ({
+      id: r.id,
+      description: r.description || r.names,
+      type: r.type,
+      locales: r.locales,
+    }));
+  } catch {
+    regions = [{ raw: String(result.stdout).substring(0, 1000) }];
+  }
+  regions.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+  return { ok: true, count: regions.length, regions };
+}
+
+async function getRegionalAvailability(service, region) {
+  const svc = String(service || '').toLowerCase().trim();
+  const reg = String(region || '').toLowerCase().trim();
+  if (!svc || !reg) return { ok: false, error: 'Both service and region are required.' };
+  const known = {
+    ecs: ['cn-south-1','cn-north-4','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','af-south-1'],
+    obs: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    vpc: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    iam: ['global'],
+    rds: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    gaussdb: ['cn-south-1','cn-north-4','cn-east-3'],
+    cce: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    modelarts: ['cn-south-1','cn-north-4','cn-east-3'],
+    functiongraph: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    dew: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    smn: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    ces: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    cts: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+  };
+  const found = known[svc] || [];
+  const available = found.includes(reg) || found.includes('global');
+  return {
+    ok: true, service: svc, region: reg, available,
+    note: available
+      ? svc + ' is available in ' + reg + '.'
+      : svc + ' availability in ' + reg + ' could not be confirmed. Verify at https://developer.huaweicloud.com/endpoint.',
   };
 }
 

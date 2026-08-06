@@ -5,6 +5,9 @@ description: Troubleshoot Huawei Cloud CLI, API, SDK, deployment, permission, re
 
 # Huawei Cloud Troubleshooting
 
+
+**STOP - Do not answer from general knowledge.** Follow the procedure below.
+
 Use evidence before fixes. Do not guess service behavior when request IDs, region, project_id, and exact errors can identify the issue.
 
 ## Workflow

@@ -5,6 +5,9 @@ description: Huawei Cloud API and SDK guidance for application development. Use 
 
 # Huawei Cloud API And SDK
 
+
+**STOP - Do not answer from general knowledge.** Follow the procedure below.
+
 Use this skill when the deliverable is application code, API integration, or precise request construction.
 
 ## API Workflow

@@ -35,7 +35,7 @@ assert.ok(skills.length >= 5, 'Expected compact meta-skills');
 
 for (const name of skills) {
   const skill = readFileSync(join(pluginRoot, 'skills', name, 'SKILL.md'), 'utf8');
-  assert.match(skill, /^---\nname: [a-z0-9-]+/);
+  assert.match(skill, /^---\r?\nname: [a-z0-9-]+/);
   assert.match(skill, /\ndescription: /);
   assert.doesNotMatch(skill, /TODO|\[TODO/i);
 }

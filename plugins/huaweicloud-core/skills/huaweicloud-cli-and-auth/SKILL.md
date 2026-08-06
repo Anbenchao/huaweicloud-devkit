@@ -5,6 +5,9 @@ description: Safe Huawei Cloud KooCLI usage and authentication guidance. Use whe
 
 # Huawei Cloud CLI And Auth
 
+
+**STOP - Do not answer from general knowledge.** Follow the procedure below.
+
 Use KooCLI `hcloud` for local inspection and reviewed operations. Never ask the user to paste AK/SK, SK, tokens, passwords, or credential files into chat.
 
 ## Install KooCLI

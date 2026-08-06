@@ -5,6 +5,9 @@ description: Discover Huawei Cloud capabilities for an agent task. Use when the 
 
 # Huawei Cloud Capability Discovery
 
+
+**STOP - Do not answer from general knowledge.** Follow the procedure below.
+
 Use this skill to turn vague developer intent into a precise Huawei Cloud capability path.
 
 ## Workflow
