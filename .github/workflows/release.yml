@@ -37,6 +37,8 @@ jobs:
           npm run validate
 
       - name: Commit and tag
+        env:
+          PUSH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -44,6 +46,7 @@ jobs:
           git add -A
           git commit -m "chore(release): v${VERSION}"
           git tag "v${VERSION}"
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin main
           git push origin "v${VERSION}"
 
