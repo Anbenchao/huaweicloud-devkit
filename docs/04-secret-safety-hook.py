@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 PreToolUse hook: block direct secret fetching from Huawei Cloud DEW/CSMS/KMS.
 Maps aws-core's secret-safety.py security model to Huawei Cloud equivalents:
@@ -29,10 +29,12 @@ DENY_MSG = (
 
 # Match hcloud CLI secret fetching commands
 HCLOUD_SECRET_PATTERN = re.compile(
-    r'hcloud\s+csms\s+(download-secret|show-secret|describe-secret|'
-    r'list-secret-versions|get-secret-version)',
+    r'hcloud\s+csms\s+(download-secret|show-secret)',
     re.I
 )
+
+# Metadata-only operations (describe-secret, list-secret-versions, get-secret-version)
+# are intentionally NOT blocked — they only return metadata, not secret values.
 
 HCLOUD_KMS_PATTERN = re.compile(
     r'hcloud\s+kms\s+decrypt',
@@ -63,7 +65,7 @@ _COMPOUND_OPERATORS_RE = re.compile(r'[;&|`]|\$\(')
 
 CSMS_OPERATIONS = (
     "downloadsecret", "downloadsecretvalue", "showsecret",
-    "showsecretvalue", "listsecretversions", "getsecretversion"
+    "showsecretvalue"
 )
 
 
