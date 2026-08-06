@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 PreToolUse hook: block direct secret fetching from Huawei Cloud DEW/CSMS/KMS.
 Maps aws-core's secret-safety.py security model to Huawei Cloud equivalents:
