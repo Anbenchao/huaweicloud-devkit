@@ -68,6 +68,19 @@ The skill provides the correct **service name and operation names** (which agent
 
 **Update skills from real test failures, not speculation.** Every gotcha added to a skill should trace back to an actual error encountered during testing.
 
+### CLI Command Construction: 4-Step Workflow
+
+Before executing any `hcloud` command, follow this discovery chain:
+
+```
+1. hcloud --help                     → discover available services
+2. hcloud <Service> --help           → discover available operations
+3. hcloud <Service> <Operation> --help → discover exact parameter names
+4. Execute the command
+```
+
+Service skills may skip steps 1-2 when the correct service name and operation are already provided.
+
 ## Safety Model
 
 Write operations are blocked by default. The only write path is `huaweicloud_run_approved_command`, which requires `approvedCommand` + `approvedByUser: true`.
@@ -80,5 +93,6 @@ Policy vocabulary lives in `plugins/huaweicloud-core/safety/policy.json`. Both `
 - `hcloud` must be in PATH or `HCLOUD_BIN` set. Agent processes inherit the environment of their launcher.
 - Codex manifest (`plugin.json`) must NOT include a `hooks` field — it fails schema validation.
 - Skills are compact routing workflows, not service docs. Do not copy Huawei Cloud documentation into them. Point to `support.huaweicloud.com` instead.
+- For complex params (nested objects, arrays with special characters), prefer `--cli-jsonInput=<file>` over inline quoting to avoid shell escaping traps.
 - OpenCode integration lives in `integrations/opencode/` (separate from the plugin).
 - Node >= 20 required, ESM only.

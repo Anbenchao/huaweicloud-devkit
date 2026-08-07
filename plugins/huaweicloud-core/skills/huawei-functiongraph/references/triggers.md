@@ -89,6 +89,40 @@ hcloud APIG BatchPublishOrOfflineApiV2 \
   --api_ids=<api-id-from-trigger-response>
 ```
 
+### Alternative: --cli-jsonInput (Recommended for Complex Configs)
+
+For trigger configs with many nested fields, use `--cli-jsonInput` to avoid shell escaping issues:
+
+```bash
+cat > trigger.json << 'EOF'
+{
+  "trigger_type_code": "DEDICATEDGATEWAY",
+  "trigger_status": "ACTIVE",
+  "event_type_code": "APICreated",
+  "event_data": {
+    "name": "my-api",
+    "auth": "IAM",
+    "path": "/my-backend",
+    "match_mode": "SWA",
+    "type": 1,
+    "protocol": "HTTPS",
+    "req_method": "ANY",
+    "func_info": { "timeout": 5000 },
+    "instance_id": "<apig-instance-id>",
+    "group_id": "<api-group-id>",
+    "sl_domain": "<sl-domain>",
+    "env_name": "RELEASE",
+    "env_id": "<env-id>"
+  }
+}
+EOF
+hcloud FunctionGraph CreateFunctionTrigger \
+  --function_urn=<urn> \
+  --cli-region=<region> \
+  --project_id=<project_id> \
+  --cli-jsonInput=trigger.json
+```
+
 ## List / Delete Triggers
 
 ```bash
