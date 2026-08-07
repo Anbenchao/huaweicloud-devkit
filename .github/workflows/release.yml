@@ -1,4 +1,4 @@
-name: Release
+name: Prepare Release
 
 on:
   workflow_dispatch:
@@ -11,15 +11,17 @@ on:
 permissions: {}
 
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -36,34 +38,20 @@ jobs:
           npm test
           npm run validate
 
-      - name: Verify push token identity
+      - name: Create release branch and PR
         env:
-          PUSH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          LOGIN=$(curl -sS -H "Authorization: Bearer ${PUSH_TOKEN}" https://api.github.com/user | jq -r '.login // "INVALID"')
-          echo "push token belongs to: ${LOGIN}"
-          echo "secret present: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}"
-
-      - name: Commit and tag
-        id: release
-        env:
-          PUSH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BRANCH="release/v${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          VERSION=$(node -p "require('./package.json').version")
-          LOGIN=$(curl -sS -H "Authorization: Bearer ${PUSH_TOKEN}" https://api.github.com/user | jq -r '.login // "x-access-token"')
-          echo "pushing as: ${LOGIN}"
           git add -A
           git commit -m "chore(release): v${VERSION}"
-          git tag "v${VERSION}"
-          git remote set-url origin "https://${LOGIN}:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push origin main
-          git push origin "v${VERSION}"
-          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          generate_release_notes: true
+          git push origin "HEAD:${BRANCH}"
+          gh pr create --base main --head "${BRANCH}" \
+            --title "chore(release): v${VERSION}" \
+            --body "Release v${VERSION}. Auto-merges once checks pass." || echo "PR already exists"
+          gh pr merge --auto --merge --delete-branch \
+            --match-head-commit "$(git rev-parse HEAD)" || true
+          echo "Release PR created. After it merges, run the 'Publish Release' workflow."
