@@ -34,3 +34,17 @@
 **归属**: 仓库基础设施 (非具体技能)
 
 **建议**: 提供 `install-opencode.sh` Bash 安装脚本。
+
+---
+
+## 3. MCP Server 工具在 OpenCode 中未暴露
+
+**影响**: 安全策略无法在 MCP 层强制执行，Agent 降级为直接使用 `hcloud` CLI，失去安全防护层。
+
+**根因**: `integrations/opencode/opencode.json` 中的 MCP server 路径为相对路径 (`../../plugins/huaweicloud-core/src/mcp-server.mjs`)。当配置合并到 `~/.config/opencode/opencode.jsonc` 时，相对路径无法正确解析。
+
+**现状**: 12 个 MCP 工具全部缺失 (search_docs, retrieve_skill, list_regions, check_cli, plan_cli_command, list_operations, run_readonly_command, run_approved_command, show_profile_redacted, service_catalog, explain_error, get_regional_availability)。
+
+**建议**:
+- 安装脚本中自动将相对路径替换为绝对路径
+- 或在 opencode.json 中增加 `_note` 指引用户手动修改

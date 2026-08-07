@@ -18,9 +18,11 @@ version: 1
 
 ## First-Time Setup
 1. **Install KooCLI** using command above
-2. **Configure credentials**: `hcloud configure set --ak=YOUR_AK --sk=YOUR_SK`
-3. **Set region**: `hcloud configure set --region=cn-north-4`
-4. **Verify**: `hcloud ECS ListServersDetails --cli-region=cn-north-4`
+2. **Configure credentials**: `hcloud configure init` (interactive, prompts for AK/SK/region safely)
+3. **Verify**: `hcloud configure list` to confirm profile, then `hcloud ECS ListServersDetails --cli-region=cn-north-4`
+4. For detailed auth guidance, see `huaweicloud-cli-and-auth` skill
+
+> **Security**: Never pass AK/SK as command-line arguments (`--ak=...`). Always use `hcloud configure init` (interactive) or `hcloud configure set` with cached profile to avoid secrets in shell history.
 
 ## Critical Warnings
 | Trap | Why |
