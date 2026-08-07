@@ -15,7 +15,7 @@ HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工
 npx --yes huaweicloud-devkit-test install     # 暂用于测试
 ```
 
-自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
+自动安装 26 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
 
 ```bash
 npx --yes huaweicloud-devkit-test doctor   # 自检：hcloud、MCP、技能、认证
@@ -86,7 +86,7 @@ npx --yes huaweicloud-devkit-test install     # 暂用于测试
 
 Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特定的华为云任务。技能按需加载——Agent 只发现和检索与当前任务相关的内容。
 
-包含 7 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错、市场发现）和 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）。
+包含 6 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错）和 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）。
 
 浏览 [`skills/`](plugins/huaweicloud-core/skills/) 目录查看所有可用技能。
 
