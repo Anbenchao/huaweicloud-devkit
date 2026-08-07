@@ -66,11 +66,10 @@ function updateOpenCodeConfig(pluginDir) {
     try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
   }
   const mcpPath = join(pluginDir, 'src', 'mcp-server.mjs').replace(/\\/g, '/');
-  config.mcpServers = config.mcpServers || {};
-  config.mcpServers.huaweicloud = {
+  config.mcp = config.mcp || {};
+  config.mcp.huaweicloud = {
     type: 'local',
-    command: 'node',
-    args: [mcpPath],
+    command: ['node', mcpPath],
     enabled: true,
   };
   writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -82,9 +81,9 @@ function removeOpenCodeConfig() {
   if (!existsSync(configPath)) return;
   let config = {};
   try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch { return; }
-  if (!config.mcpServers?.huaweicloud) return;
-  delete config.mcpServers.huaweicloud;
-  if (Object.keys(config.mcpServers).length === 0) delete config.mcpServers;
+  if (!config.mcp?.huaweicloud) return;
+  delete config.mcp.huaweicloud;
+  if (Object.keys(config.mcp).length === 0) delete config.mcp;
   writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.log(`  OpenCode MCP config cleaned: ${configPath}`);
 }
@@ -184,7 +183,7 @@ function opencodeStatus() {
   if (existsSync(configPath)) {
     try {
       const config = JSON.parse(readFileSync(configPath, 'utf8'));
-      console.log(`  MCP config: ${config.mcpServers?.huaweicloud ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
+      console.log(`  MCP config: ${config.mcp?.huaweicloud ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
     } catch {
       console.log(`  MCP config: \x1b[31mInvalid\x1b[0m`);
     }
