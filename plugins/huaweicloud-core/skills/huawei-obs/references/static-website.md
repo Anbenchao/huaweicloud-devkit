@@ -1,0 +1,49 @@
+# OBS Static Website Deployment
+
+## Workflow
+
+```
+1. Build project     → npm run build / yarn build
+2. Create OBS bucket  → hcloud OBS mb obs://<bucket> -location=<region>
+3. Bulk upload        → hcloud OBS cp <build-dir>/ obs://<bucket>/ -r
+4. Set public-read    → hcloud OBS chattri obs://<bucket> -acl=public-read
+5. Configure website  → REST API (KooCLI OBS lacks this feature)
+6. Verify             → curl http://<bucket>.obs-website.<region>.myhuaweicloud.com
+```
+
+## Step-by-Step (Vue/Vite Example)
+
+```bash
+# 1. Build
+npm run build                  # outputs to dist/
+
+# 2. Create bucket in target region
+hcloud OBS mb obs://my-static-site -location=cn-north-4
+
+# 3. Upload entire build directory (recursive)
+hcloud OBS cp dist/ obs://my-static-site/ -r
+
+# 4. Set bucket to public-read
+hcloud OBS chattri obs://my-static-site -acl=public-read
+
+# 5. Configure static website hosting
+# KooCLI OBS does NOT support this. Use one of:
+# Option A — REST API:
+#   PUT /?website HTTP/1.1
+#   Host: my-static-site.obs.cn-north-4.myhuaweicloud.com
+#   Body: {"IndexDocument": {"Suffix": "index.html"}, "ErrorDocument": {"Key": "error.html"}}
+#   (requires AK/SK signature)
+# Option B — Huawei Cloud Console:
+#   Console → OBS → Bucket → Basic Settings → Static Website Hosting
+
+# 6. Verify
+curl http://my-static-site.obs-website.cn-north-4.myhuaweicloud.com
+```
+
+## Key Gotchas
+
+- **Build output dir varies**: `dist/` (Vite), `build/` (CRA), `out/` (Next.js). Check `package.json` scripts.
+- **Bucket name must be DNS-compliant**: lowercase, numbers, hyphens only. No underscores or uppercase.
+- **Region matters**: Website endpoint depends on bucket region. `obs-website.<region>.myhuaweicloud.com`.
+- **Index.html routing**: For SPA apps (Vue Router, React Router), set `ErrorDocument` to `index.html` as well.
+- **Cache invalidation**: New uploads don't clear CDN cache. Add `?v=<timestamp>` to asset references or use OBS versioning.
