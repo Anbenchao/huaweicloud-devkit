@@ -102,6 +102,11 @@ function hasCodexCLI() {
   return r.status === 0 && r.stdout && r.stdout.toString().includes('codex');
 }
 
+function checkHcloud() {
+  const r = spawnSync('hcloud version', [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
+  return r.status === 0 && /KooCLI|Current.*version/i.test(r.stdout ? r.stdout.toString() : '');
+}
+
 function getMarketplaceName() {
   const marketplacePath = join(PACKAGE_ROOT, '.agents', 'plugins', 'marketplace.json');
   try {
@@ -304,7 +309,16 @@ async function cmdInstall() {
   console.log(`  IMPORTANT: Restart your OpenCode session now!`);
   console.log(`  MCP tools only become available AFTER restart.`);
   console.log(`========================================\x1b[0m`);
-  console.log(`\nAfter restart, run: npx huaweicloud-devkit doctor`);
+
+  const hcloudOk = checkHcloud();
+  if (!hcloudOk) {
+    console.log(`\n\x1b[33mKooCLI (hcloud) is not installed.`);
+    console.log(`  Run: npx huaweicloud-devkit install-hcloud\x1b[0m`);
+  } else {
+    console.log(`\nKooCLI (hcloud) detected.`);
+  }
+
+  console.log(`\nAfter restart + hcloud setup, run: npx huaweicloud-devkit doctor`);
   if (target === 'opencode' || target === 'all') {
     console.log('Or mention @huaweicloud-core in OpenCode');
   }
@@ -402,7 +416,7 @@ async function cmdDoctor() {
   const hcloudBin = process.env.HCLOUD_BIN || 'hcloud';
   const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
   const hcloudOk = hcloudCheck.status === 0 && hcloudCheck.stdout.toString().includes('KooCLI');
-  check('hcloud CLI installed', hcloudOk, 'Install from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html');
+  check('hcloud CLI installed', hcloudOk, 'Run: npx huaweicloud-devkit install-hcloud');
 
   if (hcloudOk) {
     const ver = (hcloudCheck.stdout.toString().match(/(\d+\.\d+\.\d+)/) || [])[1] || 'unknown';
