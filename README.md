@@ -18,8 +18,10 @@ npx --yes huaweicloud-devkit-test install     # 暂用于测试
 自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
 
 ```bash
-npx --yes huaweicloud-devkit-test doctor   # 暂用于测试
-npx --yes huaweicloud-devkit-test status
+npx --yes huaweicloud-devkit-test doctor   # 自检：hcloud、MCP、技能、认证
+npx --yes huaweicloud-devkit-test status   # 查看安装状态
+npx --yes huaweicloud-devkit-test update   # 更新到最新版
+npx --yes huaweicloud-devkit-test uninstall # 卸载
 ```
 
 ### Codex
