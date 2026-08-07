@@ -52,10 +52,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           VERSION=$(node -p "require('./package.json').version")
+          LOGIN=$(curl -sS -H "Authorization: Bearer ${PUSH_TOKEN}" https://api.github.com/user | jq -r '.login // "x-access-token"')
+          echo "pushing as: ${LOGIN}"
           git add -A
           git commit -m "chore(release): v${VERSION}"
           git tag "v${VERSION}"
-          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote set-url origin "https://${LOGIN}:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin main
           git push origin "v${VERSION}"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
