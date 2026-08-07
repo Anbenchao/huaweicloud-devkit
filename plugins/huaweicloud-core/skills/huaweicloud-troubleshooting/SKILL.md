@@ -5,10 +5,18 @@ description: Troubleshoot Huawei Cloud CLI, API, SDK, deployment, permission, re
 
 # Huawei Cloud Troubleshooting
 
-
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
 Use evidence before fixes. Do not guess service behavior when request IDs, region, project_id, and exact errors can identify the issue.
+
+## Critical Warnings
+
+| Trap | Why |
+|------|-----|
+| Error in response body, not HTTP status | Many APIs return HTTP 200 with error in JSON body. Always check `error_code` and `error_msg` |
+| Missing `project_id` is common | New users often omit project_id from API path or CLI. Get it from `IAM KeystoneListProjects` |
+| Sandbox may block hcloud | OpenCode/Codex sandbox can block hcloud metadata files in `~/.hcloud/`. Use `dangerouslyDisableSandbox` or Bash tool |
+| KooCLI param prefix varies | VPC params need `--vpc.x`, ECS params need `--server.x`, ALWAYS check `--help` first |
 
 ## Workflow
 
@@ -28,9 +36,34 @@ Use evidence before fixes. Do not guess service behavior when request IDs, regio
 
 ## Common Checks
 
-- Authentication: profile exists, credential source is configured, identity has permission.
-- Region: CLI region, endpoint, and resource region match.
-- Project: request path uses the project_id for the target region.
-- Pagination: resource may exist on a later page.
-- Quota: create or scale failure may require quota inspection.
-- IAM: permission errors need exact action and resource scope.
+| Check | Command |
+|-------|---------|
+| Authentication | `hcloud configure list` (redacted) |
+| Region | Match CLI region, endpoint, and resource region |
+| Project ID | `hcloud IAM KeystoneListProjects` |
+| Pagination | Add `--limit=100` and check `marker` |
+| Quota | Check service quotas in console or API |
+| IAM Permission | Verify user/role has required action — see `huawei-iam` skill |
+| KooCLI version | `hcloud version` |
+
+## Common Error Codes
+
+| Error | Likely Cause | Fix |
+|-------|-------------|-----|
+| AuthFailure / 401 | AK/SK invalid or expired | Regenerate AK/SK, re-run `hcloud configure init` |
+| AccessDenied / 403 | IAM permission missing | Check `huawei-iam` skill, add required policy action |
+| NoSuchKey / 404 | Resource not found | Verify resource ID, region, and project_id |
+| QuotaExceeded | Account limit reached | Request quota increase in console |
+| [USE_ERROR] 不正确的参数 | Wrong param name | Run `--help`, check `--param=value` format and nested prefix |
+| Ecs.0005 | Flavor-image mismatch | Check image `__support_*` against flavor virtualization type |
+| FSS.0400 | FunctionGraph latest version error | Strip `:latest` from function URN |
+| FSS.1417 | DEDICATEDGATEWAY missing params | Add instance_id, group_id, protocol, env_name, env_id |
+| APIC.7201 | Missing security_group_id | Add `--security_group_id` param for APIG CreateInstanceV2 |
+| [NETWORK_ERROR] | Transient network failure | Retry with `maxRetries` param or wait and retry |
+
+## Cross-Skill References
+
+- **IAM permissions**: See `huawei-iam`
+- **CLI auth setup**: See `huaweicloud-cli-and-auth`
+- **ECS specific errors**: See `huawei-ecs`
+- **FunctionGraph specific**: See `huawei-functiongraph`
