@@ -1,6 +1,6 @@
 ---
 name: huawei-cce
-description: "Use when creating or managing CCE Kubernetes clusters. Covers cluster creation, node pools, SWR registry, autoscaling. Triggers: CCE, Kubernetes, K8s, cluster, node pool, container, SWR. NOT for: serverless functions (use huawei-functiongraph)."
+description: "Use when creating or managing CCE Kubernetes clusters. Covers cluster creation, node pools, SWR registry, autoscaling. Triggers: CCE, Kubernetes, K8s, cluster, node pool, container, SWR. NOT for: serverless functions (use huawei-functiongraph), serverless containers (use huawei-cce for CCI redirect)."
 version: 1
 ---
 
@@ -10,32 +10,88 @@ version: 1
 
 Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
 
+## Overview
+
+Domain expertise for CCE (Cloud Container Engine) and SWR (Software Repository for Container). CCE uses two hcloud services: `CCE` for clusters and `SWR` for container images.
+
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
 | Cluster type immutable | Cannot change hybrid/traditional after creation |
-| Master managed by Huawei | No SSH to master. Use kubectl only |
+| Master managed by Huawei | No SSH to master. Use kubectl or kubectl-cce |
 | Network model affects pod IP | VPC network gives pods VPC IPs |
+| Addon ops use UID not name | `ShowAddonInstance` returns `metadata.uid` for install/uninstall/update |
+| SWR enterprise instance costs | `postPaid` billing. One-time activation at console required |
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| List clusters | hcloud CCE ListClusters |
-| Create cluster | hcloud CCE CreateCluster --cluster.name=<n> --cluster.flavor=cce.s1.small |
-| Create node pool | hcloud CCE CreateNodePool --cluster_id=<id> --nodepool.name=<n> |
-| Get kubeconfig | hcloud CCE CreateKubeConfig --cluster_id=<id> |
 
-## SWR
-docker tag <img> swr.cn-south-1.myhuaweicloud.com/<org>/<img>
-docker push
+| Task | Operation | Service |
+|------|-----------|---------|
+| List clusters | `ListClusters` | CCE |
+| Create cluster | `CreateCluster` | CCE |
+| Delete cluster | `DeleteCluster` | CCE |
+| Hibernate cluster | `HibernateCluster` | CCE |
+| List node pools | `ListNodePools` | CCE |
+| Create node pool | `CreateNodePool` | CCE |
+| List nodes | `ListNodes` | CCE |
+| Get kubeconfig | `CreateKubeConfig` | CCE |
+| List addons | `ListAddonInstances` | CCE |
+| Docker login (SWR) | `CreateAuthorizationToken` | SWR |
+| Create SWR org | `CreateNamespace` | SWR |
+| Create SWR repo | `CreateRepo` | SWR |
+| List repos | `ListReposDetails` | SWR |
 
-## Security
+## SWR Image Push Workflow
+
+```bash
+# 1. Docker login to SWR
+hcloud SWR CreateAuthorizationToken --help
+docker login -u <region>@<AK> -p <token> swr.<region>.myhuaweicloud.com
+
+# 2. Tag and push
+docker tag my-app:latest swr.<region>.myhuaweicloud.com/<org>/my-app:latest
+docker push swr.<region>.myhuaweicloud.com/<org>/my-app:latest
+
+# 3. Verify
+hcloud SWR ListReposDetails --cli-region=<r>
+```
+
+> SWR Auth token valid 12h. For CCE node pull access, create long-term credential with `CreateSecret` (valid 1 year).
+
+## Serverless Containers (CCI)
+
+For serverless containers without managing clusters, use CCI (Cloud Container Instance):
+
+- No cluster needed — just namespace + network + workload
+- Key ops: `CCI createCoreV1Namespace`, `CCI createNetworkingCciIoV1beta1NamespacedNetwork`, `CCI createAppsV1NamespacedDeployment`
+- Namespace MUST include `namespace-kubernetes-io/flavor` annotation
+- `limits == requests` strictly enforced (no overcommit)
+
+See `hcloud CCI --help` for full operation list.
+
+## Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| kubectl connection refused | Verify cluster Running; use `kubectl cce` (no EIP needed) |
+| Node pool creation failed | Check VPC/subnet availability and flavor capacity |
+| Docker push 401 | Re-run `CreateAuthorizationToken` (token expired) |
+| Addon install fails | Use `metadata.uid` from `ShowAddonInstance`, not name |
+| `kubectl cce` not found | Install plugin: `kubectl cce` uses AK/SK, no kubeconfig required |
+
+## Security Considerations
+
 - MUST restrict kubeconfig file permissions (0600)
 - MUST use IAM RBAC for cluster access, not cluster-admin
 - MUST store container images in private SWR repositories
 
-## Troubleshooting
-| Error | Fix |
-|-------|-----|
-| kubectl connection refused | Verify cluster is Running and kubeconfig is configured |
-| Node pool creation failed | Check VPC/subnet availability and flavor capacity |
+## Cross-Skill References
+
+- **VPC/Subnet**: See `huawei-vpc` for network prerequisites
+- **EIP**: See `huawei-vpc` for cluster public access
+
+## References
+
+- CCE Docs: https://support.huaweicloud.com/cce/
+- SWR Docs: https://support.huaweicloud.com/swr/
