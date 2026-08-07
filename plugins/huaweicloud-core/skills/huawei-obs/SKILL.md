@@ -8,6 +8,8 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
 ## Overview
 
 Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/object lifecycle, access control, replication, hosting, and presigned URLs.

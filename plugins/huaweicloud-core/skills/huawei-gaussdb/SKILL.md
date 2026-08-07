@@ -8,6 +8,8 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
 ## Critical Warnings
 | Trap | Why |
 |------|-----|
@@ -25,3 +27,9 @@ version: 1
 ## Security
 - MUST use VPC internal access
 - MUST enable SSL
+
+## Troubleshooting
+| Error | Fix |
+|-------|-----|
+| Connection refused | Check VPC/subnet and security group rules |
+| Shard expansion failed | Verify instance is in Available state first |

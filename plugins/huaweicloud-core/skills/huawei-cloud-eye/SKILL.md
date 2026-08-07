@@ -8,6 +8,8 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
 ## Critical Warnings
 | Trap | Why |
 |------|-----|
@@ -19,7 +21,7 @@ version: 1
 | Task | Command |
 |------|---------|
 | List metrics | hcloud CES ListMetrics --namespace=SYS.ECS --cli-region=<r> |
-| Create alarm rule | hcloud CES CreateAlarm --alarm_name=<n> --metric_name=cpu_util --namespace=SYS.ECS --period=300 --filter=average --value=90 --comparison_operator=>=  |
+| Create alarm rule | hcloud CES CreateAlarm --alarm_name=<n> --metric_name=cpu_util --namespace=SYS.ECS --period=300 --filter=average --value=90 --comparison_operator='>='  |
 | List alarms | hcloud CES ListAlarms --cli-region=<r> |
 | Create dashboard | hcloud CES CreateDashboard --dashboard_name=<n> |
 

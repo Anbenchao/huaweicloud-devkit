@@ -8,6 +8,8 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
 ## Overview
 
 Domain expertise for Huawei Cloud Data Encryption Workshop (DEW). Covers CSMS for secret lifecycle management, KMS for encryption key management, credential rotation, and secure application integration patterns.

@@ -8,9 +8,12 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
 ## Critical Warnings
 | Trap | Why |
 |------|-----|
+| **Service name may be "CodeArtsDeploy"** | hcloud service name for deployment may be `CodeArtsDeploy` instead of `CloudDeploy`. Run `hcloud --help` to verify available services. |
 | Deployment hosts need agent | Install CloudDeploy agent on target hosts first |
 | Task must reference application first | Create application before task |
 | Parallel deployments may conflict | Lock resources or use deployment groups |
