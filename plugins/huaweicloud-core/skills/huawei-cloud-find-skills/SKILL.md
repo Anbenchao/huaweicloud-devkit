@@ -12,7 +12,7 @@ description: |
 
 # Huawei Cloud Agent Skills Search and Discovery
 
-This skill enables users to efficiently search, discover, and install Huawei Cloud skills. 
+This skill enables users to efficiently search, discover, and install Huawei Cloud skills.
 
 ## Scenario Description
 
