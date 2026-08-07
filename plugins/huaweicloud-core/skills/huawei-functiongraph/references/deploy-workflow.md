@@ -1,15 +1,14 @@
 # End-to-End Deployment Workflow
 
 ```
-1. Write code        → Create index.py with handler function
-2. Package           → zip -r function.zip index.py
-3. Create function   → hcloud FunctionGraph CreateFunction ... (with code_type=zip)
-4. Verify            → hcloud FunctionGraph InvokeFunction
-5. Create trigger    → hcloud FunctionGraph CreateFunctionTrigger (APIG for HTTP)
-6. Publish API       → Use huawei-apig skill
+1. Write code     → Create index.py with handler function
+2. Package        → zip -r function.zip index.py
+3. Create function → hcloud FunctionGraph CreateFunction (use --help for params)
+4. Verify         → hcloud FunctionGraph InvokeFunction
+5. Create trigger  → hcloud FunctionGraph CreateFunctionTrigger (use --help for params)
 ```
 
-## Step-by-Step Example (Python)
+## Step-by-Step (Python)
 
 ```bash
 # 1. Write code
@@ -27,45 +26,17 @@ EOF
 # 2. Package
 zip -r function.zip index.py
 
-# 3. Create function (MUST run from same directory as function.zip)
-hcloud FunctionGraph CreateFunction \
-  --func_name=my-backend \
-  --runtime=Python3.10 \
-  --handler=index.handler \
-  --memory_size=256 \
-  --package=default \
-  --timeout=30 \
-  --code_type=zip \
-  --code_filename=function.zip \
-  --cli-region=cn-north-4 \
-  --project_id=<your-project-id>
+# 3. Create function (discover params with --help first!)
+hcloud FunctionGraph CreateFunction --help
+# Required: --func_name, --runtime, --handler, --memory_size, --package, --timeout
+# Code type: use --code_type=zip --code_filename=function.zip (cd to function.zip dir first!)
 
 # 4. Verify (store URN from step 3 output)
-hcloud FunctionGraph InvokeFunction \
-  --function_urn=<urn-from-step-3> \
-  --name=test-event \
-  --cli-region=cn-north-4 \
-  --project_id=<your-project-id>
+hcloud FunctionGraph InvokeFunction --help
+# Requires body param: --name=test-event
 
-# 5. Create APIG trigger (see references/triggers.md for DEDICATEDGATEWAY details)
-hcloud FunctionGraph CreateFunctionTrigger \
-  --function_urn=<urn> \
-  --trigger_type_code=DEDICATEDGATEWAY \
-  --event_type_code=APICreated \
-  --trigger_status=ACTIVE \
-  --event_data.name=<api-name> \
-  --event_data.auth=IAM \
-  --event_data.path=/my-backend \
-  --event_data.match_mode=SWA \
-  --event_data.type=1 \
-  --event_data.protocol=HTTPS \
-  --event_data.req_method=ANY \
-  --event_data.func_info.timeout=5000 \
-  --event_data.group_id=<api-group-id> \
-  --event_data.instance_id=<instance-id> \
-  --event_data.env_name=RELEASE \
-  --event_data.env_id=<env-id> \
-  --event_data.sl_domain=<sl-domain> \
-  --cli-region=cn-north-4 \
-  --project_id=<your-project-id>
+# 5. Create trigger (see references/triggers.md)
+hcloud FunctionGraph CreateFunctionTrigger --help
+# For simple testing: use --trigger_type_code=TIMER
+# For HTTP: use --trigger_type_code=DEDICATEDGATEWAY
 ```

@@ -1,8 +1,10 @@
 # Triggers
 
-## KooCLI event_data Format
+**Always run `hcloud FunctionGraph CreateFunctionTrigger --help` first** for exact parameter names and requirements.
 
-**CRITICAL**: KooCLI uses **dotted key-value format**, NOT JSON strings.
+## KooCLI event_data Format (CRITICAL)
+
+KooCLI uses **dotted key-value format**, NOT JSON strings:
 
 ```bash
 # CORRECT
@@ -12,65 +14,18 @@
 --event_data='{"name":"my-api","auth":"IAM","path":"/test"}'
 ```
 
-## CreateFunctionTrigger Skeleton
+## Trigger Types
 
-```bash
-hcloud FunctionGraph CreateFunctionTrigger \
-  --function_urn=<urn> \
-  --trigger_type_code=<type> \
-  --event_type_code=<event> \
-  --trigger_status=ACTIVE \
-  --event_data.<key>=<value> \
-  --cli-region=<region> \
-  --project_id=<project_id>
-```
+| Type | `--trigger_type_code` | Notes |
+|------|----------------------|-------|
+| APIG Dedicated | `DEDICATEDGATEWAY` | Use this, not `APIG` (deprecated). Requires APIG instance. |
+| Timer / Cron | `TIMER` | Simplest trigger for testing. No APIG dependency. |
+| OBS | `OBS` | Event when objects created/deleted in bucket |
+| SMN | `SMN` | Message notification trigger |
 
-## DEDICATEDGATEWAY Trigger (HTTP)
+## TIMER Trigger (Simple Testing)
 
-> Note: `trigger_type_code=APIG` is deprecated. Use `DEDICATEDGATEWAY` for KooCLI 7.x.
-
-```bash
-hcloud FunctionGraph CreateFunctionTrigger \
-  --function_urn=<urn> \
-  --trigger_type_code=DEDICATEDGATEWAY \
-  --event_type_code=APICreated \
-  --trigger_status=ACTIVE \
-  --event_data.name=<api-name> \
-  --event_data.auth=IAM \
-  --event_data.path=/my-backend \
-  --event_data.match_mode=SWA \
-  --event_data.type=1 \
-  --event_data.protocol=HTTPS \
-  --event_data.req_method=ANY \
-  --event_data.func_info.timeout=5000 \
-  --event_data.group_id=<api-group-id> \
-  --event_data.instance_id=<instance-id> \
-  --event_data.env_name=RELEASE \
-  --event_data.env_id=<env-id> \
-  --event_data.sl_domain=<sl-domain> \
-  --cli-region=<region> \
-  --project_id=<project_id>
-```
-
-| event_data Field | Example | Description |
-|------------------|---------|-------------|
-| `name` | `my-api` | API name (required) |
-| `auth` | `IAM` / `NONE` / `APP` | Auth type (required) |
-| `path` | `/my-backend` | Request path (required) |
-| `match_mode` | `SWA` / `NORMAL` | Match mode (required) |
-| `type` | `1` / `2` | 1=public, 2=private (required) |
-| `protocol` | `HTTPS` / `HTTP` / `BOTH` | Protocol (required) |
-| `req_method` | `GET` / `POST` / `ANY` | HTTP method (required) |
-| `func_info.timeout` | `5000` | Backend timeout ms (required) |
-| `group_id` | `<api-group-id>` | API group ID (required) |
-| `instance_id` | `<instance-id>` | APIG dedicated instance ID (required) |
-| `env_name` | `RELEASE` | Environment name (required) |
-| `env_id` | `<env-id>` | Environment ID (required) |
-| `sl_domain` | `<sl-domain>` | Subdomain (required) |
-
-> DEDICATEDGATEWAY requires an APIG dedicated instance. Use `TIMER` trigger for simpler testing without APIG dependency.
-
-## TIMER Trigger (Cron)
+The TIMER trigger is the easiest path for verifying a function works — no APIG instance needed:
 
 ```bash
 hcloud FunctionGraph CreateFunctionTrigger \
@@ -80,24 +35,21 @@ hcloud FunctionGraph CreateFunctionTrigger \
   --trigger_status=ACTIVE \
   --event_data.name=<trigger-name> \
   --event_data.schedule_type=Rate \
-  --event_data.schedule="1m" \
-  --cli-region=<region> \
-  --project_id=<project_id>
+  --event_data.schedule="1m"
 ```
 
-| event_data Field | Example | Description |
-|------------------|---------|-------------|
-| `name` | `my-timer` | Trigger name (required) |
-| `schedule_type` | `Rate` or `Cron` | Schedule type (required) |
-| `schedule` | `1m` or `0 */1 * * *` | Rate/Cron expression (required) |
+## DEDICATEDGATEWAY Trigger (HTTP Access)
+
+`trigger_type_code=APIG` is **deprecated**. Use `DEDICATEDGATEWAY` for KooCLI 7.x. Requires an APIG dedicated instance — discover required params with `--help`:
+
+```bash
+hcloud FunctionGraph CreateFunctionTrigger --help
+# Look for: trigger_type_code, event_data.instance_id, event_data.env_id, etc.
+```
 
 ## List / Delete Triggers
 
 ```bash
-hcloud FunctionGraph ListFunctionTriggers \
-  --function_urn=<urn> --cli-region=<r> --project_id=<p>
-
-hcloud FunctionGraph DeleteFunctionTrigger \
-  --function_urn=<urn> --trigger_type_code=<type> --trigger_id=<id> \
-  --cli-region=<r> --project_id=<p>
+hcloud FunctionGraph ListFunctionTriggers --function_urn=<urn>
+hcloud FunctionGraph DeleteFunctionTrigger --function_urn=<urn> --trigger_type_code=<type> --trigger_id=<id>
 ```

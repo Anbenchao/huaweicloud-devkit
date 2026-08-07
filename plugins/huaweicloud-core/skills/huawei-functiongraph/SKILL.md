@@ -10,17 +10,23 @@ version: 1
 
 ## Overview
 
-Domain expertise for Huawei Cloud FunctionGraph. Covers function lifecycle, code deployment, trigger configuration, cold start management, and troubleshooting.
+Domain expertise for Huawei Cloud FunctionGraph. Covers function lifecycle, code deployment, trigger configuration, and troubleshooting.
+
+## How to Use This Skill
+
+1. This skill tells you the **correct service/operation names** and **non-obvious traps**.
+2. **Parameters are discovered via `--help`, not hardcoded.** Always run `hcloud FunctionGraph <Operation> --help` before constructing commands.
+3. Detailed examples are in `references/` — load them only when needed.
 
 ## Critical Warnings
 
 | Trap | Why |
 |------|-----|
-| Cold start 100ms-2s | Reserve concurrency for latency-sensitive workloads |
-| Max execution 900s | Timeout after 15 min. Use ECS/CCE for long tasks |
-| Env vars plaintext | Use DEW for secrets |
 | Service name is `FunctionGraph` | NOT `FGS`. KooCLI 7.x uses the full service name |
-| CLI requires `project_id` | Get it: `hcloud IAM KeystoneListProjects` (or `KeystoneListProjectsForUser`) or extract from URN `urn:fss:<region>:<project_id>:...` |
+| CLI requires `project_id` | Get it: `hcloud IAM KeystoneListProjects` or extract from URN `urn:fss:<region>:<project_id>:...` |
+| Cold start 100ms-2s | Reserve concurrency for latency-sensitive workloads |
+| Max execution 900s | Use ECS/CCE for long-running tasks |
+| Env vars plaintext | Use DEW for secrets |
 
 ## Prerequisites
 
@@ -31,7 +37,7 @@ hcloud FunctionGraph --help        # confirm service is available
 
 ## IAM Permissions
 
-FunctionGraph operations require specific IAM permissions. If you see `FSS.0403 Forbidden`, ensure your user/agency has:
+If you see `FSS.0403 Forbidden`, the user needs these permissions:
 
 | Operation | Required Permission |
 |-----------|---------------------|
@@ -40,26 +46,38 @@ FunctionGraph operations require specific IAM permissions. If you see `FSS.0403 
 | Delete function | `functiongraph:function:deleteFunction` |
 | Invoke function | `functiongraph:function:invoke` |
 | Create trigger | `functiongraph:trigger:*` |
-| List runtimes | `functiongraph:runtime:list` |
 
-Grant via IAM console or ask project admin to attach `FunctionGraph FullAccess` role. See `huawei-iam` skill for policy templates.
+Grant via IAM console (`FunctionGraph FullAccess` role) or ask project admin.
 
-## Runtimes
+## Operations
 
-Python 2.7/3.6/3.9/3.10/3.11, Node.js 6.10–18.15, Java 8/11/17, Go 1.x/1.8, C# 2.0–6.0, PHP 7.3/8.3, Cangjie 1.0, Custom, Custom Image. Verify current: `hcloud FunctionGraph ListRuntimes`.
+Always discover parameters with `--help` before executing. These are the correct operation names:
 
-## Common Workflows
+| Task | Operation | Gotchas |
+|------|-----------|---------|
+| List functions | `ListFunctions` | |
+| Show function | `ShowFunctionConfig` | |
+| Create function | `CreateFunction` | references/create-function.md |
+| Delete function | `DeleteFunction` | Strip `:latest` from URN |
+| Invoke function | `InvokeFunction` | Requires body param (e.g. `--name=<v>`); use `--x_cff_request_version=v0` for raw output |
+| List runtimes | `ListRuntimes` | |
+| Create trigger | `CreateFunctionTrigger` | references/triggers.md |
+| List triggers | `ListFunctionTriggers` | |
+| Delete trigger | `DeleteFunctionTrigger` | |
 
-| Task | Command | Details |
-|------|---------|---------|
-| List functions | `hcloud FunctionGraph ListFunctions --cli-region=<r> --project_id=<p>` | |
-| Show function | `hcloud FunctionGraph ShowFunctionConfig --function_urn=<urn> --cli-region=<r> --project_id=<p>` | |
-| Create function | `hcloud FunctionGraph CreateFunction --func_name=<n> --runtime=Python3.10 --handler=index.handler --memory_size=128 --package=default --timeout=3 --cli-region=<r> --project_id=<p>` | references/create-function.md |
-| Delete function | `hcloud FunctionGraph DeleteFunction --function_urn=<urn> --cli-region=<r> --project_id=<p>` | |
-| Invoke function | `hcloud FunctionGraph InvokeFunction --function_urn=<urn> --name=<test-event> --cli-region=<r> --project_id=<p>` | Use `v0` for raw output, `v1` for APIG-wrapped. Pass via `--x_cff_request_version`. |
-| Create trigger | `hcloud FunctionGraph CreateFunctionTrigger --function_urn=<urn> --trigger_type_code=<type> --event_type_code=<event> --trigger_status=ACTIVE --event_data.<key>=<value> --cli-region=<r> --project_id=<p>` | references/triggers.md |
-| List triggers | `hcloud FunctionGraph ListFunctionTriggers --function_urn=<urn> --cli-region=<r> --project_id=<p>` | |
-| Deploy workflow | Write code → zip → CreateFunction → InvokeFunction → CreateFunctionTrigger | references/deploy-workflow.md |
+Discover exact parameters:
+```bash
+hcloud FunctionGraph CreateFunction --help
+hcloud FunctionGraph CreateFunctionTrigger --help
+```
+
+## Deployment Workflow
+
+```
+Write code → zip → CreateFunction → InvokeFunction → CreateFunctionTrigger
+```
+
+See `references/deploy-workflow.md` for a step-by-step example with code templates.
 
 ## Troubleshooting
 
@@ -67,21 +85,15 @@ Python 2.7/3.6/3.9/3.10/3.11, Node.js 6.10–18.15, Java 8/11/17, Go 1.x/1.8, C#
 |-------|------------------|
 | `不支持的服务名称:FGS` | Use `FunctionGraph`, not `FGS` |
 | `不支持的operation:CreateTrigger` | Use `CreateFunctionTrigger` |
-| `缺少必填参数:{*}` on Invoke | Add `--name=<value>` body param |
-| `FSS.1078` / code upload fails | `--code_filename` is filename-only, no path. `cd` to the directory containing the zip before running the command |
-| `缺少必填参数` on Create | Ensure `--memory_size`, `--package`, `--timeout`, `--cli-region`, `--project_id` |
-| `event_data` parse error | Use dotted format: `--event_data.key=value`, NOT JSON |
-| `FSS.0403` / Forbidden | Missing IAM permissions. See IAM Permissions section above |
-| APIG/EOM trigger error | `trigger_type_code=APIG` is deprecated. Use `DEDICATEDGATEWAY` |
-| FSS.1078 / code upload fails | `--code_filename` is filename-only, no path. `cd` to the directory containing the zip before running the command |
-| Function times out | Increase `--timeout` or optimize code |
-| DeleteFunction with `:latest` fails | Strip `:latest` version suffix from URN before deleting |
-| Code too large | Inline limit 10KB → use `zip`/`obs` `--code_type` |
+| `FSS.0403` / Forbidden | Missing IAM permissions — see IAM Permissions above |
+| `缺少必填参数:{*}` on Invoke | Add body param: `--name=<value>` |
+| APIG/EOM trigger error | `trigger_type_code=APIG` deprecated — use `DEDICATEDGATEWAY` |
+| `event_data` parse error | Use dotted format: `--event_data.key=value`, NOT JSON string |
+| FSS.1078 / code upload fails | `--code_filename` is filename-only, no path. `cd` to zip directory first |
+| DeleteFunction with `:latest` | Strip `:latest` version suffix from URN |
+| Code too large | Inline limit 10KB — use `zip`/`obs` code type |
 | Cold start slow | Set reserved instances for critical functions |
 | Auth failure | Run `hcloud configure init` |
-
-> **Note**: references/ files contain authoritative command formats and detailed parameters.
-> When SKILL.md and references/ differ, trust the reference files.
 
 ## Security Considerations
 
