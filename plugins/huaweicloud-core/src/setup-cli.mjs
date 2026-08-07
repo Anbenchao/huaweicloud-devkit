@@ -32,6 +32,11 @@ function opencodeConfigFile() {
   return join(configRoot('opencode'), 'opencode.json');
 }
 
+function codexDesktopSkillsDir() { return join(homedir(), '.agents', 'skills'); }
+function codexDesktopCommandsDir() { return join(homedir(), '.agents', 'commands'); }
+function codexDesktopPluginsDir() { return join(homedir(), '.agents', 'huaweicloud-plugins'); }
+function codexDesktopConfigFile() { return join(homedir(), '.agents', 'opencode.json'); }
+
 function checkNode() {
   const v = process.versions.node.split('.').map(Number);
   if (v[0] < 20) {
@@ -172,6 +177,66 @@ function uninstallOpenCode() {
   removeOpenCodeConfig();
 }
 
+async function installCodexDesktop() {
+  const skillsSrc = join(PLUGIN_ROOT, 'skills');
+  const commandsSrc = join(PACKAGE_ROOT, 'integrations', 'opencode', 'commands');
+  const srcDir = join(PLUGIN_ROOT, 'src');
+  const safetyDir = join(PLUGIN_ROOT, 'safety');
+
+  copyDir(skillsSrc, codexDesktopSkillsDir());
+  console.log(`  Skills -> ${codexDesktopSkillsDir()}`);
+  copyDir(commandsSrc, codexDesktopCommandsDir());
+  console.log(`  Commands -> ${codexDesktopCommandsDir()}`);
+  mkdirSync(codexDesktopPluginsDir(), { recursive: true });
+  copyDir(srcDir, join(codexDesktopPluginsDir(), 'src'));
+  console.log(`  MCP Server -> ${join(codexDesktopPluginsDir(), 'src')}`);
+  copyDir(safetyDir, join(codexDesktopPluginsDir(), 'safety'));
+  console.log(`  Safety Policy -> ${join(codexDesktopPluginsDir(), 'safety')}`);
+
+  const mcpPath = join(codexDesktopPluginsDir(), 'src', 'mcp-server.mjs').replace(/\\/g, '/');
+  const configPath = codexDesktopConfigFile();
+  let config = {};
+  if (existsSync(configPath)) {
+    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
+  }
+  config.mcp = config.mcp || {};
+  config.mcp.huaweicloud = {
+    type: 'local',
+    command: ['node', mcpPath],
+    enabled: true,
+  };
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log(`  Config updated: ${configPath}`);
+}
+
+function uninstallCodexDesktop() {
+  const skillsDir = codexDesktopSkillsDir();
+  let removed = 0;
+  if (existsSync(skillsDir)) {
+    for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
+      if (entry.name.startsWith('huawei')) {
+        removeIfExists(join(skillsDir, entry.name));
+        removed++;
+      }
+    }
+    console.log(`  Removed ${removed} skills`);
+  }
+  if (removeIfExists(codexDesktopPluginsDir())) {
+    console.log('  Removed MCP server and safety policy');
+  }
+  const configPath = codexDesktopConfigFile();
+  if (existsSync(configPath)) {
+    let config = {};
+    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
+    if (config.mcp?.huaweicloud) {
+      delete config.mcp.huaweicloud;
+      if (Object.keys(config.mcp).length === 0) delete config.mcp;
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log('  Config cleaned');
+    }
+  }
+}
+
 function opencodeStatus() {
   const pluginDir = opencodePluginsDir();
   const skillsDir = opencodeSkillsDir();
@@ -196,9 +261,14 @@ function opencodeStatus() {
 
 function parseTarget() {
   const idx = process.argv.indexOf('--target');
-  if (idx < 0) return 'opencode';
+  if (idx < 0) {
+    // auto-detect: Codex Desktop > OpenCode
+    if (existsSync(join(homedir(), '.agents'))) return 'codex-desktop';
+    return 'opencode';
+  }
   const val = (process.argv[idx + 1] || '').toLowerCase();
   if (val === 'codex') return 'codex';
+  if (val === 'codex-desktop') return 'codex-desktop';
   if (val === 'all') return 'all';
   return 'opencode';
 }
@@ -212,6 +282,10 @@ async function cmdInstall() {
   if (target === 'opencode' || target === 'all') {
     console.log('[OpenCode]');
     await installOpenCode();
+  }
+  if (target === 'codex-desktop' || target === 'all') {
+    console.log('\n[Codex Desktop]');
+    await installCodexDesktop();
   }
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
