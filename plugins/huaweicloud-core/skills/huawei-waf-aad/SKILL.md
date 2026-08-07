@@ -4,34 +4,60 @@ description: "Use when configuring Web Application Firewall (WAF) policies/rules
 version: 1
 ---
 
-# Huawei Cloud WAF & AAD
+# Huawei Cloud WAF / AAD
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud WAF <Operation> --help` before constructing commands to discover exact parameter names and requirements. For AAD operations, use `hcloud AAD --help`.
+
+## Overview
+
+Domain expertise for WAF and Anti-DDoS. Covers WAF policy/rules, AAD protection, IP whitelist/blacklist, and rate limiting.
 
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| WAF needs CNAME redirect | Update DNS to point to WAF CNAME |
-| AAD Standard vs Enterprise | Enterprise has dedicated IP, Standard is shared |
-| Premium WAF instance required | Cloud WAF (basic) has limited rules |
+| WAF needs CNAME redirect | DNS must point to WAF endpoint, not server IP |
+| Premium instance required | Cloud WAF needs a dedicated/premium WAF instance |
+| AAD Standard vs Enterprise | Standard protects single IP. Enterprise protects entire IP ranges |
+| Rule order matters | WAF rules evaluated top-to-bottom within a policy |
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| Create WAF policy | hcloud WAF CreatePolicy --name=<n> --cli-region=<r> |
-| Create WAF rule | hcloud WAF CreateRule --policy_id=<id> --rule_type=cc --conditions='[{"category":"url","contents":["/api"]}]' |
-| List WAF policies | hcloud WAF ListPolicy --cli-region=<r> |
-| Query AAD protection | hcloud AAD ListProtectedIp --cli-region=<r> |
+
+### WAF
+
+| Task | Operation |
+|------|-----------|
+| List WAF instances | `ListInstances --cli-region=<r> --project_id=<p>` |
+| List policies | `ListPolicies --cli-region=<r> --project_id=<p>` |
+| Create custom rule | `BatchCreateCustomRule --cli-region=<r> --project_id=<p>` |
+| Create IP blacklist | `BatchCreateWhiteblackipRule --cli-region=<r> --project_id=<p>` |
+| Create CC rule | `BatchCreateCcRule --cli-region=<r> --project_id=<p>` |
+| Create geo rule | `BatchCreateGeoIpRule --cli-region=<r> --project_id=<p>` |
+
+### AAD
+
+```bash
+hcloud AAD ListInstances --cli-region=<r> --project_id=<p>
+hcloud AAD CreateInstance --cli-region=<r> --project_id=<p>
+```
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| Site not protected | Verify DNS CNAME points to WAF |
-| Legit traffic blocked | Add IP to WAF whitelist |
+| Website unreachable after WAF | Check CNAME record points to WAF endpoint |
+| WAF blocking legitimate traffic | Check rules order, adjust false positive settings |
+| AAD not responding | Standard AAD only protects single EIP. Check EIP binding |
 
 ## Security
-- MUST enable WAF for all public-facing web services
-- MUST configure rate limiting for API endpoints
-- MUST use WAF with ELB, not direct ECS exposure
+
+- MUST use WAF for all public-facing web applications
+- SHOULD enable AAD for DDoS protection
+- MUST test WAF rules in report-only mode before blocking
+
+## Cross-Skill References
+
+- **EIP**: See `huawei-vpc` for elastic IP binding
+- **DNS/CNAME**: Configure via your DNS provider
