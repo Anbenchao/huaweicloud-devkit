@@ -80,9 +80,20 @@ Abort if the result set is larger than `--limit` and ask the user to narrow the 
 
 ## MCP Tools
 
+Prefer these tools over raw hcloud CLI — they enforce safety policies:
+
 - huaweicloud_list_operations service=ECS
-- huaweicloud_run_readonly_command for discovery
-- huaweicloud_run_approved_command for writes
+- huaweicloud_run_readonly_command for discovery (auto-redacts output)
+- huaweicloud_run_approved_command for writes (requires exact command approval)
+- huaweicloud_check_cli to verify hcloud is available
+
+## Without MCP (Fallback)
+
+If MCP tools are NOT available (new install, session not restarted):
+- Raw hcloud commands WILL appear in shell history — passwords and secrets are at risk
+- Always use key_name instead of adminPass
+- Verify safety manually: no secret value reads, no credential file access
+- Restart session as soon as possible to enable safety policies
 
 ## Without MCP
 
