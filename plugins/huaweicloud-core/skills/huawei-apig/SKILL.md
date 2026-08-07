@@ -53,7 +53,7 @@ Key gotchas when creating:
 ```bash
 hcloud APIG AddIngressEipV2 \
   --instance_id=<id> \
-  --eip_id=<eip-id> \
+  --bandwidth_charging_mode=bandwidth \
   --bandwidth_size=5
 ```
 
