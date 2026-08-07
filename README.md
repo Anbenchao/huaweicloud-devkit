@@ -1,45 +1,25 @@
-# HuaweiCloud Devkit
+# HuaweiCloud DevKit
 
-让 AI 编码助手安全、准确地使用华为云能力——技能引导、KooCLI 工具、安全策略一站式集成。
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![CI](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml)
 
-本项目遵循 `aws/agent-toolkit-for-aws` 的设计模式，当前版本聚焦于路由引导、安全管控和本地 CLI 使能，而非复制华为云全量服务文档。
+帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
-## V1 能力范围
+HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、Claude Code、Cursor 等主流 Agent。
 
-- Codex 插件包：`plugins/huaweicloud-core`
-- OpenCode 集成资源：`integrations/opencode`
-- **27 个技能**：7 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错、市场发现）+ 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）
-- 零依赖 Node.js MCP 服务器：安全规划 + 只读 CLI 执行 + 4 个知识发现工具
-- PreToolUse 安全钩子层
-- 共享安全策略：自动脱敏 + 阻断危险操作
-- KooCLI 操作发现、超时处理、网络重试退避、写操作精确命令审批
-
-## V1 不做什么
-
-- 不克隆所有华为云服务文档
-- 不替代官方文档 `support.huaweicloud.com`
-- 不暴露任意 `hcloud` 命令执行
-- 不将 AK/SK、Token、密码或云端密钥值拉入 Agent 上下文
-- 不以 Terraform 为默认路径（Terraform 仅为审查型 IaC 的备选方案）
-
-写操作仅通过 `huaweicloud_run_approved_command` 执行，且要求精确命令字符串已被展示并获用户明确批准。更安全的默认方式是使用 `huaweicloud_plan_cli_command` 返回可复制的命令块。
-
-## 架构
-
-```text
-开发者请求
-  -> huaweicloud-core 路由技能
-  -> 能力路径选择（技能 / KooCLI / API / SDK / MCP / Terraform）
-  -> 安全策略与审批关卡
-  -> 只读验证
-```
-
-## 安装
+## 快速开始
 
 ### OpenCode
 
 ```bash
 npx huaweicloud-devkit install
+```
+
+自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
+
+```bash
+npx huaweicloud-devkit doctor   # 自检：hcloud、MCP、技能、认证
+npx huaweicloud-devkit status   # 查看安装状态
 ```
 
 ### Codex
@@ -48,108 +28,119 @@ npx huaweicloud-devkit install
 npx huaweicloud-devkit install --target codex
 ```
 
-### 同时安装 OpenCode + Codex
+> **注意：** 如果未检测到 Codex CLI，安装程序会自动跳过 Codex。
 
-```bash
-npx huaweicloud-devkit install --target all
+### Claude Code
+
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。Claude Code 会自动索引插件。
+
+安装插件：
+
+```
+/plugin install huaweicloud-core@huaweicloud-devkit
 ```
 
-### 其他命令
+### Cursor
 
-```bash
-npx huaweicloud-devkit status --target all    # 查看安装状态
-npx huaweicloud-devkit update --target all    # 更新
-npx huaweicloud-devkit uninstall --target all # 卸载
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。
+
+然后在**插件**面板中安装 **huaweicloud-core** 插件。
+
+### 其他 Agent
+
+对于支持 Model Context Protocol (MCP) 的 Agent，手动配置 MCP 服务器：
+
+```json
+{
+  "mcp": {
+    "huaweicloud": {
+      "type": "local",
+      "command": ["node", "<路径>/plugins/huaweicloud-core/src/mcp-server.mjs"],
+      "enabled": true
+    }
+  }
+}
 ```
 
-## 开发
+然后安装技能：
 
 ```bash
-npm test
-npm run validate
+npx huaweicloud-devkit install
 ```
 
-项目运行时零 npm 依赖。
+> **前置条件：** 需要安装 [KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)（`hcloud`）并完成认证。MCP 服务器需要 Node.js >= 20。如果 `hcloud` 不在 `PATH` 中，请设置 `HCLOUD_BIN` 环境变量指向完整路径。
 
-## KooCLI
+## 包含内容
 
-从 https://support.huaweicloud.com/qs-hcli/hcli_02_003.html 安装华为云 KooCLI，执行 `hcloud version` 验证，然后在 Agent 会话之外配置凭证。如果 Codex 或 OpenCode 找不到可执行文件，设置 `HCLOUD_BIN` 为 `hcloud` 的完整路径。
+### 插件
 
-### MCP 不可用时的降级
+`huaweicloud-core` 插件将 MCP 服务器配置、27 个 Agent 技能和安全策略打包为一次性安装。
 
-当 MCP 服务器不可用时（连接失败、502 错误等），Agent 会自动降级到本地 `hcloud` CLI：
+| 插件 | 说明 |
+|------|------|
+| [huaweicloud-core](plugins/huaweicloud-core/) | 核心插件，含技能、MCP 服务器、安全策略。**从这里开始。** |
 
-1. 使用 `huaweicloud_check_cli` 确认 hcloud 可用
-2. 使用 `hcloud <Service> --help` 发现操作名称
-3. 安全策略仍由 `safety-policy.mjs` 分类和拦截，写操作仍需用户审批
+### 技能
 
-如果本地 hcloud 也找不到，Agent 将只能提供文档指引，无法执行任何云操作。
+Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特定的华为云任务。技能按需加载——Agent 只发现和检索与当前任务相关的内容。
+
+包含 7 个元技能（路由、发现、CLI/认证、API/SDK、安全、排错、市场发现）和 20 个服务技能（覆盖 ECS、OBS、VPC、IAM、RDS、GaussDB、FunctionGraph、APIG、CCE、SMN/DMS、ModelArts、Cloud Eye、CTS、DEW、Billing、CBR、WAF/AAD、DDS/DCS、Deployment、Getting Started）。
+
+浏览 [`skills/`](plugins/huaweicloud-core/skills/) 目录查看所有可用技能。
+
+### Rules 文件
+
+推荐的项目级配置文件，告诉 Agent 如何高效使用华为云——例如优先使用 MCP 服务器、发现可用技能、遵循最小权限 IAM 原则。
+
+详见 [`rules/huawei-agent-rules.md`](rules/huawei-agent-rules.md)。
+
+### MCP 服务器
+
+本地 MCP 服务器（`plugins/huaweicloud-core/src/mcp-server.mjs`）通过 Model Context Protocol 为 Agent 提供安全的 KooCLI 访问。
+
+- **安全优先执行** — 所有 `hcloud` 命令执行前自动分类（读/写/密钥），写操作需用户明确批准。
+- **输出脱敏** — 凭证形态的值（AK/SK、Token、密码）自动替换为 `***REDACTED***`。
+- **12 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释等。
+- **零运行时依赖** — 纯 Node.js（>= 20），无需 npm install。
+
+详见 [MCP 工具表](#mcp-工具)。
 
 ## 安全模型
 
-三层防御：
+三层防御体系：
 
-- **技能层**：教会 Agent 正确行为规则
-- **钩子层**：PreToolUse Hook 阻断高风险工具调用
-- **MCP 层**：Node.js 安全策略 wrapper 在无钩子环境下强制执行
+| 层级 | 机制 | 说明 |
+|------|------|------|
+| 技能层 | `SKILL.md` 流程文档 | 教会 Agent 正确的行为规则和安全用法 |
+| 钩子层 | `huaweicloud-safety.py` | PreToolUse Hook 阻断高风险工具调用（Claude Code、Cursor 可用） |
+| MCP 层 | `safety-policy.mjs` | Node.js 安全策略包装器，在所有 Agent 环境中强制执行 |
 
-详见 `docs/safety-model.md`。
-
-## 技能矩阵
-
-### 元技能（路由与基础能力）
-
-| 技能 | 用途 |
-|------|------|
-| huaweicloud-core | 路由中枢，Sub-skill registry 表，含 marketplace 市场路由 |
-| huaweicloud-capability-discovery | 能力发现，场景→服务映射 |
-| huaweicloud-cli-and-auth | KooCLI 安装、认证、安全用法 |
-| huaweicloud-api-and-sdk | API/SDK 应用集成指导 |
-| huaweicloud-safety | 安全策略、审批关卡、写操作边界 |
-| huaweicloud-troubleshooting | 排错诊断工作流 |
-
-### 服务技能
-
-| 技能 | 华为云服务 |
-|------|-----------|
-| huawei-ecs | 弹性云服务器 ECS |
-| huawei-obs | 对象存储服务 OBS |
-| huawei-vpc | 虚拟私有云 VPC |
-| huawei-iam | 统一身份认证 IAM |
-| huawei-rds | 关系型数据库 RDS |
-| huawei-gaussdb | 分布式数据库 GaussDB |
-| huawei-functiongraph | 函数工作流 FunctionGraph |
-| huawei-apig | API 网关 APIG |
-| huawei-cce | 云容器引擎 CCE |
-| huawei-smn-dms | 消息通知 SMN + 分布式消息 DMS |
-| huawei-modelarts | AI 开发平台 ModelArts |
-| huawei-cloud-eye | 云监控 Cloud Eye |
-| huawei-cts | 云审计服务 CTS |
-| huawei-dew | 数据加密服务 DEW (CSMS + KMS) |
-| huawei-billing | 费用中心 Billing |
-| huawei-cbr | 云备份 CBR |
-| huawei-waf-aad | Web 应用防火墙 WAF + Anti-DDoS |
-| huawei-dds-dcs | 文档数据库 DDS + 分布式缓存 DCS |
-| huawei-deployment | 部署服务 CloudDeploy |
-| huawei-getting-started | 入门引导 |
+详见 [`docs/safety-model.md`](docs/safety-model.md)。
 
 ## MCP 工具
 
 | 类别 | 工具 | 说明 |
 |------|------|------|
-| 发现 | huaweicloud_search_docs | 跨技能/文档全文搜索 |
-| 发现 | huaweicloud_retrieve_skill | 按名称加载完整技能 |
-| 发现 | huaweicloud_list_regions | 列出可用区域 |
-| 发现 | huaweicloud_get_regional_availability | 检查服务区域可用性 |
-| CLI | huaweicloud_check_cli | 检查 hcloud 安装状态 |
-| CLI | huaweicloud_plan_cli_command | 分类并规划命令（不执行） |
-| CLI | huaweicloud_list_operations | 列出服务的 KooCLI 操作 |
-| CLI | huaweicloud_run_readonly_command | 执行只读命令 |
-| CLI | huaweicloud_run_approved_command | 执行已批准的写命令 |
-| 安全 | huaweicloud_show_profile_redacted | 安全查看配置（脱敏） |
-| 路由 | huaweicloud_service_catalog | 返回推荐的能力来源 |
-| 排错 | huaweicloud_explain_error | 解释错误并建议诊断步骤 |
+| 知识发现 | `huaweicloud_search_docs` | 跨技能文件及文档全文搜索 |
+| 知识发现 | `huaweicloud_retrieve_skill` | 按名称加载完整技能内容及参考文件 |
+| 知识发现 | `huaweicloud_list_regions` | 列出可用华为云区域 |
+| 知识发现 | `huaweicloud_get_regional_availability` | 检查目标区域的服务可用性 |
+| CLI | `huaweicloud_check_cli` | 检查 KooCLI `hcloud` 是否已安装 |
+| CLI | `huaweicloud_plan_cli_command` | 分类计划命令（读/写/密钥）但不执行 |
+| CLI | `huaweicloud_list_operations` | 列出服务的可用 KooCLI 操作 |
+| CLI | `huaweicloud_run_readonly_command` | 执行只读命令并脱敏输出 |
+| CLI | `huaweicloud_run_approved_command` | 经用户明确批准后执行写命令 |
+| 安全 | `huaweicloud_show_profile_redacted` | 安全查看 KooCLI 配置（凭证脱敏） |
+| 路由 | `huaweicloud_service_catalog` | 返回推荐的能力来源排序 |
+| 排错 | `huaweicloud_explain_error` | 解释错误码并建议诊断步骤 |
+
+## 文档
+
+- [系统架构设计](docs/01-系统架构设计.md)
+- [核心技能设计](docs/02-核心技能设计.md)
+- [安全模型](docs/safety-model.md)
+- [KooCLI 官方文档](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)
 
 ## 许可证
 
-Apache-2.0
+本项目基于 Apache-2.0 许可证发布。详见 [LICENSE](LICENSE)。
