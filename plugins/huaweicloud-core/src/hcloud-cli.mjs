@@ -10,6 +10,10 @@ export function planHcloudCommand(args, options = {}) {
   const classification = classifyHcloudArgs(normalizedArgs, options);
   const command = ['hcloud', ...normalizedArgs].map(quoteShellArg).join(' ');
   const warnings = planningWarnings(normalizedArgs);
+  const paramValidation = validateRequiredParams(normalizedArgs);
+  if (paramValidation.missing.length > 0) {
+    warnings.push('Missing required parameters: ' + paramValidation.missing.join(', '));
+  }
   return {
     executable: 'hcloud',
     args: redactSecrets(normalizedArgs),
@@ -173,6 +177,28 @@ function planningWarnings(args) {
     );
   }
   return warnings;
+}
+
+const REQUIRED_PARAMS = {
+  'ECS CreateServers': ['server.flavorRef', 'server.imageRef', 'server.nics.1.subnet_id'],
+  'VPC CreateVpc': ['vpc.cidr'],
+  'VPC CreateSubnet': ['subnet.vpc_id', 'subnet.cidr'],
+  'VPC CreateSecurityGroupRule': ['security_group_id', 'direction', 'protocol'],
+  'EIP CreatePublicip': ['bandwidth.share_type'],
+  'FunctionGraph CreateFunction': ['func_name', 'runtime', 'handler', 'memory_size', 'package', 'timeout'],
+  'FunctionGraph CreateFunctionTrigger': ['function_urn', 'trigger_type_code'],
+  'APIG CreateInstanceV2': ['spec_id'],
+  'OBS CreateBucket': ['bucket'],
+};
+
+function validateRequiredParams(args) {
+  if (!args || args.length < 2) return { valid: true, missing: [] };
+  const key = `${args[0]} ${args[1]}`;
+  const required = REQUIRED_PARAMS[key];
+  if (!required) return { valid: true, missing: [] };
+  const argsStr = args.join(' ');
+  const missing = required.filter((param) => !argsStr.includes(param));
+  return { valid: missing.length === 0, missing };
 }
 
 function extractApiError(stdout) {

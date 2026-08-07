@@ -30,7 +30,10 @@ function readFrames() {
 }
 
 async function handleMessage(message) {
-  if (!Object.hasOwn(message, 'id')) return;
+  if (!Object.hasOwn(message, 'id')) {
+    if (message.method === 'notifications/initialized') return;
+    return;
+  }
   try {
     const result = await dispatch(message.method, message.params || {});
     writeMessage({ jsonrpc: '2.0', id: message.id, result });
@@ -39,7 +42,7 @@ async function handleMessage(message) {
       jsonrpc: '2.0',
       id: message.id,
       error: {
-        code: -32000,
+        code: -32603,
         message: error.message,
       },
     });
@@ -75,6 +78,10 @@ async function dispatch(method, params) {
       ],
       isError: false,
     };
+  }
+
+  if (method === 'resources/list') {
+    return { resources: [] };
   }
 
   throw new Error(`Unsupported method: ${method}`);
