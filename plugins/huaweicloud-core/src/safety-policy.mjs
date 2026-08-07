@@ -147,6 +147,15 @@ export function classifyHcloudArgs(args, options = {}) {
   }
 
   const readOnly = hasReadPrefix(operation, policy);
+  const executionOps = /(^|\.)(Invoke|SyncInvoke|AsyncInvoke|Send|Trigger|Execute|Start|Reboot|Restart|Stop|Publish|Deploy)/i;
+  if (!options.allowWrites && executionOps.test(operation) && !readOnly) {
+    return {
+      decision: 'deny',
+      risk: 'execution',
+      reason: 'Huawei Cloud execution/trigger operation blocked until approved.',
+    };
+  }
+
   if (!readOnly && hasWritePrefix(operation, policy) && !options.allowWrites) {
     return {
       decision: 'deny',
@@ -155,7 +164,7 @@ export function classifyHcloudArgs(args, options = {}) {
     };
   }
 
-  const obsutilWrites = ['mb', 'cp', 'mv', 'rm', 'chattri', 'bucketpolicy', 'lifecycle', 'cors', 'website', 'sign'];
+  const obsutilWrites = ['mb', 'cp', 'mv', 'rm', 'delete', 'mkdir', 'sync', 'restore', 'chattri', 'bucketpolicy', 'lifecycle', 'cors', 'website', 'sign', 'share-add', 'share-update', 'share-rm'];
   const obsutilReads = ['ls', 'stat', 'cat', 'help', 'version'];
   if (service.toLowerCase() === 'obs' || service.toLowerCase() === 'hcloud obs') {
     if (obsutilWrites.includes(operation) && !options.allowWrites) {

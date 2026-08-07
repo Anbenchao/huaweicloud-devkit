@@ -26,7 +26,11 @@ function configRoot(target = 'opencode') {
 function opencodeSkillsDir() { return join(configRoot('opencode'), 'skills'); }
 function opencodeCommandsDir() { return join(configRoot('opencode'), 'commands'); }
 function opencodePluginsDir() { return join(configRoot('opencode'), 'huaweicloud-plugins'); }
-function opencodeConfigFile() { return join(configRoot('opencode'), 'opencode.json'); }
+function opencodeConfigFile() {
+  const jsonc = join(configRoot('opencode'), 'opencode.jsonc');
+  if (existsSync(jsonc)) return jsonc;
+  return join(configRoot('opencode'), 'opencode.json');
+}
 
 function checkNode() {
   const v = process.versions.node.split('.').map(Number);

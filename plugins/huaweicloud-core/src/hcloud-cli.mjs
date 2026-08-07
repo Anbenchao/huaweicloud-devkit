@@ -49,11 +49,13 @@ function runHcloudOnce(plan, options) {
   const forceKillAfterMs = options.forceKillAfterMs ?? DEFAULT_FORCE_KILL_AFTER_MS;
   const executable = options.executable || options.env?.HCLOUD_BIN || process.env.HCLOUD_BIN || 'hcloud';
   const executableArgs = Array.isArray(options.executableArgs) ? options.executableArgs.map(String) : [];
+  const cwd = options.cwd || undefined;
 
   return new Promise((resolve) => {
     const child = spawn(executable, [...executableArgs, ...plan.rawArgs], {
       shell: false,
       windowsHide: true,
+      cwd,
       env: {
         ...process.env,
         ...options.env,

@@ -3,14 +3,20 @@ import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir, platform } from 'node:os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
-const SKILLS_ROOT_INSTALLED = join(dirname(__dirname), 'skills');
+function opencodeSkillsDir() {
+  const home = homedir();
+  return platform() === 'win32'
+    ? join(home, '.config', 'opencode', 'skills')
+    : join(home, '.config', 'opencode', 'skills');
+}
 function resolveSkillsRoot() {
   if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
-  if (existsSync(SKILLS_ROOT_INSTALLED)) return SKILLS_ROOT_INSTALLED;
-  return SKILLS_ROOT_INSTALLED;
+  if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
+  return SKILLS_ROOT_DEV;
 }
 const SKILLS_ROOT = resolveSkillsRoot();
 
@@ -61,6 +67,10 @@ export const TOOL_DEFINITIONS = [
           type: 'number',
           description: 'Optional retry count for transient network errors. Defaults to 1.',
         },
+        cwd: {
+          type: 'string',
+          description: 'Optional working directory for the hcloud process.',
+        },
       },
     },
   },
@@ -109,6 +119,10 @@ export const TOOL_DEFINITIONS = [
         maxRetries: {
           type: 'number',
           description: 'Optional retry count for transient network errors. Defaults to 1.',
+        },
+        cwd: {
+          type: 'string',
+          description: 'Optional working directory for the hcloud process.',
         },
       },
     },
@@ -207,6 +221,7 @@ export async function callTool(name, args = {}) {
       return runHcloud(args.args || [], {
         timeoutMs: args.timeoutMs,
         maxRetries: args.maxRetries,
+        cwd: args.cwd,
       });
     case 'huaweicloud_list_operations':
       return listOperations(args.service, { timeoutMs: args.timeoutMs });
@@ -282,19 +297,22 @@ async function listOperations(service, options = {}) {
   if (!/^[A-Za-z][A-Za-z0-9-]{1,63}$/.test(serviceName)) {
     throw new Error('service must be a KooCLI service name such as ECS, VPC, IMS, OBS, RDS, or CDN.');
   }
-  let result = await runHcloud([serviceName, '--help'], {
+  const isObs = /^obs$/i.test(serviceName);
+  const svc = isObs ? 'obs' : serviceName;
+  const args = isObs ? ['obs', 'help'] : [svc, '--help'];
+  let result = await runHcloud(args, {
     timeoutMs: options.timeoutMs,
     maxRetries: 0,
   });
-  if (!result.ok) {
-    result = await runHcloud([serviceName, 'help'], {
+  if (!result.ok && !isObs) {
+    result = await runHcloud([svc, 'help'], {
       timeoutMs: options.timeoutMs,
       maxRetries: 0,
     });
   }
   return {
     service: serviceName,
-    command: `hcloud ${serviceName} --help`,
+    command: isObs ? 'hcloud obs help' : `hcloud ${svc} --help`,
     selectionRule: 'Use this help text to select the exact KooCLI operation name before planning any service command.',
     examples: {
       listEcsInstances: 'ECS ListServersDetails',
@@ -318,6 +336,7 @@ async function runApprovedCommand(args = {}) {
     allowWrites: true,
     timeoutMs: args.timeoutMs,
     maxRetries: args.maxRetries,
+    cwd: args.cwd,
   });
   result.approved = true;
   result.plan = strictPlan;

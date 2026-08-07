@@ -36,6 +36,17 @@ Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/ob
 | Versioning is irreversible | Once enabled, cannot be disabled, only suspended |
 | OBS uses AK/SK directly | NOT IAM tokens. Auth errors mean check AK/SK validity |
 | Static website via CLI missing | KooCLI OBS lacks website config. Use REST API or console |
+| **OBS needs separate cred config** | `hcloud configure` is NOT enough for OBS. Run `hcloud OBS config -i` (interactive) to create `~/.obsutilconfig`. This must be done OUTSIDE agent chat. |
+| **Directory upload adds prefix** | `hcloud OBS cp <dir>/ obs://bucket/ -r` puts files under `bucket/<dir>/...`. To upload contents directly, rename `<dir>` to target prefix name first, or use `-dryRun` to preview keys before uploading. |
+
+## OBS Credential Setup (Required Before First Use)
+
+KooCLI OBS uses a separate config file (`~/.obsutilconfig`), NOT `~/.hcloud/config.json`. Run once outside agent chat:
+
+```bash
+hcloud OBS config -i
+# Follow prompts: AK, SK, endpoint (e.g. obs.cn-north-4.myhuaweicloud.com)
+```
 
 ## Common Workflows
 
