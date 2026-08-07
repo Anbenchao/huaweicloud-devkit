@@ -99,6 +99,17 @@ If MCP tools are NOT available (new install, session not restarted):
 
 Fall back to hcloud CLI. State: "MCP unavailable, using local hcloud CLI."
 
+## Flexus (Lightweight ECS)
+
+Flexus is the lightweight ECS family. Two variants:
+
+| Variant | API | CLI | Billing |
+|---------|-----|:---:|---------|
+| **Flexus L** | HCSS (hcss:lightInstances) | ❌ No hcloud — Python SDK only | Prepaid only |
+| **Flexus X** | Standard ECS API | ✅ `hcloud ECS` with `x1.*` flavors | On-demand & prepaid |
+
+For Flexus X, use standard ECS CreateServers flow with `x1.*` flavors. For Flexus L, manual console provisioning is recommended — no KooCLI path exists.
+
 ## References
 
 - ECS Docs: https://support.huaweicloud.com/ecs/
