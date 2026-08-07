@@ -49,6 +49,25 @@ Design docs in `docs/` use `huawei-*` and plan 20+ service skills. The **actual 
 - Update `test/structure.test.mjs` if introducing new testable invariants (e.g., new required sections in SKILL.md)
 - Add `node --test` tests if introducing new measurable invariants
 
+### Skill Design Principles
+
+**Parameters are discovered via `--help`, not hardcoded.** Every service skill must instruct the agent:
+> Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
+The skill provides the correct **service name and operation names** (which agents cannot reliably discover). Parameters come from `--help` (which is self-documenting and never stale).
+
+**Only document non-obvious traps.** If `--help` already explains a parameter correctly, don't repeat it. Document what `--help` gets wrong:
+- Parameters marked optional that are actually required (e.g., `protocol`/`sl_domain`/`env_name`/`env_id` for DEDICATEDGATEWAY)
+- Deprecated values (e.g., `APIG` trigger type, use `DEDICATEDGATEWAY`)
+- Format traps (e.g., event_data uses dotted `--event_data.key=value`, NOT JSON strings)
+- Hidden behavior (e.g., `--code_filename` is filename-only, no paths; `:latest` suffix breaks DeleteFunction)
+
+**Cross-skill references must not be dead ends.** If skill A says "see skill B for X", skill B must actually cover X. Cross-skill references are the most common failure point in end-to-end workflows.
+
+**Target ~80 lines per SKILL.md.** Move detailed examples and parameter tables to `references/` files. The SKILL.md is the routing layer; references are loaded on demand.
+
+**Update skills from real test failures, not speculation.** Every gotcha added to a skill should trace back to an actual error encountered during testing.
+
 ## Safety Model
 
 Write operations are blocked by default. The only write path is `huaweicloud_run_approved_command`, which requires `approvedCommand` + `approvedByUser: true`.
