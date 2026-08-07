@@ -8,33 +8,58 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+## Critical: OBS Command Syntax
+
+KooCLI OBS uses **obsutil-style** commands, NOT API-style operations. Always run `hcloud OBS help` (no `--`) before constructing commands:
+
+```bash
+hcloud OBS help           # NOT --help
+hcloud OBS help <command> # e.g. hcloud OBS help mb
+```
+
+| Wrong (API-style) | Correct (obsutil-style) |
+|-------------------|-------------------------|
+| `OBS CreateBucket` | `OBS mb obs://<bucket>` |
+| `OBS PutObject` | `OBS cp <file> obs://<bucket>/` |
+| `OBS DeleteBucket` | `OBS rm obs://<bucket> -r` |
 
 ## Overview
 
-Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/object lifecycle, access control, replication, hosting, and presigned URLs.
+Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/object lifecycle, access control, static website hosting, and presigned URLs.
 
 ## Critical Warnings
 
 | Trap | Why |
 |------|-----|
-| Bucket name is global | All Huawei Cloud users share bucket namespace. Choose unique name |
+| Bucket name is global | All users share bucket namespace |
 | Three-layer permissions | IAM > Bucket Policy > ACL. Most restrictive wins |
-| Strong consistency since 2021 | PUT then GET guarantees latest version (read-after-write) |
 | Versioning is irreversible | Once enabled, cannot be disabled, only suspended |
-| Non-empty bucket blocks delete | Must clear all objects AND versions before delete |
+| OBS uses AK/SK directly | NOT IAM tokens. Auth errors mean check AK/SK validity |
+| Static website via CLI missing | KooCLI OBS lacks website config. Use REST API or console |
 
 ## Common Workflows
 
-| Task | Command | Steps |
-|------|---------|-------|
-| Create bucket | hcloud OBS CreateBucket --bucket=<name> --location=<region> | references/bucket-lifecycle.md |
-| Upload object | hcloud OBS PutObject --bucket=<name> --key=<key> --body=<file> | references/upload.md |
-| Set lifecycle | hcloud OBS SetLifecycleConfiguration --bucket=<name> --lifecycle=<json> | references/bucket-lifecycle.md |
-| Enable website | hcloud OBS SetBucketWebsite --bucket=<name> --index=index.html | references/static-website.md |
-| Set CORS | hcloud OBS SetBucketCors --bucket=<name> --cors=<json> | references/cors.md |
-| Presigned URL | hcloud OBS CreateSignedUrl --bucket=<name> --key=<key> --expires=<seconds> | references/presigned.md |
-| Cross-region replication | hcloud OBS SetBucketReplication --bucket=<name> --replication=<json> | references/replication.md |
+| Task | Command |
+|------|---------|
+| Create bucket | `hcloud OBS mb obs://<bucket> -location=<region>` |
+| List buckets/objects | `hcloud OBS ls [obs://<bucket>]` |
+| Upload file | `hcloud OBS cp <file> obs://<bucket>/<key>` |
+| Upload directory (recursive) | `hcloud OBS cp <dir>/ obs://<bucket>/ -r` |
+| Download object | `hcloud OBS cp obs://<bucket>/<key> <local-path>` |
+| Set public-read ACL | `hcloud OBS chattri obs://<bucket> -acl=public-read` |
+| Set lifecycle | `hcloud OBS lifecycle obs://<bucket> -method=put -localfile=<json>` |
+| Set bucket policy | `hcloud OBS bucketpolicy obs://<bucket> -method=put -localfile=<json>` |
+| Set CORS | `hcloud OBS cors obs://<bucket> -method=put -localfile=<json>` |
+| Delete bucket | `hcloud OBS rm obs://<bucket> -r` (must be empty) |
+| Presigned URL | `hcloud OBS sign obs://<bucket>/<key> -e=<seconds>` |
+| Object metadata | `hcloud OBS stat obs://<bucket>/<key>` |
+
+## Static Website Deployment Workflow
+
+See `references/static-website.md` for the full end-to-end workflow:
+Build → Create bucket → Upload → Set public-read → Configure website (REST API/console)
+
+> KooCLI OBS does NOT support `SetBucketWebsite`. Configure static website hosting via REST API (`PUT /?website`) or the Huawei Cloud console.
 
 ## Storage Classes
 
@@ -49,9 +74,11 @@ Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/ob
 | Error | Root Cause -> Fix |
 |-------|------------------|
 | AccessDenied on bucket | IAM/bucket policy/ACL conflict -> Check all three layers |
-| BucketAlreadyExists | Name already taken globally -> Choose different name |
-| NoSuchKey | Object does not exist or wrong region -> Verify key and region |
+| BucketAlreadyExists | Name taken globally -> Choose different name |
+| NoSuchKey | Object doesn't exist or wrong region -> Verify key and region |
+| InvalidAccessKeyId | OBS uses AK/SK directly -> Verify AK/SK validity, OBS endpoint, OBS permissions |
 | EntityTooLarge | Single PUT limit 5GB -> Use multipart upload |
+| OBS --help fails | KooCLI OBS uses `help` not `--help` -> Run `hcloud OBS help` |
 
 ## Security Considerations
 
@@ -61,18 +88,14 @@ Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/ob
 - SHOULD rotate presigned URL expiry (max 7 days)
 - MUST NOT store AK/SK in bucket policies
 
-## MCP Tools
+## Cross-Skill References
 
-- huaweicloud_list_operations service=OBS
-- huaweicloud_run_readonly_command for bucket/object discovery
-- huaweicloud_run_approved_command for writes
-
-## Without MCP
-
-Fall back to hcloud CLI. State: "MCP unavailable, using local hcloud CLI."
+- **EIP**: See `huawei-vpc` for public network access
+- **DEW**: See `huawei-dew` for secret management
 
 ## References
 
 - OBS Docs: https://support.huaweicloud.com/obs/
+- Static website: references/static-website.md
 - Lifecycle: references/bucket-lifecycle.md
 - Replication: references/replication.md
