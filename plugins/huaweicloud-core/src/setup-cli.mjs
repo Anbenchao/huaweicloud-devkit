@@ -266,11 +266,7 @@ function opencodeStatus() {
 
 function parseTarget() {
   const idx = process.argv.indexOf('--target');
-  if (idx < 0) {
-    // auto-detect: Codex Desktop > OpenCode
-    if (existsSync(join(homedir(), '.agents'))) return 'codex-desktop';
-    return 'opencode';
-  }
+  if (idx < 0) return 'opencode';
   const val = (process.argv[idx + 1] || '').toLowerCase();
   if (val === 'codex') return 'codex';
   if (val === 'codex-desktop') return 'codex-desktop';
@@ -376,7 +372,7 @@ async function cmdDoctor() {
   // OpenCode installed files
   const pluginDir = opencodePluginsDir();
   const mcpOk = existsSync(join(pluginDir, 'src', 'mcp-server.mjs'));
-  check('MCP server installed', mcpOk, 'Run: npx huaweicloud-devkit install');
+  check('MCP server installed', mcpOk, 'Run: npx huaweicloud-devkit-test install');
 
   if (mcpOk) {
     // Try to start MCP server briefly
@@ -390,7 +386,7 @@ async function cmdDoctor() {
   }
 
   const safetyOk = existsSync(join(pluginDir, 'safety', 'policy.json'));
-  check('Safety policy installed', safetyOk, 'Run: npx huaweicloud-devkit install');
+  check('Safety policy installed', safetyOk, 'Run: npx huaweicloud-devkit-test install');
 
   const opencodeCfg = opencodeConfigFile();
   let mcpConfigured = false;
@@ -400,7 +396,7 @@ async function cmdDoctor() {
       mcpConfigured = !!(cfg.mcp && cfg.mcp.huaweicloud);
     } catch {}
   }
-  check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit install`);
+  check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit-test install`);
 
   // hcloud CLI
   const hcloudBin = process.env.HCLOUD_BIN || 'hcloud';
@@ -419,14 +415,16 @@ async function cmdDoctor() {
   }
 
   // Skills
-  const skillsDir = opencodeSkillsDir();
-  let skillCount = 0;
-  if (existsSync(skillsDir)) {
-    skillCount = readdirSync(skillsDir, { withFileTypes: true })
+  const skillsOptions = [opencodeSkillsDir(), codexDesktopSkillsDir()];
+  let skillCount = 0, skillsDir = '';
+  for (const dir of skillsOptions) {
+    if (!existsSync(dir)) continue;
+    const count = readdirSync(dir, { withFileTypes: true })
       .filter((d) => d.isDirectory() && d.name.startsWith('huawei')).length;
+    if (count > skillCount) { skillCount = count; skillsDir = dir; }
   }
   const skillsOk = skillCount >= 6;
-  check(`Skills installed (${skillCount})`, skillsOk, 'Run: npx huaweicloud-devkit install');
+  check(`Skills installed (${skillCount})`, skillsOk, 'Run: npx huaweicloud-devkit-test install');
 
   console.log(`\nResults: ${pass} pass, ${warn} warn, ${fail} fail`);
 
