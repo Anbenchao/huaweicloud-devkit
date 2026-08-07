@@ -29,6 +29,21 @@ hcloud configure list              # confirm a profile exists
 hcloud FunctionGraph --help        # confirm service is available
 ```
 
+## IAM Permissions
+
+FunctionGraph operations require specific IAM permissions. If you see `FSS.0403 Forbidden`, ensure your user/agency has:
+
+| Operation | Required Permission |
+|-----------|---------------------|
+| Create function | `functiongraph:function:createFunction` |
+| List functions | `functiongraph:function:list` |
+| Delete function | `functiongraph:function:deleteFunction` |
+| Invoke function | `functiongraph:function:invoke` |
+| Create trigger | `functiongraph:trigger:*` |
+| List runtimes | `functiongraph:runtime:list` |
+
+Grant via IAM console or ask project admin to attach `FunctionGraph FullAccess` role. See `huawei-iam` skill for policy templates.
+
 ## Runtimes
 
 Python 2.7/3.6/3.9/3.10/3.11, Node.js 6.10–18.15, Java 8/11/17, Go 1.x/1.8, C# 2.0–6.0, PHP 7.3/8.3, Cangjie 1.0, Custom, Custom Image. Verify current: `hcloud FunctionGraph ListRuntimes`.
@@ -53,8 +68,12 @@ Python 2.7/3.6/3.9/3.10/3.11, Node.js 6.10–18.15, Java 8/11/17, Go 1.x/1.8, C#
 | `不支持的服务名称:FGS` | Use `FunctionGraph`, not `FGS` |
 | `不支持的operation:CreateTrigger` | Use `CreateFunctionTrigger` |
 | `缺少必填参数:{*}` on Invoke | Add `--name=<value>` body param |
+| `FSS.1078` / code upload fails | `--code_filename` is filename-only, no path. `cd` to the directory containing the zip before running the command |
 | `缺少必填参数` on Create | Ensure `--memory_size`, `--package`, `--timeout`, `--cli-region`, `--project_id` |
 | `event_data` parse error | Use dotted format: `--event_data.key=value`, NOT JSON |
+| `FSS.0403` / Forbidden | Missing IAM permissions. See IAM Permissions section above |
+| APIG/EOM trigger error | `trigger_type_code=APIG` is deprecated. Use `DEDICATEDGATEWAY` |
+| FSS.1078 / code upload fails | `--code_filename` is filename-only, no path. `cd` to the directory containing the zip before running the command |
 | Function times out | Increase `--timeout` or optimize code |
 | DeleteFunction with `:latest` fails | Strip `:latest` version suffix from URN before deleting |
 | Code too large | Inline limit 10KB → use `zip`/`obs` `--code_type` |

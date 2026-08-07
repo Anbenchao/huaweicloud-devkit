@@ -33,7 +33,7 @@ hcloud FunctionGraph CreateFunction \
 | Type | Use Case | Additional Params |
 |------|----------|-------------------|
 | `inline` | Small demos (<10KB) | `--func_code.file` = base64-encoded code |
-| `zip` | Local package | `--code_filename` = zip file name |
+| `zip` | Local package | `--code_filename` = zip file name (filename only, no path; must run from file's directory) |
 | `obs` | Large packages | `--code_url` = OBS object URL |
 | `jar` | Java JARs | `--code_filename` = jar file name |
 | `Custom-Image-Swr` | Container images | `--code_url` = SWR image URI |

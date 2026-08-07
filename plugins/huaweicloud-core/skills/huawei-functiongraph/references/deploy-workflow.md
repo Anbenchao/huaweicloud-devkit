@@ -27,7 +27,7 @@ EOF
 # 2. Package
 zip -r function.zip index.py
 
-# 3. Create function
+# 3. Create function (MUST run from same directory as function.zip)
 hcloud FunctionGraph CreateFunction \
   --func_name=my-backend \
   --runtime=Python3.10 \
@@ -47,22 +47,25 @@ hcloud FunctionGraph InvokeFunction \
   --cli-region=cn-north-4 \
   --project_id=<your-project-id>
 
-# 5. Create APIG trigger (see references/triggers.md)
+# 5. Create APIG trigger (see references/triggers.md for DEDICATEDGATEWAY details)
 hcloud FunctionGraph CreateFunctionTrigger \
   --function_urn=<urn> \
-  --trigger_type_code=APIG \
+  --trigger_type_code=DEDICATEDGATEWAY \
   --event_type_code=APICreated \
   --trigger_status=ACTIVE \
   --event_data.name=<api-name> \
   --event_data.auth=IAM \
-  --event_data.req_uri=/my-backend \
+  --event_data.path=/my-backend \
   --event_data.match_mode=SWA \
   --event_data.type=1 \
-  --event_data.request_protocol=HTTPS \
-  --event_data.request_method=ANY \
+  --event_data.protocol=HTTPS \
+  --event_data.req_method=ANY \
   --event_data.func_info.timeout=5000 \
   --event_data.group_id=<api-group-id> \
+  --event_data.instance_id=<instance-id> \
   --event_data.env_name=RELEASE \
+  --event_data.env_id=<env-id> \
+  --event_data.sl_domain=<sl-domain> \
   --cli-region=cn-north-4 \
   --project_id=<your-project-id>
 ```
