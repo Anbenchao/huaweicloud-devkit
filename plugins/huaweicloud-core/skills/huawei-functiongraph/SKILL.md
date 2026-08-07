@@ -59,7 +59,7 @@ Always discover parameters with `--help` before executing. These are the correct
 | Show function | `ShowFunctionConfig` | |
 | Create function | `CreateFunction` | references/create-function.md |
 | Delete function | `DeleteFunction` | Strip `:latest` from URN |
-| Invoke function | `InvokeFunction` | Requires body param (e.g. `--name=<v>`); use `--x_cff_request_version=v0` for raw output |
+| Invoke function | `InvokeFunction` | Requires body param (`--name=<value>` becomes event body). Use `--x_cff_request_version=v0` for raw output, `v1` for APIG-wrapped. |
 | List runtimes | `ListRuntimes` | |
 | Create trigger | `CreateFunctionTrigger` | references/triggers.md |
 | List triggers | `ListFunctionTriggers` | |

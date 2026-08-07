@@ -1,50 +1,50 @@
 # 已知问题 / Known Issues
 
-> 来源: FunctionGraph 部署测试 (R1–R3), 2026-08-06
+> 来源: 多轮 FunctionGraph 部署测试 (2026-08-06 ~ 08-07)
 
 ---
 
-## 1. 首次认证配置 — Agent 环境中 `hcloud configure init` 不可用
+## 1. 认证无法在 Agent 环境中完成
 
-**影响**: 对首次使用的用户，插件无法帮助 Agent 完成认证。
+### 1.1 交互式 TUI 不可用
+- `hcloud configure init` 需要真正的终端输入 (y/N)，Agent 工具链无法传递
+- `hcloud configure set` 需要 AK/SK，插件安全规则禁止在聊天中粘贴
+- **需改动**: `huaweicloud-cli-and-auth/SKILL.md`
 
-**根因**: `hcloud configure init` 是交互式 TUI，需要真正的终端交互输入 (y/N 等)。在 Agent 工具链中，无法传递交互输入。
+### 1.2 隐私政策阻断
+KooCLI 首次使用时要求交互式确认隐私协议（`同意并继续使用(y)/不同意并退出(N)`），非交互终端直接报错 `[USE_ERROR]您输入的是无效字符`。插件对此无任何处理指引。
 
-**现状**:
-- `hcloud configure set` 非交互式替代方案需要用户提供 AK/SK，但插件安全规则禁止在聊天中粘贴凭证
-- 测试中能通过认证是因为环境中已预先存在手动配置好的 profile，而非插件完成
+### 1.3 无程序化登录引导
+插件将认证完全委托给用户（"Ask the user to configure credentials outside the agent conversation"），Agent 无法独立完成登录闭环。
 
-**需改动的技能**: `huaweicloud-cli-and-auth/SKILL.md`
+### 1.4 AK 脱敏不完整
+`hcloud configure list` 正确脱敏 SK（`****`），但 AK 仍部分可见（`HPU****WYH`），不够安全。
 
 **建议方案**:
-- 提供 "配置就绪检查" 工作流: Agent 先 `hcloud configure list`，若无可用 profile，给用户清晰的命令模板并等待确认
-- 提供引导用户离线配置的 step-by-step 指令，而非尝试在当前工具中执行交互式命令
+- 提供 "配置就绪检查" 工作流: Agent 先 `hcloud configure list`，若无可用 profile，给用户命令模板并等待确认
+- 增加非交互式环境变量认证方案指引
+- 增加 `echo "y" | hcloud <cmd>` 绕过隐私政策的指引
 
 ---
 
 ## 2. 跨平台安装脚本缺失
 
-**影响**: Linux 环境下需手动执行安装步骤，仅有 PowerShell 脚本 (install-opencode.ps1)。
-
-**现状**: 插件安装步骤在 Linux 下无自动化脚本，需要手动:
-- 复制 skills/ 到 `~/.config/opencode/skills/`
-- 复制 commands/ 到 `~/.config/opencode/commands/`
-- 编辑 opencode.jsonc 配置 MCP 路径
-
-**归属**: 仓库基础设施 (非具体技能)
-
-**建议**: 提供 `install-opencode.sh` Bash 安装脚本。
+仅有 PowerShell 脚本 (install-opencode.ps1)，Linux 需手动安装。建议提供 `install-opencode.sh`。
 
 ---
 
 ## 3. MCP Server 工具在 OpenCode 中未暴露
 
-**影响**: 安全策略无法在 MCP 层强制执行，Agent 降级为直接使用 `hcloud` CLI，失去安全防护层。
+**根因**: `integrations/opencode/opencode.json` 使用相对路径。安装到 `~/.config/opencode/` 后路径无法解析，12 个 MCP 工具全部缺失。
 
-**根因**: `integrations/opencode/opencode.json` 中的 MCP server 路径为相对路径 (`../../plugins/huaweicloud-core/src/mcp-server.mjs`)。当配置合并到 `~/.config/opencode/opencode.jsonc` 时，相对路径无法正确解析。
+**建议**: 安装脚本自动替换为绝对路径，或 opencode.json 增加引导注释。
 
-**现状**: 12 个 MCP 工具全部缺失 (search_docs, retrieve_skill, list_regions, check_cli, plan_cli_command, list_operations, run_readonly_command, run_approved_command, show_profile_redacted, service_catalog, explain_error, get_regional_availability)。
+---
 
-**建议**:
-- 安装脚本中自动将相对路径替换为绝对路径
-- 或在 opencode.json 中增加 `_note` 指引用户手动修改
+## 4. 跨技能场景衔接空白
+
+**问题**: FunctionGraph + APIG + VPC 的 HTTP 访问链路没有预定义的衔接路径。Agent 需要自行跨技能连接步骤。
+
+**受影响场景**: 从函数部署到对外提供 HTTP 服务需要 DEDICATEDGATEWAY → APIG 实例 → API 分组 → 环境 → URL 的完整链路。
+
+**建议**: 增加场景级 checklist 或 `huawei-apig` 技能中提供 FunctionGraph 触发器的联合工作流。

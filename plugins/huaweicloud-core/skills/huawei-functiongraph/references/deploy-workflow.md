@@ -2,13 +2,49 @@
 
 ```
 1. Write code     → Create index.py with handler function
-2. Package        → zip -r function.zip index.py
-3. Create function → hcloud FunctionGraph CreateFunction (use --help for params)
+2. Package        → zip -j function.zip index.py (no directory nesting!)
+3. Create function → hcloud FunctionGraph CreateFunction (inline for small demos, zip for production)
 4. Verify         → hcloud FunctionGraph InvokeFunction
-5. Create trigger  → hcloud FunctionGraph CreateFunctionTrigger (use --help for params)
+5. Create trigger  → hcloud FunctionGraph CreateFunctionTrigger (TIMER for testing, DEDICATEDGATEWAY for HTTP)
 ```
 
-## Step-by-Step (Python)
+## Quick Demo (Inline — No File Packaging)
+
+Use inline for small demo functions (<10KB):
+
+```bash
+# 1. Prepare base64-encoded code
+python3 -c "
+import base64
+code = '''import json
+def handler(event, context):
+    return {'statusCode': 200, 'body': json.dumps({'message': 'Hello FunctionGraph!'}), 'headers': {'Content-Type': 'application/json'}}
+'''
+print(base64.b64encode(code.encode()).decode())
+"
+
+# 2. Create function with inline code (paste base64 output as --func_code.file)
+hcloud FunctionGraph CreateFunction --help
+hcloud FunctionGraph CreateFunction \
+  --func_name=my-backend \
+  --runtime=Python3.10 \
+  --handler=index.handler \
+  --memory_size=256 \
+  --package=default \
+  --timeout=30 \
+  --code_type=inline \
+  --func_code.file=<base64-from-step-1> \
+  --cli-region=<region> \
+  --project_id=<project-id>
+
+# 3. Verify
+hcloud FunctionGraph InvokeFunction \
+  --function_urn=<urn> \
+  --name=test-event \
+  --x_cff_request_version=v0
+```
+
+## Production Deployment (Zip)
 
 ```bash
 # 1. Write code
@@ -23,20 +59,51 @@ def handler(event, context):
     }
 EOF
 
-# 2. Package
-zip -r function.zip index.py
+# 2. Package — CRITICAL: use -j to flatten, no directory nesting
+zip -j function.zip index.py
 
 # 3. Create function (discover params with --help first!)
 hcloud FunctionGraph CreateFunction --help
 # Required: --func_name, --runtime, --handler, --memory_size, --package, --timeout
-# Code type: use --code_type=zip --code_filename=function.zip (cd to function.zip dir first!)
+# Code type: use --code_type=zip --code_filename=function.zip
+# IMPORTANT: cd to function.zip directory first! --code_filename is filename only.
 
 # 4. Verify (store URN from step 3 output)
 hcloud FunctionGraph InvokeFunction --help
-# Requires body param: --name=test-event
+# Requires body param: --name=test-event (becomes event body passed to handler)
+hcloud FunctionGraph InvokeFunction \
+  --function_urn=<urn> \
+  --name=test-event \
+  --x_cff_request_version=v0
 
 # 5. Create trigger (see references/triggers.md)
-hcloud FunctionGraph CreateFunctionTrigger --help
-# For simple testing: use --trigger_type_code=TIMER
-# For HTTP: use --trigger_type_code=DEDICATEDGATEWAY
+# For quick testing: TIMER trigger (no prerequisites)
+# For HTTP access: DEDICATEDGATEWAY (requires APIG instance — see pre-flight checklist below)
+
+# 5a. TIMER (simple — no APIG dependency)
+hcloud FunctionGraph CreateFunctionTrigger \
+  --function_urn=<urn> \
+  --trigger_type_code=TIMER \
+  --event_type_code=MessageCreated \
+  --trigger_status=ACTIVE \
+  --event_data.name=test-timer \
+  --event_data.schedule_type=Rate \
+  --event_data.schedule="5m"
 ```
+
+## DEDICATEDGATEWAY Pre-Flight Checklist
+
+Before creating a DEDICATEDGATEWAY (HTTP) trigger, verify these prerequisites exist:
+
+```bash
+# 1. Check for APIG dedicated instance
+hcloud APIG ListInstancesV2 --cli-region=<r>
+
+# 2. If no instance exists, you need to create one first (requires VPC, subnet, security group)
+#    See huawei-apig skill for APIG instance/group/env setup.
+
+# 3. Once APIG instance exists, discover DEDICATEDGATEWAY params
+hcloud FunctionGraph CreateFunctionTrigger --help
+```
+
+If no APIG instance is available, use TIMER trigger for function testing instead.
