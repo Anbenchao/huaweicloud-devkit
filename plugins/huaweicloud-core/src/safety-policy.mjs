@@ -148,7 +148,10 @@ export function classifyHcloudArgs(args, options = {}) {
 
   const readOnly = hasReadPrefix(operation, policy);
   const executionOps = /(^|\.)(Invoke|SyncInvoke|AsyncInvoke|Send|Trigger|Execute|Start|Reboot|Restart|Stop|Publish|Deploy)/i;
-  if (!options.allowWrites && executionOps.test(operation) && !readOnly) {
+  const isExecution = executionOps.test(operation) && !readOnly;
+  const isWrite = !readOnly && hasWritePrefix(operation, policy);
+
+  if (isExecution && !options.allowWrites) {
     return {
       decision: 'deny',
       risk: 'execution',
@@ -156,7 +159,7 @@ export function classifyHcloudArgs(args, options = {}) {
     };
   }
 
-  if (!readOnly && hasWritePrefix(operation, policy) && !options.allowWrites) {
+  if (isWrite && !options.allowWrites) {
     return {
       decision: 'deny',
       risk: 'write',
@@ -166,24 +169,57 @@ export function classifyHcloudArgs(args, options = {}) {
 
   const obsutilWrites = ['mb', 'cp', 'mv', 'rm', 'delete', 'mkdir', 'sync', 'restore', 'chattri', 'bucketpolicy', 'lifecycle', 'cors', 'website', 'sign', 'share-add', 'share-update', 'share-rm'];
   const obsutilReads = ['ls', 'stat', 'cat', 'help', 'version'];
-  if (service.toLowerCase() === 'obs' || service.toLowerCase() === 'hcloud obs') {
-    if (obsutilWrites.includes(operation) && !options.allowWrites) {
-      return {
-        decision: 'deny',
-        risk: 'write',
-        reason: 'OBS write operation blocked until the agent presents a plan and receives explicit user approval.',
-      };
-    }
-    if (obsutilReads.includes(operation)) {
-      return {
-        decision: 'allow',
-        risk: 'read_only',
-        reason: 'OBS read-only operation.',
-        service,
-        operation,
-        args: normalizedArgs,
-      };
-    }
+  const isObs = service.toLowerCase() === 'obs' || service.toLowerCase() === 'hcloud obs';
+  const isObsWrite = isObs && obsutilWrites.includes(operation);
+  const isObsRead = isObs && obsutilReads.includes(operation);
+  if (isObsWrite && !options.allowWrites) {
+    return {
+      decision: 'deny',
+      risk: 'write',
+      reason: 'OBS write operation blocked until the agent presents a plan and receives explicit user approval.',
+    };
+  }
+  if (isObsRead) {
+    return {
+      decision: 'allow',
+      risk: 'read_only',
+      reason: 'OBS read-only operation.',
+      service,
+      operation,
+      args: normalizedArgs,
+    };
+  }
+  if (isObsWrite && options.allowWrites) {
+    return {
+      decision: 'allow',
+      risk: 'write',
+      reason: 'OBS write operation approved by user.',
+      service,
+      operation,
+      args: normalizedArgs,
+    };
+  }
+
+  if (isExecution && options.allowWrites) {
+    return {
+      decision: 'allow',
+      risk: 'execution',
+      reason: 'Huawei Cloud execution/trigger operation approved by user.',
+      service,
+      operation,
+      args: normalizedArgs,
+    };
+  }
+
+  if (isWrite && options.allowWrites) {
+    return {
+      decision: 'allow',
+      risk: 'write',
+      reason: 'Huawei Cloud write operation approved by user.',
+      service,
+      operation,
+      args: normalizedArgs,
+    };
   }
 
   return {

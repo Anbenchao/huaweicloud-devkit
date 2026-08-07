@@ -22,7 +22,10 @@ Always discover parameters with `hcloud APIG <Operation> --help` before executin
 | Throttling per-API default | Use app-level quotas for per-user limits |
 | CORS must be explicit | OPTIONS preflight fails until configured |
 | `BASIC` spec has no public IP | Use `PROFESSIONAL` + `elb` provider for public access |
-| Instance creation takes 5-15min | Long-running async operation, poll with `ListInstancesV2` |
+| Instance creation takes 5-15min | Long-running async operation. State is **Running** (NOT "SUCCESS"). Poll with `ListInstancesV2`, wait for `status == "Running"` |
+| `sl_domain` is from API **Group** | NOT from Instance. Get it from `CreateApiGroupV2` or `ListApiGroupsV2` response |
+| API name must NOT have hyphens | `[a-zA-Z0-9_]+` only. Hyphens cause regex validation failure |
+| VPC params need prefix | `--vpc.name=<n>` / `--subnet.vpc_id=<id>` / `--security_group.name=<n>` with KooCLI 7.x |
 
 ## Instance Management
 
@@ -47,6 +50,7 @@ Key gotchas when creating:
 | `--enterprise_project_id` | **Required** for enterprise accounts. Use `"0"` for default project |
 | `--available_zone_ids` | Use AZ code like `ap-southeast-3a`, NOT UUID from `ListAvailableZonesV2` |
 | `--vpc_id`, `--subnet_id` | Must exist in the target region |
+| `--security_group_id` | **Required**. Create a security group first via `VPC CreateSecurityGroup` (VPC v3 API — no `vpc_id` param needed) |
 
 ### Add Public Access (ELB Provider Only)
 
@@ -83,10 +87,10 @@ hcloud APIG BatchPublishOrOfflineApiV2 \
   --instance_id=<id> \
   --action=online \
   --env_id=<env-id> \
-  --api_ids=<api-id>
+  --apis.1=<api-id>
 ```
 
-> The operation is `BatchPublishOrOfflineApiV2`, NOT `PublishApiV2`.
+> The operation is `BatchPublishOrOfflineApiV2`, NOT `PublishApiV2`. The parameter is `apis.1` (1-based array), NOT `api_ids`. For multiple APIs, use `--apis.1`, `--apis.2`, etc.
 
 ## Throttling
 
@@ -122,7 +126,7 @@ hcloud APIG BatchPublishOrOfflineApiV2 \
   --instance_id=<apig-instance-id> \
   --action=online \
   --env_id=<env-id> \
-  --api_ids=<api-id-from-trigger>
+  --apis.1=<api-id-from-trigger>
 ```
 
 See `huawei-functiongraph` skill → `references/deploy-workflow.md` for the full end-to-end workflow.

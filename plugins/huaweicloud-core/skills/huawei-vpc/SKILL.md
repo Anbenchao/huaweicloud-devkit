@@ -24,6 +24,8 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | EIP bills when idle | Unbound EIP still charges. Release when unused |
 | Subnet AZ binding | Subnet tied to single AZ. Cross-AZ needs multiple subnets |
 | EIP PER type needs `--bandwidth.name` | PER bandwidth requires explicit name; `--help` marks it optional but it's required |
+| **VPC params need nested prefix** | KooCLI 7.x VPC API uses `--vpc.<param>`, `--subnet.<param>`, `--security_group.<param>`. Example: `--vpc.name=xxx` NOT `--name=xxx` |
+| **Security group needs no vpc_id** | VPC v3 API `CreateSecurityGroup` does NOT accept `vpc_id`. Security groups are region-level, not VPC-bound |
 
 ## Common Workflows
 
