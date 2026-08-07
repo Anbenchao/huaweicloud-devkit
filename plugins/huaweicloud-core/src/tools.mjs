@@ -608,6 +608,7 @@ async function getRegionalAvailability(service, region) {
       ? svc + ' is available in ' + reg + '.'
       : svc + ' availability in ' + reg + ' could not be confirmed. Verify at https://developer.huaweicloud.com/endpoint.',
     sourcedFrom: 'static cache, update via npm package upgrade',
+    disclaimer: 'This result reflects service-level availability only. It does NOT guarantee that your IAM user has permissions in this region. Account-level restrictions (e.g., APIGW.0802) may block actual API calls even when the service is available.',
   };
 }
 
