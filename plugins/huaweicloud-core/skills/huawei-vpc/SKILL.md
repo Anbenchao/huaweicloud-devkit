@@ -32,9 +32,9 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | Create VPC | hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=192.168.0.0/16 | references/vpc.md |
 | Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=192.168.1.0/24 --subnet.availability_zone=<az> | references/subnet.md |
 | Security group | hcloud VPC CreateSecurityGroup --security_group.name=<name> | references/security-group.md |
-| SG rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=ingress --protocol=tcp --port=22 --remote_ip_prefix=<cidr> | references/security-group.md |
-| Create EIP | hcloud EIP CreatePublicip --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | references/eip.md |
-| Bind EIP to ECS | hcloud EIP BindPublicIp --publicip_id=<id> --server_id=<ecs-id> | references/eip.md |
+| SG rule | hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<id> --security_group_rule.direction=ingress --security_group_rule.protocol=tcp --security_group_rule.multiport=22 --security_group_rule.remote_ip_prefix=<cidr> | references/security-group.md |
+| Create EIP | hcloud EIP CreatePublicip --publicip.type=EIP --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | references/eip.md |
+| Bind EIP to ECS | hcloud EIP AssociatePublicips --publicip_id=<id> --publicip.associate_instance_id=<ecs-id> --publicip.associate_instance_type=ecs | references/eip.md |
 | Unbind EIP | hcloud EIP UnbindPublicIp --publicip_id=<id> | references/eip.md |
 | List EIPs | hcloud EIP ListPublicips | |
 | NAT gateway | hcloud NAT CreateNatGateway --nat.name=<name> --nat.spec=1 --router_id=<vpc-id> --internal_network_id=<subnet-id> | references/nat.md |

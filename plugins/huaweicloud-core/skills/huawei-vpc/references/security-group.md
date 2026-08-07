@@ -11,4 +11,4 @@
 | Egress | ALL | ALL | 0.0.0.0/0 | Outbound (default) |
 
 ## Create Rule
-hcloud VPC CreateSecurityGroupRule --security_group_id=<sg-id> --direction=ingress --protocol=tcp --port=22 --remote_ip_prefix=1.2.3.4/32
+hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<sg-id> --security_group_rule.direction=ingress --security_group_rule.protocol=tcp --security_group_rule.multiport=22 --security_group_rule.remote_ip_prefix=1.2.3.4/32

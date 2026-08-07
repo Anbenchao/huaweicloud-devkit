@@ -183,8 +183,8 @@ const REQUIRED_PARAMS = {
   'ECS CreateServers': ['server.flavorRef', 'server.imageRef', 'server.nics.1.subnet_id'],
   'VPC CreateVpc': ['vpc.cidr'],
   'VPC CreateSubnet': ['subnet.vpc_id', 'subnet.cidr'],
-  'VPC CreateSecurityGroupRule': ['security_group_id', 'direction', 'protocol'],
-  'EIP CreatePublicip': ['bandwidth.share_type'],
+  'VPC CreateSecurityGroupRule': ['security_group_rule.security_group_id', 'security_group_rule.direction', 'security_group_rule.protocol'],
+  'EIP CreatePublicip': ['bandwidth.share_type', 'publicip.type'],
   'FunctionGraph CreateFunction': ['func_name', 'runtime', 'handler', 'memory_size', 'package', 'timeout'],
   'FunctionGraph CreateFunctionTrigger': ['function_urn', 'trigger_type_code'],
   'APIG CreateInstanceV2': ['spec_id'],
@@ -202,7 +202,10 @@ function validateRequiredParams(args) {
 }
 
 function extractApiError(stdout) {
-  const text = String(stdout || '');
+  let text = String(stdout || '');
+  // Strip KooCLI multi-version prefix lines (e.g. "ListVpcs有多个版本,默认使用该API版本v3…")
+  const bracketIdx = text.indexOf('{');
+  if (bracketIdx > 0) text = text.substring(bracketIdx);
   try {
     const parsed = JSON.parse(text);
     if (parsed.error_code || parsed.errorCode) {
