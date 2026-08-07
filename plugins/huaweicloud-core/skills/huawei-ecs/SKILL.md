@@ -70,6 +70,7 @@ Abort if the result set is larger than `--limit` and ask the user to narrow the 
 | Flavor unavailable | Region limitation -> ListFlavors in target region |
 | Insufficient resources | Stock depleted -> Change flavor or AZ |
 | AuthFailure | Expired AK/SK -> hcloud configure init |
+| APIGW.0802 / region permission | IAM user has no access to this region -> IAM console → User → Permissions → add region, or switch to another region |
 
 ## Security Considerations
 
