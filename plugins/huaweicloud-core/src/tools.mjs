@@ -309,15 +309,19 @@ async function runApprovedCommand(args = {}) {
   if (args.approvedByUser !== true) {
     throw new Error('approvedByUser must be true after explicit user approval for this exact command.');
   }
+  const strictPlan = planHcloudCommand(args.args || [], { allowWrites: false });
   const plan = planHcloudCommand(args.args || [], { allowWrites: true });
   if (String(args.approvedCommand || '') !== plan.command) {
     throw new Error('approvedCommand must exactly match the planned hcloud command.');
   }
-  return runHcloud(args.args || [], {
+  const result = await runHcloud(args.args || [], {
     allowWrites: true,
     timeoutMs: args.timeoutMs,
     maxRetries: args.maxRetries,
   });
+  result.approved = true;
+  result.plan = strictPlan;
+  return result;
 }
 
 function serviceCatalog(intent = '') {
@@ -447,6 +451,7 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
 
 async function searchDocs(query, topic = 'all') {
   const q = String(query || '').toLowerCase();
+  const tokens = q.split(/\s+/).filter((t) => t.length > 0);
   const results = [];
   try {
     if (existsSync(SKILLS_ROOT)) {
@@ -467,11 +472,16 @@ async function searchDocs(query, topic = 'all') {
           const descMatch = fm.match(/^description:\s*(.+)$/m);
           if (descMatch) description = descMatch[1].trim();
         }
-        if (topic !== 'all' && !name.includes(topic) && !description.toLowerCase().includes(topic)) continue;
-        const relevance =
-          (description.toLowerCase().includes(q) ? 3 : 0) +
-          (name.toLowerCase().includes(q) ? 2 : 0) +
-          (content.toLowerCase().includes(q) ? 1 : 0);
+        if (topic !== 'all') {
+          const topicLower = topic.toLowerCase();
+          if (!name.toLowerCase().includes(topicLower) && !description.toLowerCase().includes(topicLower)) continue;
+        }
+        const descLower = description.toLowerCase();
+        const nameLower = name.toLowerCase();
+        const contentLower = content.toLowerCase();
+        const relevance = tokens.reduce((score, token) => {
+          return score + (descLower.includes(token) ? 3 : 0) + (nameLower.includes(token) ? 2 : 0) + (contentLower.includes(token) ? 1 : 0);
+        }, 0);
         if (relevance > 0) {
           results.push({
             source: "skills/" + dir + "/SKILL.md",
@@ -547,27 +557,32 @@ async function getRegionalAvailability(service, region) {
   const reg = String(region || '').toLowerCase().trim();
   if (!svc || !reg) return { ok: false, error: 'Both service and region are required.' };
   const known = {
-    ecs: ['cn-south-1','cn-north-4','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','af-south-1'],
-    obs: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
-    vpc: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    ecs: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','ap-southeast-4','af-south-1','tr-west-1','sa-brazil-1','la-north-2','na-mexico-1','me-east-1'],
+    obs: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','af-south-1'],
+    vpc: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','ap-southeast-4','af-south-1','tr-west-1','sa-brazil-1','la-north-2','me-east-1'],
     iam: ['global'],
-    rds: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    rds: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     gaussdb: ['cn-south-1','cn-north-4','cn-east-3'],
-    cce: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    cce: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     modelarts: ['cn-south-1','cn-north-4','cn-east-3'],
-    functiongraph: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    functiongraph: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     dew: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     smn: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     ces: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     cts: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    apig: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    cbr: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    dds: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    dcs: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
   };
-  const found = known[svc] || [];
-  const available = found.includes(reg) || found.includes('global');
+  if (!known[svc]) return { ok: false, service: svc, region: reg, available: false, note: 'Service ' + svc + ' is not in the regional availability cache. Run hcloud ' + svc.toUpperCase() + ' --help to verify, or check https://developer.huaweicloud.com/endpoint.' };
+  const available = known[svc].includes(reg) || known[svc].includes('global');
   return {
     ok: true, service: svc, region: reg, available,
     note: available
       ? svc + ' is available in ' + reg + '.'
       : svc + ' availability in ' + reg + ' could not be confirmed. Verify at https://developer.huaweicloud.com/endpoint.',
+    sourcedFrom: 'static cache, update via npm package upgrade',
   };
 }
 

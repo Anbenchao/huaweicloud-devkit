@@ -119,6 +119,20 @@ function runHcloudOnce(plan, options) {
         });
         return;
       }
+      const apiError = extractApiError(stdout);
+      if (apiError) {
+        finish({
+          ok: false,
+          exitCode: code,
+          signal,
+          errorCode: apiError.errorCode,
+          errorMessage: apiError.errorMessage,
+          stdout: redactOutput(stdout),
+          stderr: redactOutput(stderr),
+          plan,
+        });
+        return;
+      }
       finish({
         ok: code === 0,
         exitCode: code,
@@ -157,6 +171,31 @@ function planningWarnings(args) {
     );
   }
   return warnings;
+}
+
+function extractApiError(stdout) {
+  const text = String(stdout || '');
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.error_code || parsed.errorCode) {
+      return {
+        errorCode: parsed.error_code || parsed.errorCode || 'UNKNOWN',
+        errorMessage: parsed.error_msg || parsed.errorMsg || parsed.message || '',
+      };
+    }
+    if (parsed.error && typeof parsed.error === 'object') {
+      return {
+        errorCode: parsed.error.code || parsed.error.error_code || 'UNKNOWN',
+        errorMessage: parsed.error.message || parsed.error.error_msg || '',
+      };
+    }
+  } catch {}
+  const ecMatch = text.match(/"error_code"\s*:\s*"([^"]+)"/);
+  const emMatch = text.match(/"error_msg"\s*:\s*"([^"]+)"/);
+  if (ecMatch) {
+    return { errorCode: ecMatch[1], errorMessage: emMatch ? emMatch[1] : '' };
+  }
+  return null;
 }
 
 export function redactOutput(output) {
