@@ -30,7 +30,6 @@ jobs:
 
   remote-deploy:
     needs: preflight
-    if: hashFiles('cloud-server/**') != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -38,5 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy staging environment
+        if: hashFiles('cloud-server/**') != ''
         run: |
           echo "TODO: cloud-server staging deploy (build image -> push SWR -> deploy ECS -> smoke test)."
