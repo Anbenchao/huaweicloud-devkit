@@ -34,23 +34,33 @@
   -> 只读验证
 ```
 
-## 安装 (Codex)
+## 安装
 
-从仓库根目录运行：
+### OpenCode
 
-```powershell
-.\scripts\install-codex-local.ps1
+```bash
+npx huaweicloud-devkit install
 ```
 
-然后新建 Codex 会话，输入 `@huaweicloud-core`。
+### Codex
 
-## 安装 (OpenCode)
-
-```powershell
-.\scripts\install-opencode-local.ps1
+```bash
+npx huaweicloud-devkit install --target codex
 ```
 
-将 `integrations/opencode/opencode.json` 中的 MCP 示例合并到你的 OpenCode 配置。
+### 同时安装 OpenCode + Codex
+
+```bash
+npx huaweicloud-devkit install --target all
+```
+
+### 其他命令
+
+```bash
+npx huaweicloud-devkit status --target all    # 查看安装状态
+npx huaweicloud-devkit update --target all    # 更新
+npx huaweicloud-devkit uninstall --target all # 卸载
+```
 
 ## 开发
 

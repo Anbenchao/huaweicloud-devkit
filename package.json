@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "description": "Agent toolkit that helps coding agents use Huawei Cloud Skills, KooCLI, APIs, SDKs, and future MCP capabilities safely and accurately.",
   "type": "module",
-  "private": false,
   "files": [
-    "plugins/huaweicloud-core/src"
+    "bin",
+    ".agents",
+    "plugins/huaweicloud-core",
+    "integrations/opencode"
   ],
   "bin": {
-    "huaweicloud-devkit-mcp": "./plugins/huaweicloud-core/src/mcp-server.mjs"
+    "huaweicloud-devkit": "./bin/setup.cjs"
   },
   "repository": {
     "type": "git",
@@ -18,7 +20,8 @@
     "test": "node --test",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.git\" \"#test/**\" \"#docs/**\"",
     "lint": "npm run lint:md",
-    "validate": "node ./scripts/validate-package.mjs"
+    "validate": "node ./scripts/validate-package.mjs",
+    "postinstall": "node -e \"console.log('\\nHuaweiCloud DevKit installed. Run: npx huaweicloud-devkit install\\n')\""
   },
   "devDependencies": {
     "markdownlint-cli2": "^0.23.2"
