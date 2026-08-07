@@ -103,7 +103,12 @@ function hasCodexCLI() {
 }
 
 function getMarketplaceName() {
-  return 'huaweicloud-agent-toolkit';
+  const marketplacePath = join(PACKAGE_ROOT, '.agents', 'plugins', 'marketplace.json');
+  try {
+    const manifest = JSON.parse(readFileSync(marketplacePath, 'utf8'));
+    if (manifest.name) return manifest.name;
+  } catch {}
+  return 'huaweicloud-devkit';
 }
 
 function installCodex() {
@@ -398,7 +403,8 @@ async function cmdDoctor() {
   check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit install`);
 
   // hcloud CLI
-  const hcloudCheck = spawnSync('hcloud version', [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
+  const hcloudBin = process.env.HCLOUD_BIN || 'hcloud';
+  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
   const hcloudOk = hcloudCheck.status === 0 && hcloudCheck.stdout.toString().includes('KooCLI');
   check('hcloud CLI installed', hcloudOk, 'Install from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html');
 
