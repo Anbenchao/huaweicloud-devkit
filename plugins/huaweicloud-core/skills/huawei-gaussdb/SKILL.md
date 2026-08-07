@@ -8,28 +8,49 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud GaussDB <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
+## Overview
+
+Domain expertise for GaussDB. Covers instance lifecycle, databases, backups, configurations, and shard/readonly node management.
 
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| Shard key permanent | Cannot change after creation |
-| Cross-shard queries expensive | Avoid joins across shard keys |
-| Min 3 nodes for production | For HA in distributed mode |
+| Shard key permanent | Once set, shard key cannot be changed |
+| Minimum nodes | Distributed GaussDB requires at least 3 nodes for production |
+| Engine version pinned | MySQL-compatible vs openGauss are separate products |
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| List flavors | hcloud GaussDB ListFlavors --database_name=gaussdb-mysql |
-| Create instance | hcloud GaussDB CreateInstance --name=<n> --datastore.type=gaussdb-mysql --shard_num=3 |
-| Add shard | hcloud GaussDB ExpandInstance --instance_id=<id> --shard_num=<n> |
 
-## Security
-- MUST use VPC internal access
-- MUST enable SSL
+| Task | Operation |
+|------|-----------|
+| List instances | `ListInstances --cli-region=<r> --project_id=<p>` |
+| Show instance | `ShowInstance --cli-region=<r> --project_id=<p>` |
+| List flavors | `ListFlavors --cli-region=<r> --project_id=<p>` |
+| Create instance | `CreateInstance --cli-region=<r> --project_id=<p>` |
+| Delete instance | `DeleteInstance --cli-region=<r> --project_id=<p>` |
+| Create backup | `CreateGaussMySqlBackup --cli-region=<r> --project_id=<p>` |
+| Add readonly node | `AddReadonlyNode --cli-region=<r> --project_id=<p>` |
+| Add shard | `AddShardingNode --cli-region=<r> --project_id=<p>` |
+| Manage database | `AddDatabasePermission --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| Connection refused | Check VPC/subnet and security group rules |
-| Shard expansion failed | Verify instance is in Available state first |
+| Instance creation fails | Check VPC/subnet availability and flavor capacity |
+| Connection refused | SG missing database port |
+
+## Security
+
+- MUST use security groups for database access
+- MUST enable SSL for connections
+
+## Cross-Skill References
+
+- **VPC/Subnet/Security Group**: See `huawei-vpc`
+- **Backup/CBR**: See `huawei-cbr`

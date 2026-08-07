@@ -8,30 +8,43 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud CBR <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
+## Overview
+
+Domain expertise for Cloud Backup and Recovery. Covers vaults, backups, restore operations, policies, and cross-region replication.
 
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| Vault binds to a single resource type | Can't mix ECS and EVS in same vault |
-| Restore requires instance shutdown | Plan maintenance window |
-| Backup storage billed by size | Delete stale backups to control cost |
+| Vault binds single resource type | Server vault != disk vault != file system vault |
+| Restore needs instance stop | Most VM restore requires the target instance to be stopped first |
+| Backup storage incurs charges | Retention policies affect storage costs |
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| Create vault | hcloud CBR CreateVault --vault.name=<n> --vault.billing.charging_mode=post_paid --vault.billing.protect_type=backup --cli-region=<r> |
-| Create backup | hcloud CBR CreateCheckpoint --vault_id=<id> --name=<n> |
-| Restore backup | hcloud CBR RestoreBackup --backup_id=<id> |
-| List vaults | hcloud CBR ListVaults --cli-region=<r> |
+
+| Task | Operation |
+|------|-----------|
+| List vaults | `ListVaults --cli-region=<r> --project_id=<p>` |
+| Create vault | `CreateVault --cli-region=<r> --project_id=<p>` |
+| Create backup policy | `CreatePolicy --cli-region=<r> --project_id=<p>` |
+| Create checkpoint | `CreateCheckpoint --cli-region=<r> --project_id=<p>` |
+| Add resource to vault | `AddVaultResource --cli-region=<r> --project_id=<p>` |
+| Batch update vault | `BatchUpdateVault --cli-region=<r> --project_id=<p>` |
+| Create organization policy | `CreateOrganizationPolicy --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| Backup failed | Check agent status on target instance |
-| Restore stuck | Verify target resource state allows restore |
+| Backup creation fails | Check instance is running and agent is online |
+| Restore fails | Ensure target instance is stopped before restore |
+| Vault full | Increase vault capacity or adjust retention policy |
 
-## Security
-- MUST encrypt backups with KMS
-- MUST restrict vault access to resource IAM roles
-- MUST test restore procedures regularly
+## Cross-Skill References
+
+- **ECS**: See `huawei-ecs` for backing up instances
+- **EVS**: See `huawei-ecs` references/evs.md for disk backup

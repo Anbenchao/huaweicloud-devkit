@@ -8,30 +8,48 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud ModelArts <Operation> --help` before constructing commands to discover exact parameter names and requirements.
 
-## Critical Warnings
-| Trap | Why |
-|------|-----|
-| Training jobs charge by duration | Stop idle notebooks to avoid costs |
-| Model versioning is manual | No automatic version tracking |
-| OBS bucket required for training data | Must create OBS bucket before training |
+## Overview
+
+Domain expertise for ModelArts. Covers training jobs, model deployment, notebook instances, and OBS integration.
+
+## Prerequisites
+
+- Training data must be stored in an OBS bucket (see `huawei-obs`)
+- Output path for trained models must be an OBS path
+- Notebook instances need a VPC/subnet (see `huawei-vpc`)
 
 ## Common Workflows
-| Task | Command |
+
+| Task | Operation |
+|------|-----------|
+| List models | `ListModels --cli-region=<r> --project_id=<p>` |
+| List training jobs | `ListTrainJobs --cli-region=<r> --project_id=<p>` |
+| List services | `ListServices --cli-region=<r> --project_id=<p>` |
+| List notebooks | `ListNotebooks --cli-region=<r> --project_id=<p>` |
+| Create model | `CreateModel --cli-region=<r> --project_id=<p>` |
+| Create notebook | `CreateNotebook --cli-region=<r> --project_id=<p>` |
+
+Discover operation parameters with `--help` before executing any write operation.
+
+## Service Types
+
+| Type | Purpose |
 |------|---------|
-| List training jobs | hcloud ModelArts ListTrainingJobs --cli-region=<r> |
-| Create training job | hcloud ModelArts CreateTrainingJob --job_name=<n> --algorithm_id=<id> --inputs='[{"obs_url":"<url>"}]' |
-| Deploy model | hcloud ModelArts CreateService --service_name=<n> --model_id=<id> --specification=<spec> |
-| Create notebook | hcloud ModelArts CreateNotebookInstance --name=<n> --flavor=<f> --volume.size=50 |
+| Training Job | Train models on GPU/CPU resources |
+| Model | Register trained models for deployment |
+| Service (Online) | Deploy models as REST API endpoints |
+| Notebook | JupyterLab environments for development |
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| OBS access denied | Check OBS bucket policy and IAM role |
-| Training job stuck | Check logs via hcloud ModelArts ShowTrainingJobLog |
+| OBS path not found | Verify OBS bucket exists and path is correct |
+| Training job fails | Check training data format, resource quotas, and logs in console |
 
-## Security
-- MUST use dedicated OBS buckets for training data
-- MUST restrict notebook internet access when not needed
-- MUST encrypt training data at rest
+## Cross-Skill References
+
+- **OBS storage**: See `huawei-obs` for bucket and training data management
+- **VPC/Subnet**: See `huawei-vpc` for notebook network configuration

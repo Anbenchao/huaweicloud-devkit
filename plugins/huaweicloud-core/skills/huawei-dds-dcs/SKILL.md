@@ -4,34 +4,67 @@ description: "Use when creating or managing Document Database Service (DDS/Mongo
 version: 1
 ---
 
-# Huawei Cloud DDS & DCS
+# Huawei Cloud DDS / DCS
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud DDS <Operation> --help` or `hcloud DCS <Operation> --help` before constructing commands.
 
-## Critical Warnings
+## DDS (Document Database Service — MongoDB Compatible)
+
+### Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| DDS replica set needs 3 nodes | Minimum deployment is 3-node replica |
-| DCS Redis password is mandatory | Cannot disable auth |
-| DDS engine version immutable | Choose version before creating instance |
+| Requires 3-node replica | Minimum production deployment needs 3 nodes |
+| Shard key permanent | Once selected, shard key cannot be changed |
+| Storage auto-scaling off | Enable before storage fills |
 
-## Common Workflows
-| Task | Command |
-|------|---------|
-| List DDS flavors | hcloud DDS ListFlavors --engine_name=DDS-Community --cli-region=<r> |
-| Create DDS instance | hcloud DDS CreateInstance --name=<n> --datastore.type=DDS-Community --datastore.version=4.0 --mode=ReplicaSet |
-| Create DCS Redis | hcloud DCS CreateInstance --name=<n> --engine=Redis --engine_version=6.0 --capacity=2 |
-| List DCS instances | hcloud DCS ListInstances --cli-region=<r> |
+### Common Workflows
+
+| Task | Operation |
+|------|-----------|
+| List instances | `ListInstances --cli-region=<r> --project_id=<p>` |
+| Create instance | `CreateInstance --cli-region=<r> --project_id=<p>` |
+| Delete instance | `DeleteInstance --cli-region=<r> --project_id=<p>` |
+| Add readonly node | `AddReadonlyNode --cli-region=<r> --project_id=<p>` |
+| Add shard | `AddShardingNode --cli-region=<r> --project_id=<p>` |
+| Create backup | `CreateBackup --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
+
+## DCS (Distributed Cache Service — Redis/Memcached)
+
+### Critical Warnings
+
+| Trap | Why |
+|------|-----|
+| Redis password required | Cannot create Redis instance without password |
+| Memcached no password | Memcached has no auth — only accessible within VPC |
+| Cache persistence costs | AOF/RDB persistence uses additional storage |
+
+### Common Workflows
+
+| Task | Operation |
+|------|-----------|
+| List instances | `ListInstances --cli-region=<r> --project_id=<p>` |
+| Create Redis instance | `CreateInstance --cli-region=<r> --project_id=<p>` |
+| Delete instance | `DeleteInstances --cli-region=<r> --project_id=<p>` |
+| Restart instance | `RestartInstance --cli-region=<r> --project_id=<p>` |
+| Show node information | `BatchShowNodesInformation --cli-region=<r> --project_id=<p>` |
+| Create custom template | `CreateCustomTemplate --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| DDS connection timeout | Check VPC/subnet and security group (port 8635) |
-| DCS auth failure | Redis requires --password parameter on connect |
+| DDS instance creation fails | Check 3-node minimum, VPC/subnet availability |
+| DCS connection refused | Redis instances need password. Memcached only accessible within VPC |
+| DCS auto-expire not working | Enable auto-expire scan task for Redis |
 
-## Security
-- MUST enable DDS SSL connections
-- MUST use strong passwords for DCS instances
-- MUST deploy in VPC private subnet, not public
+## Cross-Skill References
+
+- **VPC/Subnet**: See `huawei-vpc` for instance networking
+- **Backup/CBR**: See `huawei-cbr` for backup management
