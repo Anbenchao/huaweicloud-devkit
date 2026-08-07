@@ -479,6 +479,52 @@ async function confirm(msg) {
   });
 }
 
+async function cmdInstallHcloud() {
+  console.log(BANNER);
+  console.log('Installing KooCLI (hcloud)...\n');
+
+  const os = platform();
+  const arch = process.arch;
+  const baseUrl = 'https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest';
+  const installDir = os === 'win32'
+    ? join(homedir(), 'hcloud')
+    : join(homedir(), '.local', 'bin');
+
+  if (os === 'win32') {
+    console.log(`[Windows] Download and unzip to ${installDir}`);
+    const url = `${baseUrl}/huaweicloud-cli-windows-amd64.zip`;
+    console.log(`  Download: ${url}`);
+    console.log(`  Unzip to: ${installDir}`);
+    console.log(`  Add to PATH: ${installDir}`);
+    console.log(`  Verify: hcloud version`);
+    console.log('\n\x1b[33mWindows auto-install not supported yet. Run commands above manually.\x1b[0m');
+    console.log(`\nFull guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_01.html`);
+  } else if (os === 'linux') {
+    console.log('[Linux] One-liner install:');
+    console.log('  curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y');
+    console.log(`\nOr manual: ${arch === 'arm64' ? 'ARM64' : 'AMD64'}`);
+    const pkg = arch === 'arm64' ? 'linux-arm64' : 'linux-amd64';
+    console.log(`  curl -LO "${baseUrl}/huaweicloud-cli-${pkg}.tar.gz"`);
+    console.log(`  tar -zxvf huaweicloud-cli-${pkg}.tar.gz`);
+    console.log(`  mv hcloud ~/.local/bin/`);
+    console.log(`  hcloud version`);
+    console.log(`\nFull guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_02.html`);
+  } else if (os === 'darwin') {
+    console.log('[macOS] One-liner install:');
+    console.log('  curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y');
+    console.log(`\nOr manual: ${arch === 'arm64' ? 'ARM64 (Apple Silicon)' : 'AMD64 (Intel)'}`);
+    const pkg = arch === 'arm64' ? 'mac-arm64' : 'mac-amd64';
+    console.log(`  curl -LO "${baseUrl}/huaweicloud-cli-${pkg}.tar.gz"`);
+    console.log(`  tar -zxvf huaweicloud-cli-${pkg}.tar.gz`);
+    console.log(`  mv hcloud /usr/local/bin/`);
+    console.log(`  hcloud version`);
+    console.log(`\nFull guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_03.html`);
+  }
+
+  console.log('\nAfter install, set HCLOUD_BIN if hcloud is not on PATH.');
+  console.log('Then run: npx huaweicloud-devkit doctor');
+}
+
 async function main() {
   const cmd = process.argv[2] || 'help';
 
@@ -506,6 +552,9 @@ async function main() {
     case 'check':
       await cmdDoctor();
       break;
+    case 'install-hcloud':
+      await cmdInstallHcloud();
+      break;
     case 'help':
     case '--help':
     case '-h':
@@ -519,6 +568,7 @@ async function main() {
       console.log('  reinstall    Full clean reinstall');
       console.log('  status       Show installation status');
       console.log('  doctor       Self-check: hcloud, MCP, skills, auth');
+      console.log('  install-hcloud  Show KooCLI install commands for your OS');
       console.log('  help         Show this help');
       console.log('\nOptions:');
       console.log('  --target     Target agent: opencode (default), codex, all');
