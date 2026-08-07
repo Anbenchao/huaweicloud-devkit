@@ -155,6 +155,28 @@ export function classifyHcloudArgs(args, options = {}) {
     };
   }
 
+  const obsutilWrites = ['mb', 'cp', 'mv', 'rm', 'chattri', 'bucketpolicy', 'lifecycle', 'cors', 'website', 'sign'];
+  const obsutilReads = ['ls', 'stat', 'cat', 'help', 'version'];
+  if (service.toLowerCase() === 'obs' || service.toLowerCase() === 'hcloud obs') {
+    if (obsutilWrites.includes(operation) && !options.allowWrites) {
+      return {
+        decision: 'deny',
+        risk: 'write',
+        reason: 'OBS write operation blocked until the agent presents a plan and receives explicit user approval.',
+      };
+    }
+    if (obsutilReads.includes(operation)) {
+      return {
+        decision: 'allow',
+        risk: 'read_only',
+        reason: 'OBS read-only operation.',
+        service,
+        operation,
+        args: normalizedArgs,
+      };
+    }
+  }
+
   return {
     decision: 'allow',
     risk: readOnly ? 'read_only' : 'unknown_read',
