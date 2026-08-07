@@ -40,11 +40,53 @@ hcloud FunctionGraph CreateFunctionTrigger \
 
 ## DEDICATEDGATEWAY Trigger (HTTP Access)
 
-`trigger_type_code=APIG` is **deprecated**. Use `DEDICATEDGATEWAY` for KooCLI 7.x. Requires an APIG dedicated instance — discover required params with `--help`:
+`trigger_type_code=APIG` is **deprecated**. Use `DEDICATEDGATEWAY` for KooCLI 7.x.
+
+### Required Parameters (Hidden Optional)
+
+These are labeled optional by `--help` but are **required** for DEDICATEDGATEWAY:
+
+| Param | Note |
+|-------|------|
+| `--event_data.protocol` | `HTTPS` or `HTTP` or `BOTH` |
+| `--event_data.sl_domain` | Subdomain from APIG instance (e.g. `xxxx.apic.<region>.huaweicloudapis.com`) |
+| `--event_data.env_name` | API environment name (`RELEASE`) |
+| `--event_data.env_id` | API environment ID |
+| `--event_data.instance_id` | APIG dedicated instance ID |
+| `--event_data.group_id` | API group ID |
+| `--event_data.name` | API name (regex: no hyphens) |
+
+### Example
 
 ```bash
-hcloud FunctionGraph CreateFunctionTrigger --help
-# Look for: trigger_type_code, event_data.instance_id, event_data.env_id, etc.
+hcloud FunctionGraph CreateFunctionTrigger \
+  --function_urn=<urn> \
+  --trigger_type_code=DEDICATEDGATEWAY \
+  --event_type_code=APICreated \
+  --trigger_status=ACTIVE \
+  --event_data.name=<api-name-no-hyphens> \
+  --event_data.auth=IAM \
+  --event_data.path=/my-backend \
+  --event_data.match_mode=SWA \
+  --event_data.type=1 \
+  --event_data.protocol=HTTPS \
+  --event_data.req_method=ANY \
+  --event_data.func_info.timeout=5000 \
+  --event_data.instance_id=<apig-instance-id> \
+  --event_data.group_id=<api-group-id> \
+  --event_data.sl_domain=<sl-domain> \
+  --event_data.env_name=RELEASE \
+  --event_data.env_id=<env-id>
+```
+
+After trigger creation, you must **publish** the API before it's accessible:
+
+```bash
+hcloud APIG BatchPublishOrOfflineApiV2 \
+  --instance_id=<apig-instance-id> \
+  --action=online \
+  --env_id=<env-id> \
+  --api_ids=<api-id-from-trigger-response>
 ```
 
 ## List / Delete Triggers

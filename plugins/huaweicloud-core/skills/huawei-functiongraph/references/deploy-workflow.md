@@ -99,11 +99,21 @@ Before creating a DEDICATEDGATEWAY (HTTP) trigger, verify these prerequisites ex
 # 1. Check for APIG dedicated instance
 hcloud APIG ListInstancesV2 --cli-region=<r>
 
-# 2. If no instance exists, you need to create one first (requires VPC, subnet, security group)
-#    See huawei-apig skill for APIG instance/group/env setup.
+# 2. If no instance exists, create one (see huawei-apig skill)
+#    Key: --spec_id=PROFESSIONAL --loadbalancer_provider=elb for public access
+#    Requires: VPC, subnet, security group, enterprise_project_id
 
-# 3. Once APIG instance exists, discover DEDICATEDGATEWAY params
-hcloud FunctionGraph CreateFunctionTrigger --help
+# 3. Once instance is Running with public IP, create API group
+hcloud APIG CreateApiGroupV2 --instance_id=<id> --name=<group-name>
+
+# 4. Create DEDICATEDGATEWAY trigger (see references/triggers.md)
+
+# 5. Publish the API (after trigger creation)
+hcloud APIG BatchPublishOrOfflineApiV2 \
+  --instance_id=<apig-instance-id> \
+  --action=online \
+  --env_id=<env-id> \
+  --api_ids=<api-id-from-trigger-response>
 ```
 
 If no APIG instance is available, use TIMER trigger for function testing instead.

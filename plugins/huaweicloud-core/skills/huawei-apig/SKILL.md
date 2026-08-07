@@ -1,6 +1,6 @@
 ---
 name: huawei-apig
-description: "Use when creating or managing API Gateway (APIG). Covers API creation, throttling, auth (IAM/APP/basic), CORS, publishing. Triggers: APIG, API gateway, throttling, publish API. NOT for: FunctionGraph triggers."
+description: "Use when creating or managing API Gateway (APIG). Covers API creation, throttling, auth (IAM/APP/basic), CORS, publishing, instance management. Triggers: APIG, API gateway, throttling, publish API. NOT for: FunctionGraph triggers (use huawei-functiongraph)."
 version: 1
 ---
 
@@ -8,17 +8,131 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+## Overview
+
+Domain expertise for Huawei Cloud API Gateway (APIG). Covers instance lifecycle, API group/API creation, publishing, and FunctionGraph trigger integration.
+
+Always discover parameters with `hcloud APIG <Operation> --help` before executing.
+
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
 | API group region-locked | Cannot move across regions |
 | Throttling per-API default | Use app-level quotas for per-user limits |
 | CORS must be explicit | OPTIONS preflight fails until configured |
+| `BASIC` spec has no public IP | Use `PROFESSIONAL` + `elb` provider for public access |
+| Instance creation takes 5-15min | Long-running async operation, poll with `ListInstancesV2` |
+
+## Instance Management
+
+### Check Existing Instances
+
+```bash
+hcloud APIG ListInstancesV2 --cli-region=<r>
+```
+
+### Create Instance
+
+```bash
+hcloud APIG CreateInstanceV2 --help
+```
+
+Key gotchas when creating:
+
+| Param | Note |
+|-------|------|
+| `--spec_id` | `BASIC` (no public access), `PROFESSIONAL` (requires `--loadbalancer_provider`) |
+| `--loadbalancer_provider` | `elb` for public access (supports `AddIngressEipV2`), `lvs` for internal only (supports `AddEipV2`) |
+| `--enterprise_project_id` | **Required** for enterprise accounts. Use `"0"` for default project |
+| `--available_zone_ids` | Use AZ code like `ap-southeast-3a`, NOT UUID from `ListAvailableZonesV2` |
+| `--vpc_id`, `--subnet_id` | Must exist in the target region |
+
+### Add Public Access (ELB Provider Only)
+
+```bash
+hcloud APIG AddIngressEipV2 \
+  --instance_id=<id> \
+  --eip_id=<eip-id> \
+  --bandwidth_size=5
+```
+
+> `AddIngressEipV2` only works with `elb` provider. `AddEipV2` requires `lvs` provider. Bandwidth minimum is 5 Mbps.
+
+## API Group
+
+```bash
+hcloud APIG CreateApiGroupV2 --instance_id=<id> --name=<n>
+```
+
+| Param | Note |
+|-------|------|
+| `--name` | Group name (required) |
+| `--remark` | Description (optional) |
+
+## API Management
+
+```bash
+hcloud APIG CreateApiV2 --help
+```
+
+## Publishing
+
+```bash
+hcloud APIG BatchPublishOrOfflineApiV2 \
+  --instance_id=<id> \
+  --action=online \
+  --env_id=<env-id> \
+  --api_ids=<api-id>
+```
+
+> The operation is `BatchPublishOrOfflineApiV2`, NOT `PublishApiV2`.
+
+## Throttling
+
+```bash
+hcloud APIG CreateThrottlingPolicyV2 --name=<n> --api_call_limits=1000
+```
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| Create group | hcloud APIG CreateApiGroupV2 --name=<n> |
-| Create API | hcloud APIG CreateApiV2 --group_id=<id> --name=<n> --req_uri=/path --req_method=GET |
-| Set throttle | hcloud APIG CreateThrottlingPolicyV2 --name=<n> --api_call_limits=1000 |
-| Publish | hcloud APIG PublishApiV2 --api_id=<id> --env_id=<env> |
+
+| Task | Operation |
+|------|-----------|
+| List instances | `ListInstancesV2` |
+| Create instance | `CreateInstanceV2` |
+| Delete instance | `DeleteInstancesV2` |
+| Add public EIP | `AddIngressEipV2` |
+| Create API group | `CreateApiGroupV2` |
+| Create API | `CreateApiV2` |
+| Publish | `BatchPublishOrOfflineApiV2` |
+| List APIs | `ListApisV2` |
+
+## FunctionGraph Integration
+
+To expose a FunctionGraph function via HTTP, you need the complete chain:
+
+```
+APIG Instance → API Group → DEDICATEDGATEWAY Trigger → Publish
+```
+
+After the trigger is created on FunctionGraph side, publish the API in APIG:
+
+```bash
+hcloud APIG BatchPublishOrOfflineApiV2 \
+  --instance_id=<apig-instance-id> \
+  --action=online \
+  --env_id=<env-id> \
+  --api_ids=<api-id-from-trigger>
+```
+
+See `huawei-functiongraph` skill → `references/deploy-workflow.md` for the full end-to-end workflow.
+
+## Cross-Skill References
+
+- **VPC setup**: See `huawei-vpc` for VPC, subnet, security group creation
+- **EIP setup**: See `huawei-vpc` for EIP creation and binding
+- **FunctionGraph**: See `huawei-functiongraph` for DEDICATEDGATEWAY trigger creation
+
+## References
+
+- APIG Docs: https://support.huaweicloud.com/apig/
