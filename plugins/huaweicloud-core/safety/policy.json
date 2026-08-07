@@ -60,7 +60,11 @@
                                     "Install",
                                     "Publish",
                                     "Bind",
-                                    "Unbind"
+                                    "Unbind",
+                                    "Invoke",
+                                    "Execute",
+                                    "Trigger",
+                                    "Deploy"
                                ],
     "readOperationPrefixes":  [
                                   "List",
