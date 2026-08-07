@@ -94,5 +94,10 @@ Policy vocabulary lives in `plugins/huaweicloud-core/safety/policy.json`. Both `
 - Codex manifest (`plugin.json`) must NOT include a `hooks` field — it fails schema validation.
 - Skills are compact routing workflows, not service docs. Do not copy Huawei Cloud documentation into them. Point to `support.huaweicloud.com` instead.
 - For complex params (nested objects, arrays with special characters), prefer `--cli-jsonInput=<file>` over inline quoting to avoid shell escaping traps.
+- `HCLOUD_BIN` must be respected consistently across ALL tools and scripts (check_cli, doctor, runHcloud, etc.). Use `process.env.HCLOUD_BIN || 'hcloud'` everywhere, never hardcode `'hcloud'`.
+- OBS via KooCLI uses obsutil-style commands: `hcloud OBS help` (not `--help`), subcommands like `mb`/`cp`/`rm`/`chattri`. Always use `-f` to avoid interactive prompts that hang agents.
+- Bucket ACL does NOT cascade to objects. For static websites, set both bucket-level AND object-level `-acl=public-read`.
+- `InvokeFunction` / `Execute` / `Trigger` / `Deploy` operations are classified as write (require approval) — they have execution side effects even without data mutation.
+- Codex plugin marketplace name is read from `.agents/plugins/marketplace.json`. `getMarketplaceName()` must match, never hardcode.
 - OpenCode integration lives in `integrations/opencode/` (separate from the plugin).
 - Node >= 20 required, ESM only.
