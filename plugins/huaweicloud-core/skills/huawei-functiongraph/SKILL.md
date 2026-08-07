@@ -27,6 +27,9 @@ Domain expertise for Huawei Cloud FunctionGraph. Covers function lifecycle, code
 | Cold start 100ms-2s | Reserve concurrency for latency-sensitive workloads |
 | Max execution 900s | Use ECS/CCE for long-running tasks |
 | Env vars plaintext | Use DEW for secrets |
+| **ZIP upload is unreliable** | `CreateFunction --code_type=zip --code_filename=xxx.zip` succeeds even with a nonexistent file — the function is created with empty code. Prefer `code_type=inline` for simple functions. If using zip, verify `code_size` > placeholder after creation and run `InvokeFunction` to confirm output. |
+| **DeleteFunction strip `:latest`** | Passing `urn:fss:...:function:xxx:latest` causes FSS.0400. Strip the `:latest` suffix. |
+| **DeleteFunctionTrigger does NOT cascade** | Deleting a DEDICATEDGATEWAY trigger leaves the API in APIG. Manually clean up: `hcloud APIG DeleteApiV2 --instance_id=<id> --api_id=<api-id>`. |
 
 ## Prerequisites
 

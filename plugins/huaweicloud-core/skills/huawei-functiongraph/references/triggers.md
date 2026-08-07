@@ -54,7 +54,14 @@ These are labeled optional by `--help` but are **required** for DEDICATEDGATEWAY
 | `--event_data.env_id` | API environment ID |
 | `--event_data.instance_id` | APIG dedicated instance ID |
 | `--event_data.group_id` | API group ID |
-| `--event_data.name` | API name (regex: no hyphens) |
+| `--event_data.name` | API name — **hyphens (`-`) are DISALLOWED**. Use underscores (`_`) instead. |
+
+### Error Mapping
+
+| Error | Root Cause → Fix |
+|-------|-----------------|
+| FSS.1417 | Missing `instance_id`, `group_id`, `protocol`, `env_name`, or `env_id`. These are labeled optional but REQUIRED. |
+| API name regex fail | Rename API — remove hyphens (`-`), use `[a-zA-Z0-9_]+` only. |
 
 ### Example
 
