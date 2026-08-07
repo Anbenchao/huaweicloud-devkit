@@ -421,6 +421,9 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
     VPC: {
       'VPC.0301': 'Bandwidth name is required for PER type EIPs, even though --help marks it optional.',
     },
+    APIGW: {
+      'APIGW.0802': 'The current IAM user has no permissions in the requested region. Go to IAM console → Users → Permissions → add the target region, or switch to a different region.',
+    },
   };
   if (hwErrorPatterns[service] && hwErrorPatterns[service][errorCode]) {
     suggestions.push(hwErrorPatterns[service][errorCode]);
@@ -438,6 +441,9 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
     } else {
       suggestions.push('Check KooCLI profile, region, project_id, and IAM permissions without printing secrets.');
     }
+  }
+  if (/APIGW\.(\d+)/i.test(errorCode)) {
+    suggestions.push('APIGW.' + (errorCode.match(/APIGW\.(\d+)/i) || [])[1] + ': API Gateway layer error. ' + (errorCode === 'APIGW.0802' ? 'IAM user has no region permissions — check IAM console → User → Permissions → add target region.' : 'Verify the API request, region endpoint, and IAM permissions.'));
   }
   if (/region|endpoint|project/i.test(combined)) {
     suggestions.push('Confirm the service endpoint, region, and project_id match the target resource.');
