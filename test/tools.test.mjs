@@ -56,7 +56,8 @@ test('TOOL_DEFINITIONS includes all 12 required tools', () => {
   for (const name of required) {
     assert.ok(names.includes(name), `Missing tool: ${name}`);
   }
-  assert.equal(names.length, 12);
+  assert.ok(names.length >= 12);
+  assert.ok(names.includes('huaweicloud_search_marketplace'), 'Should have marketplace search tool');
 });
 
 test('TOOL_DEFINITIONS expose cwd parameter on run tools', () => {

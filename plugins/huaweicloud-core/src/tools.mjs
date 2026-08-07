@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir, platform } from 'node:os';
+import { searchMarketplace } from './search-market.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
@@ -209,6 +210,17 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_search_marketplace',
+    description: 'Search the Huawei Cloud agent skill marketplace for available skills. Returns scored results with names, categories, and descriptions. Use when built-in skills are insufficient or the user asks what skills exist.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query across skill name, description, triggers, and service.' },
+        category: { type: 'string', description: 'Optional category filter: computing, storage, network, security, devtools, monitoring, etc.' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -241,6 +253,8 @@ export async function callTool(name, args = {}) {
       return getRegionalAvailability(args.service || '', args.region || '');
         case 'huaweicloud_explain_error':
       return explainError(args);
+    case 'huaweicloud_search_marketplace':
+      return searchMarketplace(args.query || '', args.category || '');
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -374,7 +388,7 @@ function serviceCatalog(intent = '') {
     { keywords: ['cbr', 'backup', 'restore', 'vault', 'snapshot'], skills: ['huawei-cbr'], services: ['CBR'] },
     { keywords: ['deployment', 'deploy', 'ci/cd', 'pipeline', 'release'], skills: ['huawei-deployment'], services: ['CloudDeploy'] },
     { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
-  ];
+];
   const matched = [];
   const tokens = it.split(/[\s,./-]+/).filter((t) => t.length > 0);
   for (const route of routeMap) {
