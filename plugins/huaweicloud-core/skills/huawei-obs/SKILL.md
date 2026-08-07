@@ -42,11 +42,15 @@ Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/ob
 
 ## OBS Credential Setup (Required Before First Use)
 
-KooCLI OBS uses a separate config file (`~/.obsutilconfig`), NOT `~/.hcloud/config.json`. Run once outside agent chat:
+KooCLI OBS uses a separate config file (`~/.obsutilconfig`), NOT `~/.hcloud/config.json`. Use the **same AK/SK** that you configured for hcloud. Run once outside agent chat:
 
 ```bash
+# Preferred: interactive (safe, no AK/SK in shell history)
 hcloud OBS config -i
 # Follow prompts: AK, SK, endpoint (e.g. obs.cn-north-4.myhuaweicloud.com)
+
+# Alternative: non-interactive (use with caution — AK/SK in shell history)
+hcloud OBS config -e=<endpoint> -i=<AK> -k=<SK>
 ```
 
 ## Common Workflows
