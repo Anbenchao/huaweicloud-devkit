@@ -7,7 +7,23 @@ hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
 
 ## 3. Find image
-hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=未注册
+
+List available images for standard ECS (exclude BareMetal / Ironic):
+hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=未注册 --virtual_env_type=FusionCompute --__support_amd=true --limit=50
+
+Filtering explained:
+- `--__imagetype=gold`: public marketplace images
+- `--virtual_env_type=FusionCompute`: standard ECS hypervisor (this excludes Ironic/BareMetal images)
+- `--__support_amd=true`: AMD-compatible images (use `--__support_xen=true` for older Xen-based flavors)
+- If `ListImages` returns no results, try `kvm` or omit `virtual_env_type` and check the `virtual_env_type` field in output to filter client-side
+
+Select an image whose `__support_*` flags match the chosen flavor's virtualization type. Verify compatibility:
+- From ListFlavors output, look for `os_extra_specs` or `cond:image` field on the chosen flavor
+- Cross-check flavor's required image properties against the image's `__support_amd`, `__support_xen`, `__support_kvm` flags
+
+## 3b. Alternative: find image by ID
+hcloud IMS GlanceShowImage --image_id=<image-id> --cli-region=<region>
+Use this to inspect a specific known image's properties before creating.
 
 ## 4. Verify VPC/subnet
 hcloud VPC ListVpcs --cli-region=<region>

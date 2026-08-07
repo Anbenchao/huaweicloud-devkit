@@ -229,12 +229,17 @@ export async function runVersionCheck(options = {}) {
     ...options,
     maxRetries: options.maxRetries ?? 0,
   });
+  const errorText = result.error || result.stderr || '';
+  const isSpawnError = /ENOENT|SPAWN_ERROR/i.test(errorText) || result.code === 'SPAWN_ERROR';
   return {
     installed: result.ok,
-    output: result.ok ? result.stdout : result.error || result.stderr,
+    errorCode: isSpawnError ? 'HCLOUD_NOT_FOUND' : undefined,
+    output: result.ok ? result.stdout : errorText,
     nextStep: result.ok
       ? 'Use huaweicloud_show_profile_redacted to inspect the active KooCLI profile safely.'
-      : 'Install Huawei Cloud KooCLI from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html. If hcloud is not on PATH, set HCLOUD_BIN to the hcloud executable path. Configure credentials outside the agent conversation.',
+      : isSpawnError
+        ? 'hcloud executable not found. If hcloud is already installed, set the HCLOUD_BIN environment variable to the full path of hcloud (e.g., C:\\Users\\sunzy\\hcloud\\hcloud.exe on Windows, or /usr/local/bin/hcloud on Linux/macOS). Then restart the agent session. Otherwise, install KooCLI from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html.'
+        : 'Install Huawei Cloud KooCLI from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html. If hcloud is not on PATH, set HCLOUD_BIN to the hcloud executable path. Configure credentials outside the agent conversation.',
   };
 }
 
