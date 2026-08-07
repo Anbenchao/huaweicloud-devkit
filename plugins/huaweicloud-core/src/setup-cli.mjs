@@ -413,7 +413,7 @@ async function cmdDoctor() {
     console.log(`    Version: ${ver}`);
 
     // Check auth
-    const authCheck = spawnSync('hcloud configure list', [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
+    const authCheck = spawnSync(`"${hcloudBin}" configure list`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
     const hasAuth = authCheck.status === 0 && /access.?key/i.test(authCheck.stdout.toString());
     check('hcloud credentials configured', hasAuth, 'Run: hcloud configure init');
   }
