@@ -14,6 +14,16 @@ Always run `hcloud ModelArts <Operation> --help` before constructing commands to
 
 Domain expertise for ModelArts. Covers training jobs, model deployment, notebook instances, and OBS integration.
 
+## Critical Warnings
+
+| Trap | Why |
+|------|-----|
+| OBS bucket required | All training data, model outputs, and notebook storage use OBS. Create bucket first |
+| Training charges by duration | Pay-per-minute GPU/CPU billing. Stop unused notebooks and services |
+| Notebook auto-stop needed | Default no auto-stop — can run indefinitely and incur charges |
+| Model deployment needs quota | Online services may require service quota approval in new accounts |
+| Training job output must be OBS | Local output not supported. Ensure `--output_path` is a valid OBS path |
+
 ## Prerequisites
 
 - Training data must be stored in an OBS bucket (see `huawei-obs`)

@@ -14,6 +14,16 @@ Always run `hcloud CES <Operation> --help` before constructing commands to disco
 
 Domain expertise for Cloud Eye (CES). Covers metric queries, alarm rules, dashboards, and monitoring agent management.
 
+## Critical Warnings
+
+| Trap | Why |
+|------|-----|
+| Telescope agent required for detailed metrics | Without agent: only basic CPU/network metrics. Memory, disk require agent installation on ECS |
+| Alarm needs SMN topic first | Alarm notifications fail silently without a configured SMN topic |
+| Cost metrics incur charges | Custom metrics and high-frequency alarms have billing implications |
+| CES endpoint may vary by region | Some older regions use different endpoint URLs. Check `https://developer.huaweicloud.com/endpoint?CES` |
+| Metric granularity minimum 300s | Free tier has 5-minute minimum. Higher resolution requires paid tier |
+
 ## Prerequisites
 
 - ECS instances need the **Telescope agent** installed for detailed metrics (memory, disk, network)

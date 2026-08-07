@@ -16,7 +16,7 @@ Domain expertise for SMN (Simple Message Notification) and DMS (Distributed Mess
 
 ## SMN
 
-### Critical Warnings
+## Critical Warnings
 
 | Trap | Why |
 |------|-----|
