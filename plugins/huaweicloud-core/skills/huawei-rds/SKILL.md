@@ -13,89 +13,161 @@ Always run `hcloud RDS <Operation> --help` before constructing commands to disco
 ## Prerequisites
 
 Before creating an RDS instance, you MUST have:
-- A VPC and subnet (see `huawei-vpc` skill)
-- A security group with database port open (MySQL=3306, PostgreSQL=5432)
+- A VPC and subnet (see `huawei-vpc`)
+- A security group with database port open (MySQL=3306, PostgreSQL=5432, SQL Server=1433)
 - Run `hcloud RDS ListFlavors --database_name=<engine> --cli-region=<r>` to get spec codes
+
+## KooCLI Command Format
+
+```
+hcloud RDS <Operation> --cli-region=<region> [--key=value ...]
+```
+
+| Rule | Detail |
+|------|--------|
+| Service name | `RDS` (uppercase) |
+| Operation | PascalCase: `ListInstances`, `CreateManualBackup` |
+| Params | `--key=value` format. JSON params: `--key='{"k":"v"}'` |
+| Array params | 1-based: `--instance_ids.1=xxx` |
+| Password param | Conflicts with KooCLI system param; pipe `echo \|` to bypass |
 
 ## Critical Warnings
 
 | Trap | Why |
 |------|-----|
 | Engine version immutable | Cannot change MySQL to PostgreSQL in-place |
-| Automated backups use OBS | Backup storage incurs separate charges |
-| Storage auto-scaling off by default | Enable before storage runs out |
-| `--password` conflicts with KooCLI system param | Non-interactive needs `echo b \| hcloud RDS CreateInstance ...` |
-| Volume type must match flavor group | General flavor→CLOUDSSD; Dedicated→CLOUDSSD/ESSD; ARM→ULTRAHIGH |
+| Automated backups use OBS | Backup storage incurs separate charges. Set retention period explicitly |
+| Storage auto-scaling off by default | Enable before storage runs out or instance goes read-only |
+| `--password` conflicts with KooCLI | Non-interactive needs `echo \| hcloud RDS CreateInstance ...` |
+| Volume type must match flavor | General→CLOUDSSD; Dedicated→CLOUDSSD\|ESSD; ARM→ULTRAHIGH |
+| Flavor not in region | Always `ListFlavors` first. Spec codes vary by region |
+| Restore creates new instance | No in-place restore. Verify target flavor before restoring |
 
-## Common Workflows
+## Instance Management
 
-| Task | Operation |
-|------|-----------|
-| List flavors | `ListFlavors --database_name=<engine>` |
-| Create instance | `CreateInstance` — see below for required params |
-| List instances | `ListInstances` (get status + connection info) |
-| Create backup | `CreateManualBackup` |
-| Create read replica | `CreateReadReplica` |
-| Delete instance | `DeleteInstance` |
+### List
+```bash
+hcloud RDS ListInstances --cli-region=<r>
+hcloud RDS ListFlavors --database_name=<engine> --cli-region=<r>
+hcloud RDS ListDatastores --database_name=<engine> --cli-region=<r>
+hcloud RDS ListEngineFlavors --instance_id=<id> --cli-region=<r>
+```
 
-## Create Instance — Gotchas
+### Create Instance
+```bash
+hcloud RDS CreateInstance --cli-region=<r> \
+  --name=<name> \
+  --datastore='{"type":"MySQL","version":"8.0"}' \
+  --flavor_ref=<flavor-id> \
+  --volume='{"type":"CLOUDSSD","size":100}' \
+  --vpc_id=<vpc-id> \
+  --subnet_id=<subnet-id> \
+  --security_group_id=<sg-id> \
+  --availability_zone=<az> \
+  --password=<pw>
+```
 
-Always run `hcloud RDS CreateInstance --help` first. Key traps:
+| Param | Required | Note |
+|-------|----------|------|
+| `--name` | Yes | Instance name |
+| `--datastore` | Yes | Engine type and version as JSON |
+| `--flavor_ref` | Yes | From `ListFlavors` output |
+| `--volume` | Yes | Type matching: General→CLOUDSSD, Dedicated→CLOUDSSD\|ESSD, ARM→ULTRAHIGH |
+| `--vpc_id` | Yes | Must exist in target region |
+| `--subnet_id` | Yes | Must exist in target region |
+| `--security_group_id` | Yes | Must have DB port open |
+| `--availability_zone` | Yes | Use AZ code from `NovaListAvailabilityZones` |
+| `--password` | Yes | 8-32 chars, uppercase+lowercase+digit+special |
+| `--port` | No | Default 3306 (MySQL) / 5432 (PG) / 1433 (SQL Server) |
 
-| Param | Note |
-|-------|------|
-| `--password` | Conflicts with KooCLI system param. Pipe `echo b \|` to bypass |
-| `--volume.type` | General=CLOUDSSD, Dedicated=CLOUDSSD\|ESSD, ARM=ULTRAHIGH |
-| `--vpc_id`, `--subnet_id` | Required. Must exist in target region |
-| `--security_group_id` | Required. Must have DB port open |
-| `--availability_zone` | Required |
+### Modify / Resize
+```bash
+hcloud RDS StartInstanceRestartAction --instance_id=<id> --cli-region=<r>
+hcloud RDS StartResizeFlavorAction --instance_id=<id> --flavor_ref=<new-id> --cli-region=<r>
+hcloud RDS StartInstanceEnlargeVolumeAction --instance_id=<id> --volume_size=<gb> --cli-region=<r>
+hcloud RDS StartFailover --instance_id=<id> --cli-region=<r>
+hcloud RDS UpdateInstanceAlias --instance_id=<id> --alias=<new-name> --cli-region=<r>
+```
 
-## Connecting to RDS
+### Delete
+```bash
+hcloud RDS DeleteInstance --instance_id=<id> --cli-region=<r>
+```
 
-After the instance is ACTIVE, connect using a database client:
+## Backup & Recovery
 
 ```bash
-# Get connection info
-hcloud RDS ListInstances --cli-region=<r>
-# → private_ips + port
+hcloud RDS ShowBackupPolicy --instance_id=<id> --cli-region=<r>
+hcloud RDS SetBackupPolicy --instance_id=<id> --backup_policy='{"keep_days":7,"period":"1,2,3,4,5,6,7","start_time":"00:00-01:00"}' --cli-region=<r>
+hcloud RDS ListBackups --instance_id=<id> --cli-region=<r>
+hcloud RDS CreateManualBackup --instance_id=<id> --name=<name> --cli-region=<r>
+hcloud RDS ShowRecoveryTimeWindow --instance_id=<id> --cli-region=<r>
+hcloud RDS CreateRestoreInstance --instance_id=<id> --backup_id=<id> --name=<new-name> --flavor_ref=<id> --cli-region=<r>
+```
 
-# Install MySQL client
-apt install mysql-client   # Linux
-# or: choco install mysql-cli  # Windows
+> Manual backup deletion is irreversible. Verify backup ID before deleting.
 
-# Connect (use SSL)
+## Read Replicas
+
+```bash
+hcloud RDS CreateReadReplica --replica_of_id=<primary-id> --name=<name> --flavor_ref=<id> --volume='{"type":"CLOUDSSD","size":100}' --cli-region=<r>
+```
+
+## Fault Diagnosis
+
+```bash
+hcloud RDS ListErrorLogs --instance_id=<id> --start_date=2024-01-01T00:00:00Z --end_date=2024-01-31T23:59:59Z --cli-region=<r>
+hcloud RDS ListSlowLogs --instance_id=<id> --start_date=... --end_date=... --cli-region=<r>
+hcloud RDS ShowReplicationStatus --instance_id=<id> --cli-region=<r>
+hcloud RDS ListInstanceDiagnosis --cli-region=<r>
+```
+
+## Connecting
+
+```bash
+hcloud RDS ListInstances --cli-region=<r>  # get private_ips + port
 mysql -h <private_ip> -P 3306 -u root -p --ssl-mode=REQUIRED
+psql -h <private_ip> -p 5432 -U root -d postgres
 ```
 
-## Database Operations
+> hcloud does NOT support SQL execution. Use a database client.
+> For public access, bind an EIP (see `huawei-vpc`).
 
-RDS instance is running, but **hcloud does NOT support SQL execution**. Use a database client:
+## Mutating Operations (Require Approval)
 
-```sql
-CREATE DATABASE mydb;
-USE mydb;
-CREATE TABLE employee (name VARCHAR(100), age INT);
-INSERT INTO employee VALUES ('Alice', 30);
-SELECT * FROM employee;
-```
+| Operation | Effect |
+|-----------|--------|
+| `CreateInstance` | New instance (billing starts) |
+| `DeleteInstance` | Irreversible data loss |
+| `StartResizeFlavorAction` | Brief interruption during switchover |
+| `StartInstanceEnlargeVolumeAction` | Online, but irreversible |
+| `StartFailover` | Primary-standby switchover |
+| `CreateRestoreInstance` | Creates new instance from backup |
+| `CreateManualBackup` | Incurs OBS storage charges |
+| `DeleteManualBackup` | Irreversible |
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| Connection refused | SG missing port 3306/5432 |
+| Error | Root Cause -> Fix |
+|-------|-------------------|
+| Connection refused | SG missing DB port. Add ingress rule |
 | Storage full | Manual resize or enable auto-scaling |
-| DBS.280241 Invalid storage type | Volume type doesn't match flavor group — check matching table above |
-| DBS.280448 Sold out | Try different volume type |
-| --password interactive prompt | Pipe `echo b \|` before command to select API parameter |
+| DBS.280241 Invalid storage type | Volume type doesn't match flavor group |
+| DBS.280448 Sold out | Try different volume type or AZ |
+| Replication lag | Check `ShowReplicationStatus`. Consider read replica |
+| Instance stuck BUILDING | Check task status: `hcloud RDS ListTasks` |
 
 ## Security
 
 - MUST use security groups, not open 0.0.0.0/0
 - MUST enable SSL for connections
-- MUST store passwords in DEW/CSMS
+- MUST store passwords in DEW/CSMS (see `huawei-dew`)
+- SHOULD enable audit logs for compliance
+- SHOULD set backup policy with >= 7 day retention
 
 ## Cross-Skill References
 
-- **VPC/Subnet/Security Group**: See `huawei-vpc`
-- **DEW secrets**: See `huawei-dew`
+- VPC/Subnet/Security Group: `huawei-vpc`
+- DEW secrets: `huawei-dew`
+- EIP for public access: `huawei-vpc`
+- OBS for backup storage: `huawei-obs`
