@@ -20,8 +20,8 @@ npm run build                  # outputs to dist/
 # 2. Create bucket in target region
 hcloud OBS mb obs://my-static-site -location=cn-north-4
 
-# 3. Upload entire build directory (recursive)
-hcloud OBS cp dist/ obs://my-static-site/ -r
+# 3. Upload entire build directory (recursive, force, flatten)
+hcloud OBS cp dist/ obs://my-static-site/ -r -f -flat
 
 # 4. Set bucket to public-read
 hcloud OBS chattri obs://my-static-site -acl=public-read
@@ -47,3 +47,5 @@ curl http://my-static-site.obs-website.cn-north-4.myhuaweicloud.com
 - **Region matters**: Website endpoint depends on bucket region. `obs-website.<region>.myhuaweicloud.com`.
 - **Index.html routing**: For SPA apps (Vue Router, React Router), set `ErrorDocument` to `index.html` as well.
 - **Cache invalidation**: New uploads don't clear CDN cache. Add `?v=<timestamp>` to asset references or use OBS versioning.
+- **Always use `-f`**: Without `-f`, obsutil prompts "Please input (y/n)" on large uploads — Agent hangs (TIMEOUT).
+- **Use `-flat` for root files**: Without `-flat`, `dist/` becomes `bucket/dist/` prefix. Static sites need files at bucket root.

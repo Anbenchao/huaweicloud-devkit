@@ -37,7 +37,8 @@ Domain expertise for Huawei Cloud Object Storage Service (OBS). Covers bucket/ob
 | OBS uses AK/SK directly | NOT IAM tokens. Auth errors mean check AK/SK validity |
 | Static website via CLI missing | KooCLI OBS lacks website config. Use REST API or console |
 | **OBS needs separate cred config** | `hcloud configure` is NOT enough for OBS. Run `hcloud OBS config -i` (interactive) to create `~/.obsutilconfig`. This must be done OUTSIDE agent chat. |
-| **Directory upload adds prefix** | `hcloud OBS cp <dir>/ obs://bucket/ -r` puts files under `bucket/<dir>/...`. To upload contents directly, rename `<dir>` to target prefix name first, or use `-dryRun` to preview keys before uploading. |
+| **obsutil interactive prompts** | `cp`/`rm` without `-f` causes "Please input (y/n)" → Agent hangs (TIMEOUT). Always use `-f` for non-interactive. |
+| **Directory upload adds prefix** | `cp <dir>/ obs://<bucket>/ -r` puts files under `bucket/<dir>/...`. Use `-flat` for root-level files (static sites). Preview with `-dryRun` first. |
 
 ## OBS Credential Setup (Required Before First Use)
 
@@ -55,7 +56,7 @@ hcloud OBS config -i
 | Create bucket | `hcloud OBS mb obs://<bucket> -location=<region>` |
 | List buckets/objects | `hcloud OBS ls [obs://<bucket>]` |
 | Upload file | `hcloud OBS cp <file> obs://<bucket>/<key>` |
-| Upload directory (recursive) | `hcloud OBS cp <dir>/ obs://<bucket>/ -r` |
+| Upload directory (recursive) | `hcloud OBS cp <dir>/ obs://<bucket>/ -r -f -flat` |
 | Download object | `hcloud OBS cp obs://<bucket>/<key> <local-path>` |
 | Set public-read ACL | `hcloud OBS chattri obs://<bucket> -acl=public-read` |
 | Set lifecycle | `hcloud OBS lifecycle obs://<bucket> -method=put -localfile=<json>` |
