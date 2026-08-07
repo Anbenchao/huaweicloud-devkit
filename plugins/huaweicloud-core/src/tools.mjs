@@ -292,6 +292,19 @@ async function showProfileRedacted(profile) {
   };
 }
 
+const SERVICE_EXAMPLES = {
+  ECS: { list: 'ECS ListServersDetails', create: 'ECS CreateServers', show: 'IMS GlanceShowImage' },
+  VPC: { list: 'VPC ListVpcs', create: 'VPC CreateVpc', show: 'VPC ShowVpc' },
+  FunctionGraph: { list: 'FunctionGraph ListFunctions', create: 'FunctionGraph CreateFunction', show: 'FunctionGraph ShowFunctionConfig' },
+  APIG: { list: 'APIG ListInstancesV2', create: 'APIG CreateInstanceV2', show: 'APIG ShowDetailsOfInstanceV2' },
+  OBS: { list: 'OBS ls', create: 'OBS mb obs://<bucket>', show: 'OBS stat obs://<bucket>/<key>' },
+  RDS: { list: 'RDS ListInstances', create: 'RDS CreateInstance', show: 'RDS ShowInstance' },
+  CES: { list: 'CES ListAlarms', create: 'CES CreateAlarm', show: 'CES ListMetrics' },
+  GaussDB: { list: 'GaussDB ListInstances', create: 'GaussDB CreateInstance', show: 'GaussDB ShowInstance' },
+  DDS: { list: 'DDS ListInstances', create: 'DDS CreateInstance', show: 'DDS ShowInstance' },
+  DCS: { list: 'DCS ListInstances', create: 'DCS CreateInstance', show: 'DCS ShowInstance' },
+};
+
 async function listOperations(service, options = {}) {
   const serviceName = String(service || '').trim();
   if (!/^[A-Za-z][A-Za-z0-9-]{1,63}$/.test(serviceName)) {
@@ -314,11 +327,7 @@ async function listOperations(service, options = {}) {
     service: serviceName,
     command: isObs ? 'hcloud obs help' : `hcloud ${svc} --help`,
     selectionRule: 'Use this help text to select the exact KooCLI operation name before planning any service command.',
-    examples: {
-      listEcsInstances: 'ECS ListServersDetails',
-      createEcsInstance: 'ECS CreateServers',
-      showImage: 'IMS GlanceShowImage',
-    },
+    examples: SERVICE_EXAMPLES[serviceName.toUpperCase()] || { note: `No cached examples for ${serviceName}. Use the help text above to discover available operations.` },
     result,
   };
 }
@@ -367,8 +376,9 @@ function serviceCatalog(intent = '') {
     { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
   ];
   const matched = [];
+  const tokens = it.split(/[\s,./-]+/).filter((t) => t.length > 0);
   for (const route of routeMap) {
-    if (route.keywords.some((kw) => it.includes(kw))) {
+    if (route.keywords.some((kw) => tokens.includes(kw))) {
       matched.push(route);
     }
   }
@@ -403,6 +413,12 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
   const suggestions = [];
   const svc = String(service).toLowerCase();
 
+  const SERVICE_ALIASES = {
+    'functiongraph': 'FSS',
+    'fgs': 'FSS',
+  };
+  const patternKey = SERVICE_ALIASES[svc] || service;
+
   const hwErrorPatterns = {
     OBS: {
       'InvalidAccessKeyId': 'OBS uses AK/SK directly (not IAM tokens). Verify AK/SK validity, OBS endpoint, and OBS permissions.',
@@ -425,10 +441,10 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
       'APIGW.0802': 'The current IAM user has no permissions in the requested region. Go to IAM console → Users → Permissions → add the target region, or switch to a different region.',
     },
   };
-  if (hwErrorPatterns[service] && hwErrorPatterns[service][errorCode]) {
-    suggestions.push(hwErrorPatterns[service][errorCode]);
+  if (hwErrorPatterns[patternKey] && hwErrorPatterns[patternKey][errorCode]) {
+    suggestions.push(hwErrorPatterns[patternKey][errorCode]);
   }
-  const svcPatterns = hwErrorPatterns[service] || {};
+  const svcPatterns = hwErrorPatterns[patternKey] || {};
   for (const [code, tip] of Object.entries(svcPatterns)) {
     if (errorCode && code.includes(errorCode)) {
       if (!suggestions.includes(tip)) suggestions.push(tip);
@@ -466,11 +482,16 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
     suggestions.push('Provide the Request ID (' + requestId + ') when contacting Huawei Cloud support.');
   }
 
+  const uniqueSuggestions = suggestions.filter((s, i, arr) => {
+    return !arr.slice(0, i).some((prev) =>
+      prev.substring(0, 50).toLowerCase() === s.substring(0, 50).toLowerCase());
+  });
+
   return {
     service,
     errorCode,
     requestId,
-    suggestions,
+    suggestions: uniqueSuggestions,
   };
 }
 
@@ -537,7 +558,12 @@ async function retrieveSkill(name) {
   const content = readFileSync(skillPath, 'utf8');
   const references = [];
   const refDir = join(SKILLS_ROOT, skillName, 'references');
-  if (existsSync(refDir)) readdirSync(refDir).forEach((f) => references.push(f));
+  if (existsSync(refDir)) {
+    readdirSync(refDir).forEach((f) => {
+      const refPath = join(refDir, f);
+      references.push({ filename: f, content: readFileSync(refPath, 'utf8').substring(0, 4000) });
+    });
+  }
   const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   let version = 1, description = '';
   if (frontmatter) {
@@ -558,6 +584,18 @@ async function listRegions() {
       ok: false,
       error: result.error || 'Failed to list regions.',
       fallback: 'Check https://developer.huaweicloud.com/endpoint for available regions.',
+      staticRegions: [
+        { id: 'cn-north-1', description: '华北-北京一' },
+        { id: 'cn-north-4', description: '华北-北京四' },
+        { id: 'cn-east-3', description: '华东-上海一' },
+        { id: 'cn-east-2', description: '华东-上海二' },
+        { id: 'cn-south-1', description: '华南-广州' },
+        { id: 'ap-southeast-1', description: '香港' },
+        { id: 'ap-southeast-3', description: '新加坡' },
+        { id: 'ap-southeast-2', description: '曼谷' },
+        { id: 'af-south-1', description: '约翰内斯堡' },
+      ],
+      note: 'hcloud unavailable. Showing static region list. For the complete list, visit the fallback URL.',
     };
   }
   let regions = [];

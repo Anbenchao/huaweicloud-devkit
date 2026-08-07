@@ -13,6 +13,9 @@ export function planHcloudCommand(args, options = {}) {
   const paramValidation = validateRequiredParams(normalizedArgs);
   if (paramValidation.missing.length > 0) {
     warnings.push('Missing required parameters: ' + paramValidation.missing.join(', '));
+    if (paramValidation.hints && paramValidation.hints.length > 0) {
+      warnings.push('Find valid values: ' + paramValidation.hints.join('; '));
+    }
   }
   return {
     executable: 'hcloud',
@@ -188,17 +191,30 @@ const REQUIRED_PARAMS = {
   'FunctionGraph CreateFunction': ['func_name', 'runtime', 'handler', 'memory_size', 'package', 'timeout'],
   'FunctionGraph CreateFunctionTrigger': ['function_urn', 'trigger_type_code'],
   'APIG CreateInstanceV2': ['spec_id'],
-  'OBS CreateBucket': ['bucket'],
+  'OBS mb': ['obs://'],
+  'OBS rm': ['obs://'],
+};
+
+const PARAM_VALUE_HINTS = {
+  'server.flavorRef': 'Run `hcloud ECS ListFlavors --cli-region=<r>` to find valid flavors',
+  'server.imageRef': 'Run `hcloud IMS ListImages --cli-region=<r> --__imagetype=gold` to find valid image IDs',
+  'server.nics.1.subnet_id': 'Run `hcloud VPC ListSubnets --cli-region=<r>` to find subnet IDs',
+  'subnet.vpc_id': 'Run `hcloud VPC ListVpcs --cli-region=<r>` to find VPC IDs',
+  'func_name': 'Function name must be unique within project',
+  'runtime': 'Run `hcloud FunctionGraph ListRuntimes` to see available runtimes',
+  'spec_id': 'APIG spec: BASIC (no public IP) or PROFESSIONAL (requires --loadbalancer_provider)',
+  'obs://': 'Bucket name must be globally unique and DNS-compliant (lowercase, numbers, hyphens only)',
 };
 
 function validateRequiredParams(args) {
-  if (!args || args.length < 2) return { valid: true, missing: [] };
+  if (!args || args.length < 2) return { valid: true, missing: [], hints: [] };
   const key = `${args[0]} ${args[1]}`;
   const required = REQUIRED_PARAMS[key];
-  if (!required) return { valid: true, missing: [] };
+  if (!required) return { valid: true, missing: [], hints: [] };
   const argsStr = args.join(' ');
   const missing = required.filter((param) => !argsStr.includes(param));
-  return { valid: missing.length === 0, missing };
+  const hints = missing.map((param) => PARAM_VALUE_HINTS[param]).filter(Boolean);
+  return { valid: missing.length === 0, missing, hints };
 }
 
 function extractApiError(stdout) {
