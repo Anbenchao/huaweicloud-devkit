@@ -136,3 +136,5 @@ hcloud FunctionGraph CreateFunctionTrigger \
 hcloud FunctionGraph ListFunctionTriggers --function_urn=<urn>
 hcloud FunctionGraph DeleteFunctionTrigger --function_urn=<urn> --trigger_type_code=<type> --trigger_id=<id>
 ```
+
+> Deleting a trigger does NOT cascade-delete the associated APIG API. After `DeleteFunctionTrigger`, also run `hcloud APIG ListApisV2 --instance_id=<id>` and delete orphaned APIs to avoid resource residue.
