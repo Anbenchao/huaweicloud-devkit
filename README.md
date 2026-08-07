@@ -107,7 +107,6 @@ npm run validate
 | huaweicloud-api-and-sdk | API/SDK 应用集成指导 |
 | huaweicloud-safety | 安全策略、审批关卡、写操作边界 |
 | huaweicloud-troubleshooting | 排错诊断工作流 |
-| huawei-cloud-find-skills | 官方技能市场搜索与安装（需 Python 3.6+，联网） |
 
 ### 服务技能
 
