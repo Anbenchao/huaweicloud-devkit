@@ -66,19 +66,23 @@ hcloud RDS CreateInstance --cli-region=<r> \
   --subnet_id=<subnet-id> \
   --security_group_id=<sg-id> \
   --availability_zone=<az> \
+  --charge_info.charge_mode=<mode> \
   --password=<pw>
 ```
+
+> `--password` conflicts with a KooCLI system param. Pipe `echo "b\n" |` before the command or use `--cli-jsonInput` (see Critical Warnings).
 
 | Param | Required | Note |
 |-------|----------|------|
 | `--name` | Yes | Instance name |
-| `--datastore` | Yes | Engine type and version as JSON |
+| `--datastore` | Yes | `--datastore.type=<engine> --datastore.version=<version>` |
 | `--flavor_ref` | Yes | From `ListFlavors` output |
 | `--volume` | Yes | Type matching: General→CLOUDSSD, Dedicated→CLOUDSSD\|ESSD, ARM→ULTRAHIGH |
 | `--vpc_id` | Yes | Must exist in target region |
 | `--subnet_id` | Yes | Must exist in target region |
 | `--security_group_id` | Yes | Must have DB port open |
 | `--availability_zone` | Yes | Use AZ code from `NovaListAvailabilityZones` |
+| `--charge_info` | No | `--charge_info.charge_mode=<mode>`. Default postPaid (pay-per-use). Run `--help` for options |
 | `--password` | Yes | 8-32 chars, uppercase+lowercase+digit+special |
 | `--port` | No | Default 3306 (MySQL) / 5432 (PG) / 1433 (SQL Server) |
 
@@ -158,6 +162,8 @@ psql -h <private_ip> -p 5432 -U root -d postgres
 | DBS.280448 Sold out | Try different volume type or AZ |
 | Replication lag | Check `ShowReplicationStatus`. Consider read replica |
 | Instance stuck BUILDING | Check task status: `hcloud RDS ListTasks` |
+| SYS.0403 | SCP policy denies this operation (e.g. security group rules, EIP binding). See `huawei-vpc` troubleshooting |
+| EIP.7905 | EIP quota exceeded — cannot create new EIP for public access. See `huawei-vpc` troubleshooting |
 
 ## Security
 
