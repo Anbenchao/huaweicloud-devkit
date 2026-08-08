@@ -14,6 +14,15 @@ Always run `hcloud <Service> <Operation> --help` before constructing commands to
 
 Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance lifecycle, flavor selection, image management, networking, storage attachment, auto-scaling, and troubleshooting.
 
+## Prerequisites
+
+Before creating an ECS instance from scratch, you MUST have:
+- A VPC (see `huawei-vpc`)
+- A subnet with DNS configured (see `huawei-vpc`)
+- A security group with application ports open (see `huawei-vpc`)
+
+If these do not exist, load the `huawei-vpc` skill first and create them before returning here.
+
 ## Critical Warnings
 
 | Trap | Why |

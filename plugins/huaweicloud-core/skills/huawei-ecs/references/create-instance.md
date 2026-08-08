@@ -20,9 +20,10 @@ Common image IDs (cn-south-1, verify with region):
 
 Always run ListImages to get the latest image IDs — they change over time.
 
-## 4. Verify VPC/subnet
+## 4. Verify or create VPC/subnet
 hcloud VPC ListVpcs --cli-region=<region>
 hcloud VPC ListSubnets --vpc_id=<vpc-id> --cli-region=<region>
+If no VPC/subnet exists: load `huawei-vpc` skill → create VPC → create subnet (with DNS) → create security group → return here.
 
 ## 5. Create keypair (recommended over adminPass)
 hcloud ECS NovaCreateKeypair --keypair.name=<name>
