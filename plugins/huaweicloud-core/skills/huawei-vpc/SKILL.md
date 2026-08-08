@@ -26,13 +26,14 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | EIP PER type needs `--bandwidth.name` | PER bandwidth requires explicit name; `--help` marks it optional but it's required |
 | **VPC params need nested prefix** | KooCLI 7.x VPC API uses `--vpc.<param>`, `--subnet.<param>`, `--security_group.<param>`. Example: `--vpc.name=xxx` NOT `--name=xxx` |
 | **Security group needs no vpc_id** | VPC v3 API `CreateSecurityGroup` does NOT accept `vpc_id`. Security groups are region-level, not VPC-bound |
+| Subnet DNS empty → ECS no DNS | DNS params (`--subnet.primary_dns`, `--subnet.secondary_dns`) marked optional but empty default breaks cloud-init domain resolution — `yum`/`apt` installs fail silently. Always set both. See `--help` for region-specific DNS IPs |
 
 ## Common Workflows
 
 | Task | Command | Steps |
 |------|---------|-------|
 | Create VPC | hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=<cidr> | CIDR must not conflict with existing VPCs. Run `hcloud VPC ListVpcs` first |
-| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=<cidr> --subnet.gateway_ip=<gw> --subnet.availability_zone=<az> | Subnet CIDR must be a subset of the VPC CIDR |
+| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=<cidr> --subnet.gateway_ip=<gw> --subnet.primary_dns=<dns1> --subnet.secondary_dns=<dns2> --subnet.availability_zone=<az> | Subnet CIDR must be a subset of the VPC CIDR. DNS addresses vary by region — see `hcloud VPC CreateSubnet --help` |
 | Security group | hcloud VPC CreateSecurityGroup --security_group.name=<name> | references/security-group.md |
 | SG rule | hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<id> --security_group_rule.direction=<direction> --security_group_rule.protocol=<protocol> --security_group_rule.multiport=<port> --security_group_rule.remote_ip_prefix=<cidr> | references/security-group.md |
 | Create EIP | hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name> | Run `hcloud EIP CreatePublicip --help` to confirm valid type values per region |
@@ -52,6 +53,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | EIP.7905 | Run `hcloud EIP ListPublicips --cli-region=<r>` first to check current usage |
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
+| ECS cloud-init fails silently (port 80/443 closed) | Subnet likely has no DNS. Check `hcloud VPC ShowSubnet --subnet_id=<id>` → `dnsList` empty? Rebuild subnet with `--subnet.primary_dns=<dns1> --subnet.secondary_dns=<dns2>`. DNS addresses per region: `hcloud VPC CreateSubnet --help` |
 | SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction |
 
 ## Security Considerations
