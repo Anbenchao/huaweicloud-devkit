@@ -20,7 +20,7 @@ const BANNER = `
 
 function configRoot(target = 'opencode') {
   const home = homedir();
-  return platform() === 'win32' ? join(home, '.config', target) : join(home, '.config', target);
+  return join(home, '.config', target);
 }
 
 function opencodeSkillsDir() { return join(configRoot('opencode'), 'skills'); }
@@ -365,6 +365,7 @@ async function cmdUninstall() {
   }
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
+    uninstallCodexDesktop();
     if (!hasCodexCLI()) {
       console.log('  \x1b[33mCodex CLI not found. Run "npm uninstall -g codex" to fully remove.\x1b[0m');
     } else {

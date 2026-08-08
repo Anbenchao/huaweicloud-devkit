@@ -3,16 +3,14 @@ import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir, platform } from 'node:os';
+import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
 function opencodeSkillsDir() {
   const home = homedir();
-  return platform() === 'win32'
-    ? join(home, '.config', 'opencode', 'skills')
-    : join(home, '.config', 'opencode', 'skills');
+  return join(home, '.config', 'opencode', 'skills');
 }
 function resolveSkillsRoot() {
   if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
