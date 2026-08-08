@@ -246,7 +246,9 @@ function extractApiError(stdout) {
 }
 
 export function redactOutput(output) {
-  const text = String(output || '');
+  let text = String(output || '');
+  const bracketIdx = text.indexOf('{');
+  if (bracketIdx > 0) text = text.substring(bracketIdx);
   try {
     return JSON.stringify(redactSecrets(JSON.parse(text)), null, 2);
   } catch {
