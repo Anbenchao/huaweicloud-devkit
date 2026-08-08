@@ -10,8 +10,8 @@ hcloud EVS CreateVolume --help
 ```bash
 hcloud EVS CreateVolume \
   --volume.availability_zone=<az> \
-  --volume.size=40 \
-  --volume.volume_type=SSD \
+  --volume.size=<size> \
+  --volume.volume_type=<type> \
   --volume.name=<name>
 ```
 

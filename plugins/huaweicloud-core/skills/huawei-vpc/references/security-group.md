@@ -22,9 +22,9 @@ Complete example with nested prefix:
 ```bash
 hcloud VPC CreateSecurityGroupRule \
   --security_group_rule.security_group_id=<sg-id> \
-  --security_group_rule.direction=ingress \
-  --security_group_rule.protocol=tcp \
-  --security_group_rule.multiport=22 \
+  --security_group_rule.direction=<direction> \
+  --security_group_rule.protocol=<protocol> \
+  --security_group_rule.multiport=<port> \
   --security_group_rule.remote_ip_prefix=<cidr>
 ```
 
