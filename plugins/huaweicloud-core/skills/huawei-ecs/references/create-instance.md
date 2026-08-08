@@ -37,8 +37,14 @@ Password alternative:
 hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD --server.root_volume.size=40 --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
 
 ## 7. EIP (optional)
-hcloud EIP CreatePublicip --publicip.type=EIP --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
-hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instance_id=<instance-id> --publicip.associate_instance_type=ecs
+hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
+
+# Get the ECS network port ID
+hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
+# → addresses.<vpc-id>[].OS-EXT-IPS:port_id
+
+# Bind EIP via port
+hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT
 
 ## 8. Verify
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
