@@ -52,6 +52,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | EIP.7905 | Run `hcloud EIP ListPublicips --cli-region=<r>` first to check current usage |
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
+| SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction |
 
 ## Security Considerations
 
