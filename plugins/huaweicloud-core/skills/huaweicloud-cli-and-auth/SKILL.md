@@ -65,17 +65,15 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 
 ### Authentication Modes
 
-KooCLI supports multiple authentication modes. Select one based on the environment:
+KooCLI supports multiple authentication modes. **Agent-safe modes are marked ✅; others must be configured by the user outside agent chat.**
 
-| Mode | Scenario | Command |
-|------|----------|---------|
-| **Profile** | Agent sessions, multi-call | `hcloud configure init --cli-profile=<name>` |
-| **Explicit Param** | One-time, CI/CD | `hcloud <Service> <Op> --cli-access-key=<AK> --cli-secret-key=<SK>` |
-| **ECS Agency** | Inside ECS with IAM agency | `hcloud <Service> <Op> --cli-mode=ecsAgency` |
-| **AssumeRole** | Cross-account management | `hcloud <Service> <Op> --cli-agency-domain-id=<id> --cli-agency-name=<name> --cli-source-profile=<src>` |
-| **SSO** | SSO login | `hcloud configure sso` (interactive browser-based) |
-
-Explicit Param mode should NOT pass AK/SK in the agent conversation — the user must run it outside chat.
+| Mode | Agent-Safe | Scenario |
+|------|:----------:|----------|
+| **Profile** | ✅ | `hcloud configure init --cli-profile=<name>` — interactive, recommended for agent sessions |
+| **ECS Agency** | ✅ | `hcloud <Service> <Op> --cli-mode=ecsAgency` — auto-obtains temp credentials from ECS metadata |
+| **Explicit Param** | ❌ | `hcloud <Service> <Op> --cli-access-key=<AK> --cli-secret-key=<SK>` — AK/SK on command line, DO NOT use in agent chat |
+| **AssumeRole** | ❌ | Cross-account delegation — must be pre-configured by user |
+| **SSO** | ❌ | `hcloud configure sso` — requires browser login, user-only |
 
 ## Safe Flow
 
