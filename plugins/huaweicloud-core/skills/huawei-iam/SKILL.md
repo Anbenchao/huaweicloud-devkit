@@ -56,8 +56,10 @@ Domain expertise for Huawei Cloud Identity and Access Management (IAM). Covers u
 | Role | Actions | Resource |
 |------|---------|----------|
 | ECS Reader | ecs:List*, ecs:Get*, ecs:Describe* | * |
-| OBS Bucket Operator | obs:Get*, obs:Put*, obs:Delete*, obs:List* | arn:aws:obs:::my-bucket/* |
-| RDS Backup Operator | rds:CreateBackup, rds:RestoreFromBackup, rds:ListBackup | arn:aws:rds:*:*:db:* |
+| OBS Bucket Operator | obs:Get*, obs:Put*, obs:Delete*, obs:List* | obs:*:*:bucket:my-bucket |
+| RDS Backup Operator | rds:CreateBackup, rds:RestoreFromBackup, rds:ListBackup | rds:* |
+
+> See `references/policy-examples.md` for complete policy JSON templates with conditions.
 
 ## Troubleshooting
 
