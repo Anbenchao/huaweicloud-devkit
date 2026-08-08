@@ -54,4 +54,18 @@ Grant `FunctionGraph FullAccess` role or custom policy.
 | FSS.0400 | `:latest` suffix on URN. Strip it |
 | FSS.1417 | Missing DEDICATEDGATEWAY params |
 | FSS.0403 | Insufficient IAM permission |
+| FSS.1020 | Missing `--app_xrole` when binding VPC. Create IAM agency with `trust_domain_name=functiongraph`. See `huawei-iam` skill → Agencies section |
+
+## VPC + Agency Configuration
+
+To access VPC-internal resources from FunctionGraph:
+
+```bash
+# 1. Create agency (see huawei-iam skill)
+hcloud IAM CreateAgency --agency_name=<name> --trust_domain_name=functiongraph
+# 2. Grant role (e.g., VPC Administrator)
+hcloud IAM GrantRoleToAgency --agency_name=<name> --role_id=<role-id>
+# 3. Use in CreateFunction
+hcloud FunctionGraph CreateFunction --func_vpc.vpc_id=<vpc> --func_vpc.subnet_id=<subnet> --app_xrole=<name> ...
+```
 | QuotaExceeded | Max 10 functions per project per region |
