@@ -68,6 +68,14 @@ function runHcloudOnce(plan, options) {
         ...options.env,
       },
     });
+    if (options.stdin) {
+      if (typeof options.stdin === 'function') {
+        options.stdin(child.stdin);
+      } else {
+        child.stdin.write(String(options.stdin));
+        child.stdin.end();
+      }
+    }
     let stdout = '';
     let stderr = '';
     let timedOut = false;
