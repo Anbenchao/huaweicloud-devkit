@@ -44,7 +44,7 @@ Flavor families are **region-dependent**. Always run `hcloud ECS ListFlavors --c
 | List flavors | hcloud ECS ListFlavors --cli-region=<region> | references/flavors.md |
 | Create instance | hcloud ECS CreateServers --server.name=<n> --server.flavorRef=<id> --server.imageRef=<id> --server.nics.1.subnet_id=<id> --server.availability_zone=<az> | references/create-instance.md |
 | Find by name | See "How to search for instances" below | |
-| Bind EIP | hcloud EIP BindPublicIp --publicip_id=<id> | references/eip.md |
+| Bind EIP | hcloud EIP AssociatePublicips --publicip_id=<id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT | Get port ID from `hcloud ECS ListServersDetails --server_id=<id>` → `OS-EXT-IPS:port_id` |
 | Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=ingress --protocol=tcp | references/sg.md |
 | Attach disk | hcloud EVS AttachVolume --volume_id=<id> --server_id=<id> | references/evs.md |
 | Delete instance | hcloud ECS DeleteServers --servers.1.id=<id> --delete_publicip=true --delete_volume=true | references/create-instance.md |

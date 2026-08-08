@@ -15,12 +15,12 @@ KooCLI 7.x VPC API requires nested prefixes:
 
 ```bash
 # Create EIP (pay-per-use)
-hcloud EIP CreatePublicip --publicip.type=EIP \
+hcloud EIP CreatePublicip --publicip.type=5_bgp \
   --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
 
-# Bind to ECS
+# Bind to ECS (PORT type, not ECS)
 hcloud EIP AssociatePublicips --publicip_id=<id> \
-  --publicip.associate_instance_id=<ecs-id> --publicip.associate_instance_type=ecs
+  --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT
 
 # Unbind
 hcloud EIP UnbindPublicIp --publicip_id=<id>
