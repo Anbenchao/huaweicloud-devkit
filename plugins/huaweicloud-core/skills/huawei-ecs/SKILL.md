@@ -26,12 +26,16 @@ Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance li
 
 ## Flavor Selection Guide
 
-| Scenario | Family | Example |
-|----------|--------|---------|
-| Web app / microservices | s6 (general) | s6.large.2 (2vCPU/4GB) |
-| Database / big data | m6 (memory) | m6.xlarge.8 (4vCPU/32GB) |
-| AI inference | g6 (GPU) | g6.2xlarge.8 (8vCPU/64GB+1xT4) |
-| HPC | h6 (high-IO) | h6.2xlarge.8 (8vCPU/64GB+local SSD) |
+Flavor families are **region-dependent**. Always run `hcloud ECS ListFlavors --cli-region=<r>` to discover available flavors before recommending.
+
+| Scenario | Family | What to look for |
+|----------|--------|-----------------|
+| Web app / microservices | General-purpose (ac, s, sn, c) | 2-4 vCPU, 4-8 GB RAM |
+| Database / big data | Memory-optimized (m, r) | 4-8 vCPU, 16-64 GB RAM |
+| AI inference | GPU (g, p) | 8+ vCPU, 64+ GB RAM + GPU |
+| HPC | High-IO (h, ir, i) | 8+ vCPU, local SSD |
+
+> See `references/flavors.md` for discovery workflow. **Do not hardcode flavor names** — availability changes by region and over time.
 
 ## Common Workflows
 
