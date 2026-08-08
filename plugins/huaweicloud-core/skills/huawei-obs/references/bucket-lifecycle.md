@@ -1,7 +1,9 @@
 # OBS Bucket Lifecycle
 
+> KooCLI OBS uses obsutil-style commands. `OBS CreateBucket` → `OBS mb`. `SetBucketWebsite` is NOT supported in KooCLI OBS (use API/SDK).
+
 ## Create Bucket
-hcloud OBS CreateBucket --bucket=<unique-name> --location=cn-south-1
+hcloud OBS mb obs://<bucket> -location=<region>
 
 ## Lifecycle Rules (JSON)
 {
@@ -15,10 +17,10 @@ hcloud OBS CreateBucket --bucket=<unique-name> --location=cn-south-1
 }
 
 ## Apply
-hcloud OBS SetLifecycleConfiguration --bucket=<name> --lifecycle=lifecycle.json
+hcloud OBS lifecycle obs://<bucket> -method=put -localfile=<lifecycle.json>
 
 ## Static Website
-hcloud OBS SetBucketWebsite --bucket=<name> --index=index.html --error=error.html
+Not available via KooCLI OBS CLI. Use `hcloud OBS chattri obs://<bucket> -acl=public-read` for bucket ACL, or use API/SDK for website configuration.
 
 ## Cross-Region Replication
 Requires: source bucket versioning enabled, destination bucket in different region, replication IAM role.

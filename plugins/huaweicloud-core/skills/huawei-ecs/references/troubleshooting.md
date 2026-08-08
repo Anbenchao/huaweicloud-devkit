@@ -29,7 +29,7 @@
 
 ```bash
 # 正确：双下划线前缀
-hcloud IMS ListImages --cli-region=<r> --__imagetype=gold --__isregistered=未注册 --limit=20
+hcloud IMS ListImages --cli-region=<r> --__imagetype=gold --__isregistered=true --limit=20
 
 # 按需过滤（如果参数支持）
 # --virtual_env_type=FusionCompute  排除 BareMetal
