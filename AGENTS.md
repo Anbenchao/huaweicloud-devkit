@@ -56,6 +56,34 @@ Design docs in `docs/` use `huawei-*` and plan 20+ service skills. The **actual 
 
 The skill provides the correct **service name and operation names** (which agents cannot reliably discover). Parameters come from `--help` (which is self-documenting and never stale).
 
+**Three-class parameter value rule.** When a command in a SKILL.md or reference file contains a concrete value (not a `<placeholder>`), classify it before committing:
+
+| Class | Definition | Action |
+|-------|-----------|--------|
+| **HELPFUL** | `--help` cannot reveal this knowledge | **Keep** the concrete value |
+| **UNNECESSARY** | `--help` already documents this correctly | **Replace** with `<placeholder>` |
+| **WRONG** | Contradicts what `--help` says | **Fix immediately** |
+
+```
+HELPFUL examples (keep):
+  --publicip.associate_instance_type=PORT   # ECS→PORT mapping is non-obvious
+  --x_cff_request_version=v0                # v0=raw, v1=APIG-wrapped semantics
+  --delete_publicip=true                    # default=false leaks EIP; teach override
+  --code_type=inline                        # zip unreliable on KooCLI
+  --loadbalancer_provider=elb               # elb=public, lvs=internal-only
+
+UNNECESSARY examples (replace with placeholder):
+  --publicip.type=5_bgp       → <type>       # --help lists valid types
+  --bandwidth.size=5          → <size>       # user-determined
+  --security_group_rule.direction=ingress → <direction>  # --help lists ingress/egress
+  --server.root_volume.volumetype=SSD → <type>          # --help lists SSD/SAS/…
+  --cli-region=cn-north-4     → <region>     # example region
+```
+
+**Duplication rule:** If the same UNNECESSARY value repeats across 3+ files, fix all occurrences together. Single-occurrence values in reference files are acceptable tradeoffs for teaching clarity.
+
+**Reference files vs SKILL.md:** SKILL.md is the routing layer (~80 lines) — prefer placeholders or omit inline values entirely. `references/*.md` are teaching files — complete working commands are expected, but UNNECESSARY values should still use placeholders unless the value itself is the teaching point.
+
 **Only document non-obvious traps.** If `--help` already explains a parameter correctly, don't repeat it. Document what `--help` gets wrong:
 - Parameters marked optional that are actually required (e.g., `protocol`/`sl_domain`/`env_name`/`env_id` for DEDICATEDGATEWAY)
 - Deprecated values (e.g., `APIG` trigger type, use `DEDICATEDGATEWAY`)
