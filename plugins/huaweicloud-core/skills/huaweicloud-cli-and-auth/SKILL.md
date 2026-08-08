@@ -62,6 +62,7 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 - **Non-interactive** (Agent/CI environments): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` — user must execute outside agent chat.
 - Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
+- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x. Always use `hcloud configure set`.
 
 ## Safe Flow
 
