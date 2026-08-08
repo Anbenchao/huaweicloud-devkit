@@ -34,7 +34,7 @@ Password alternative:
 - Passwords are logged in shell history — this is a security risk
 
 ## 6. Create instance
-hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD --server.root_volume.size=40 --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
+hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=<type> --server.root_volume.size=<minsize> --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
 
 ### Bootstrap with user_data (cloud-init)
 
@@ -57,7 +57,7 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
 ## 7. EIP (optional)
-hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
+hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
 
 # Get the ECS network port ID
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>

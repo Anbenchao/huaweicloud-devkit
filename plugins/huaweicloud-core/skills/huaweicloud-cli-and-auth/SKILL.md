@@ -86,7 +86,7 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 - Minimal create shape to refine after help lookup:
 
 ```bash
-hcloud ECS CreateServers --cli-region=ap-southeast-3 --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD
+hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=<type>
 ```
 
 If a command needs an `adminPass` or other password field, do not leave plaintext secrets in shell history. Prefer local-only input or runtime injection.

@@ -15,8 +15,8 @@ KooCLI 7.x VPC API requires nested prefixes:
 
 ```bash
 # Create EIP (pay-per-use)
-hcloud EIP CreatePublicip --publicip.type=5_bgp \
-  --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
+hcloud EIP CreatePublicip --publicip.type=<type> \
+  --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
 
 # Bind to ECS (PORT type, not ECS)
 hcloud EIP AssociatePublicips --publicip_id=<id> \
@@ -43,9 +43,9 @@ hcloud VPC CreateSecurityGroup --security_group.name=<name>
 # Add SSH rule
 hcloud VPC CreateSecurityGroupRule \
   --security_group_rule.security_group_id=<sg-id> \
-  --security_group_rule.direction=ingress \
-  --security_group_rule.protocol=tcp \
-  --security_group_rule.multiport=22 \
+  --security_group_rule.direction=<direction> \
+  --security_group_rule.protocol=<protocol> \
+  --security_group_rule.multiport=<port> \
   --security_group_rule.remote_ip_prefix=<cidr>
 ```
 
