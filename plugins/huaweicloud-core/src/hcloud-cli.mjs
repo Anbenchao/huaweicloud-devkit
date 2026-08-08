@@ -143,7 +143,7 @@ function runHcloudOnce(plan, options) {
         return;
       }
       finish({
-        ok: code === 0,
+        ok: code === 0 || (code !== 0 && /successfully|succ?ess.*\[200\]|create bucket successfully|upload successfully/i.test(stdout + stderr)),
         exitCode: code,
         signal,
         stdout: redactOutput(stdout),

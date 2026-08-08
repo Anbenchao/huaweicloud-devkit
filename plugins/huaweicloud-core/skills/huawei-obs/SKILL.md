@@ -62,7 +62,8 @@ hcloud OBS config -e=<endpoint> -i=<AK> -k=<SK>
 | Upload file | `hcloud OBS cp <file> obs://<bucket>/<key>` |
 | Upload directory (recursive) | `hcloud OBS cp <dir>/ obs://<bucket>/ -r -f -flat` |
 | Download object | `hcloud OBS cp obs://<bucket>/<key> <local-path>` |
-| Set public-read ACL | `hcloud OBS chattri obs://<bucket> -acl=public-read` |
+| Set bucket ACL | `hcloud OBS chattri obs://<bucket> -acl=public-read` |
+| Set object ACL | `hcloud OBS chattri obs://<bucket>/<key> -acl=public-read` | Bucket ACL does NOT cascade — anonymous reads need both |
 | Set lifecycle | `hcloud OBS lifecycle obs://<bucket> -method=put -localfile=<json>` |
 | Set bucket policy | `hcloud OBS bucketpolicy obs://<bucket> -method=put -localfile=<json>` |
 | Set CORS | `hcloud OBS cors obs://<bucket> -method=put -localfile=<json>` |
@@ -73,7 +74,7 @@ hcloud OBS config -e=<endpoint> -i=<AK> -k=<SK>
 ## Static Website Deployment Workflow
 
 See `references/static-website.md` for the full end-to-end workflow:
-Build → Create bucket → Upload → Set public-read → Configure website (REST API/console)
+Build → Create bucket → Upload → Set bucket ACL → Set object ACL → Configure website (REST API/console)
 
 > KooCLI OBS does NOT support `SetBucketWebsite`. Configure static website hosting via REST API (`PUT /?website`) or the Huawei Cloud console.
 

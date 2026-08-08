@@ -269,6 +269,7 @@ export async function runVersionCheck(options = {}) {
   const isSpawnError = /ENOENT|SPAWN_ERROR/i.test(errorText) || result.code === 'SPAWN_ERROR';
   return {
     installed: result.ok,
+    authenticated: result.ok && !/配置文件中不存在配置项|USE_ERROR.*配置/i.test(result.stdout || ''),
     errorCode: isSpawnError ? 'HCLOUD_NOT_FOUND' : undefined,
     output: result.ok ? result.stdout : errorText,
     nextStep: result.ok
@@ -276,6 +277,7 @@ export async function runVersionCheck(options = {}) {
       : isSpawnError
         ? 'hcloud executable not found. Set HCLOUD_BIN to the full hcloud path, or install KooCLI: npx huaweicloud-devkit install-hcloud. Then restart the agent.'
         : 'Install Huawei Cloud KooCLI: npx huaweicloud-devkit install-hcloud. Configure credentials outside the agent conversation.',
+    authHint: 'If hcloud is installed but commands fail with "配置文件中不存在配置项", run `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` outside agent chat to configure credentials.',
   };
 }
 
@@ -436,6 +438,7 @@ function explainError({ service = 'unknown', errorCode = '', message = '', reque
   const hwErrorPatterns = {
     OBS: {
       'InvalidAccessKeyId': 'OBS uses AK/SK directly (not IAM tokens). Verify AK/SK validity, OBS endpoint, and OBS permissions.',
+      'UserRestricted': 'This IAM user is restricted from OBS operations (403). Check IAM console → Users → Permissions: grant OBS bucket/object actions, or use an unrestricted account. If the account is a sub-account, the main account may have imposed restrictions.',
     },
     APIG: {
       'APIC.7241': 'The enterprise_project_id is required for enterprise accounts. Add --enterprise_project_id=0.',

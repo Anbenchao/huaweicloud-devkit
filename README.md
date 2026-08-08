@@ -15,7 +15,7 @@ HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工
 npx --yes huaweicloud-devkit-test install     # 暂用于测试
 ```
 
-自动安装 26 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
+自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
 
 ```bash
 npx --yes huaweicloud-devkit-test doctor   # 自检：hcloud、MCP、技能、认证

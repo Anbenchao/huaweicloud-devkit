@@ -343,6 +343,7 @@ async function cmdInstall() {
     console.log(`  Run: npx huaweicloud-devkit install-hcloud\x1b[0m`);
   } else {
     console.log(`\nKooCLI (hcloud) detected.`);
+    console.log(`  \x1b[33mFirst-time KooCLI users: run \`hcloud version\` once outside agent chat to accept the privacy agreement.\x1b[0m`);
   }
 
   console.log(`\nAfter restart + hcloud setup, run: npx huaweicloud-devkit doctor`);
