@@ -170,8 +170,9 @@ async function installOpenCode() {
 }
 
 function uninstallOpenCode() {
-  const skills = opencodeSkillsDir();
   let removed = 0;
+
+  const skills = opencodeSkillsDir();
   if (existsSync(skills)) {
     for (const entry of readdirSync(skills, { withFileTypes: true })) {
       if (entry.name.startsWith('huawei')) {
@@ -181,6 +182,19 @@ function uninstallOpenCode() {
     }
     console.log(`  Removed ${removed} skills`);
   }
+
+  const commands = opencodeCommandsDir();
+  let cmdRemoved = 0;
+  if (existsSync(commands)) {
+    for (const entry of readdirSync(commands, { withFileTypes: true })) {
+      if (entry.name.startsWith('huawei')) {
+        removeIfExists(join(commands, entry.name));
+        cmdRemoved++;
+      }
+    }
+    if (cmdRemoved > 0) console.log(`  Removed ${cmdRemoved} commands`);
+  }
+
   if (removeIfExists(opencodePluginsDir())) {
     console.log('  Removed MCP server and safety policy');
   }
@@ -231,6 +245,19 @@ function uninstallCodexDesktop() {
     }
     console.log(`  Removed ${removed} skills`);
   }
+
+  const cmdDir = codexDesktopCommandsDir();
+  let cmdRemoved = 0;
+  if (existsSync(cmdDir)) {
+    for (const entry of readdirSync(cmdDir, { withFileTypes: true })) {
+      if (entry.name.startsWith('huawei')) {
+        removeIfExists(join(cmdDir, entry.name));
+        cmdRemoved++;
+      }
+    }
+    if (cmdRemoved > 0) console.log(`  Removed ${cmdRemoved} commands`);
+  }
+
   if (removeIfExists(codexDesktopPluginsDir())) {
     console.log('  Removed MCP server and safety policy');
   }
