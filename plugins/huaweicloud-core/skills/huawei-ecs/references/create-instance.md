@@ -36,6 +36,26 @@ Password alternative:
 ## 6. Create instance
 hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD --server.root_volume.size=40 --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
 
+### Bootstrap with user_data (cloud-init)
+
+Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**:
+
+```bash
+# Encode the script
+user_data=$(cat << 'SCRIPT' | base64
+#!/bin/bash
+# Your bootstrap commands here.
+# Output logs: /var/log/cloud-init-output.log
+SCRIPT
+)
+
+hcloud ECS CreateServers ... --server.user_data=$user_data
+```
+
+> **Security**: Never embed secrets (passwords, AK/SK, tokens) in user_data. It is stored unencrypted and readable from within the instance via IMDS. Fetch secrets at boot from DEW/CSMS instead.
+
+> **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
+
 ## 7. EIP (optional)
 hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name>
 
@@ -49,6 +69,16 @@ hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instan
 ## 8. Verify
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
 Expected: status=ACTIVE
+
+### Verify HTTP accessibility (if EIP bound)
+
+```bash
+# Get the EIP address from instance details
+hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
+# → addresses.<vpc-id>[].OS-EXT-IPS:addr
+
+curl http://<eip-address>
+# Expected: HTTP 200 (if port 80 open and web server installed)
 
 ## 9. Delete instance (with cleanup)
 hcloud ECS DeleteServers --servers.1.id=<instance-id> --delete_publicip=true --delete_volume=true
