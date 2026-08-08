@@ -32,7 +32,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | Task | Command | Steps |
 |------|---------|-------|
 | Create VPC | hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=<cidr> | CIDR must not conflict with existing VPCs. Run `hcloud VPC ListVpcs` first |
-| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=<cidr> --subnet.availability_zone=<az> | Subnet CIDR must be a subset of the VPC CIDR |
+| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=<cidr> --subnet.gateway_ip=<gw> --subnet.availability_zone=<az> | Subnet CIDR must be a subset of the VPC CIDR |
 | Security group | hcloud VPC CreateSecurityGroup --security_group.name=<name> | references/security-group.md |
 | SG rule | hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<id> --security_group_rule.direction=ingress --security_group_rule.protocol=tcp --security_group_rule.multiport=22 --security_group_rule.remote_ip_prefix=<cidr> | references/security-group.md |
 | Create EIP | hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | Run `hcloud EIP CreatePublicip --help` to confirm valid type values per region |
