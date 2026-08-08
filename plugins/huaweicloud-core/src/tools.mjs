@@ -370,7 +370,7 @@ function serviceCatalog(intent = '') {
   const it = String(intent).toLowerCase();
   const routeMap = [
     { keywords: ['ecs', 'server', 'vm', 'instance', 'compute', 'flavor', 'image'], skills: ['huawei-ecs'], services: ['ECS'] },
-    { keywords: ['vpc', 'subnet', 'network', 'security group', 'eip', 'nat', 'vpn', 'elb', 'load balancer', 'bandwidth'], skills: ['huawei-vpc'], services: ['VPC', 'EIP'] },
+    { keywords: ['vpc', 'subnet', 'network', 'security group', 'eip', 'nat', 'vpn', 'bandwidth'], skills: ['huawei-vpc'], services: ['VPC', 'EIP'] },
     { keywords: ['obs', 'bucket', 'storage', 'object', 'static website', 'static site', 'hosting'], skills: ['huawei-obs'], services: ['OBS'] },
     { keywords: ['functiongraph', 'serverless', 'function', 'lambda', 'trigger', 'faas'], skills: ['huawei-functiongraph'], services: ['FunctionGraph'] },
     { keywords: ['cce', 'kubernetes', 'k8s', 'container', 'cluster', 'node pool', 'swr', 'docker', 'image registry'], skills: ['huawei-cce'], services: ['CCE', 'SWR'] },
