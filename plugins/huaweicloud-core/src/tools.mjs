@@ -234,6 +234,7 @@ export async function callTool(name, args = {}) {
         timeoutMs: args.timeoutMs,
         maxRetries: args.maxRetries,
         cwd: args.cwd,
+        stdin: args.stdin,
       });
     case 'huaweicloud_list_operations':
       return listOperations(args.service, { timeoutMs: args.timeoutMs });
@@ -362,6 +363,7 @@ async function runApprovedCommand(args = {}) {
     timeoutMs: args.timeoutMs,
     maxRetries: args.maxRetries,
     cwd: args.cwd,
+    stdin: args.stdin,
   });
   result.approved = true;
   result.plan = strictPlan;

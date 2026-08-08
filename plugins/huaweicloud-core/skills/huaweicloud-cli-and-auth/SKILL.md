@@ -67,7 +67,7 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 ## Safe Flow
 
 1. Check whether `hcloud` is installed.
-2. On first run, KooCLI requires privacy agreement acceptance. If you see `同意并继续使用(y)/不同意并退出(N)`, respond `y`. Non-interactive terminals: `echo "y" | hcloud version` once.
+2. **KooCLI first-run privacy agreement**: On a fresh KooCLI install, `hcloud` blocks with `同意并继续使用(y)/不同意并退出(N)` and fails with `[USE_ERROR]您输入的是无效字符` in non-interactive mode. Detection: check command output for these strings. Ask the user: "KooCLI needs to accept its privacy agreement. May I accept it on your behalf?" If the user agrees, run `huaweicloud_run_readonly_command` with `args=["version"]` and `stdin="y\n"`. This accepts the agreement once, after which hcloud works normally.
 3. Ask the user to configure credentials outside the agent conversation when setup is needed.
 4. Inspect profile and region only through redacted tooling.
 4. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
