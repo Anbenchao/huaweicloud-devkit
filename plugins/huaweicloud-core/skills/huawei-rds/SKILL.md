@@ -57,9 +57,11 @@ hcloud RDS ListEngineFlavors --instance_id=<id> --cli-region=<r>
 ```bash
 hcloud RDS CreateInstance --cli-region=<r> \
   --name=<name> \
-  --datastore='{"type":"MySQL","version":"8.0"}' \
+  --datastore.type=<engine> \
+  --datastore.version=<version> \
   --flavor_ref=<flavor-id> \
-  --volume='{"type":"CLOUDSSD","size":100}' \
+  --volume.type=<vol-type> \
+  --volume.size=<size> \
   --vpc_id=<vpc-id> \
   --subnet_id=<subnet-id> \
   --security_group_id=<sg-id> \
@@ -110,7 +112,7 @@ hcloud RDS CreateRestoreInstance --instance_id=<id> --backup_id=<id> --name=<new
 ## Read Replicas
 
 ```bash
-hcloud RDS CreateReadReplica --replica_of_id=<primary-id> --name=<name> --flavor_ref=<id> --volume='{"type":"CLOUDSSD","size":100}' --cli-region=<r>
+hcloud RDS CreateReadReplica --replica_of_id=<primary-id> --name=<name> --flavor_ref=<id> --volume.type=<vol-type> --volume.size=<size> --cli-region=<r>
 ```
 
 ## Fault Diagnosis

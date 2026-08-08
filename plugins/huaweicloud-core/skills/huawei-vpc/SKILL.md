@@ -31,15 +31,15 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 
 | Task | Command | Steps |
 |------|---------|-------|
-| Create VPC | hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=192.168.0.0/16 | references/vpc.md |
-| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=192.168.1.0/24 --subnet.availability_zone=<az> | references/subnet.md |
+| Create VPC | hcloud VPC CreateVpc --vpc.name=<name> --vpc.cidr=<cidr> | CIDR must not conflict with existing VPCs. Run `hcloud VPC ListVpcs` first |
+| Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=<cidr> --subnet.availability_zone=<az> | Subnet CIDR must be a subset of the VPC CIDR |
 | Security group | hcloud VPC CreateSecurityGroup --security_group.name=<name> | references/security-group.md |
 | SG rule | hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<id> --security_group_rule.direction=ingress --security_group_rule.protocol=tcp --security_group_rule.multiport=22 --security_group_rule.remote_ip_prefix=<cidr> | references/security-group.md |
 | Create EIP | hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | Run `hcloud EIP CreatePublicip --help` to confirm valid type values per region |
 | Bind EIP to ECS | hcloud EIP AssociatePublicips --publicip_id=<id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT | Get port ID from `hcloud ECS ListServersDetails --server_id=<id>` → `OS-EXT-IPS:port_id` |
 | Unbind EIP | hcloud EIP UnbindPublicIp --publicip_id=<id> | references/eip.md |
 | List EIPs | hcloud EIP ListPublicips | |
-| NAT gateway | hcloud NAT CreateNatGateway --nat.name=<name> --nat.spec=1 --router_id=<vpc-id> --internal_network_id=<subnet-id> | references/nat.md |
+| NAT gateway | hcloud NAT CreateNatGateway --nat.name=<name> --nat.spec=<spec> --router_id=<vpc-id> --internal_network_id=<subnet-id> | Run `hcloud NAT CreateNatGateway --help` for available spec values |
 
 ## Troubleshooting
 
