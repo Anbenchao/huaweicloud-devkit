@@ -9,7 +9,7 @@ hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
 
 ## 3. Find image
-hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=未注册 --limit=20
+hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=true --limit=20
 
 Common image IDs (cn-south-1, verify with region):
 | Image | ID |
