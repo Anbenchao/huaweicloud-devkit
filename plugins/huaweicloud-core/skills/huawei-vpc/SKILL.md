@@ -1,6 +1,6 @@
 ---
 name: huawei-vpc
-description: "Use when creating, configuring, or managing VPC networks, subnets, security groups, EIPs, NAT gateways, VPN connections, load balancers, or network ACLs on Huawei Cloud. Triggers on: VPC, subnet, security group, EIP, NAT, VPN, load balancer, ELB, network ACL, route table, bandwidth. NOT for: DNS or CDN configuration."
+description: "Use when creating, configuring, or managing VPC networks, subnets, security groups, EIPs, NAT gateways, VPN connections, or network ACLs on Huawei Cloud. Triggers on: VPC, subnet, security group, EIP, NAT, VPN, network ACL, route table, bandwidth. NOT for: DNS or CDN configuration."
 version: 1
 ---
 
@@ -12,7 +12,7 @@ Always run `hcloud <Service> <Operation> --help` before constructing commands to
 
 ## Overview
 
-Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet lifecycle, security groups, EIP management, NAT gateways, VPN, load balancers, and network ACLs.
+Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet lifecycle, security groups, EIP management, NAT gateways, VPN, and network ACLs.
 
 ## Critical Warnings
 

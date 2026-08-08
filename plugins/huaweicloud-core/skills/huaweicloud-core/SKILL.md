@@ -28,7 +28,7 @@ Do not rely on training data for facts. Huawei Cloud services, pricing, quotas, 
 | compute | Compute Routing | server, VM, instance, ECS, BMS, GPU, HPC | Handoff to huawei-ecs or huawei-cce |
 | storage | Storage Routing | store files, bucket, OBS, backup, disk, EVS, SFS | Handoff to huawei-obs or huawei-cbr |
 | database | Database Routing | database, SQL, NoSQL, cache, RDS, GaussDB, DDS, DCS | Handoff to huawei-rds or huawei-gaussdb |
-| network | Network Routing | VPC, subnet, security group, EIP, NAT, VPN, ELB | Handoff to huawei-vpc |
+| network | Network Routing | VPC, subnet, security group, EIP, NAT, VPN | Handoff to huawei-vpc |
 | serverless | Serverless Routing | function, Lambda, serverless, FunctionGraph, API gateway | Handoff to huawei-functiongraph or huawei-apig |
 | ai | AI/ML Routing | AI, model, LLM, Pangu, training, inference, RAG | Handoff to huawei-modelarts |
 | messaging | Messaging Routing | message queue, notification, Kafka, RabbitMQ, event, SMN | Handoff to huawei-smn-dms |
