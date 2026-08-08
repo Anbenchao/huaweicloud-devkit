@@ -48,7 +48,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | Cannot reach instance | SG missing rule or no EIP -> Add SG rule / Bind EIP |
 | Subnet CIDR conflict | Overlapping with existing subnets -> Choose non-overlapping CIDR |
 | NAT gateway no internet | Route table missing default route -> Add 0.0.0.0/0 via NAT |
-| EIP quota exceeded | Default quota 10 per account -> Request quota increase |
+| EIP quota exceeded | Check actual quota: `hcloud EIP ListPublicips --cli-region=<r>` to see current usage. Default varies by account (typically 5-10) |
 | EIP.7905 | Run `hcloud EIP ListPublicips --cli-region=<r>` first to check current usage |
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
