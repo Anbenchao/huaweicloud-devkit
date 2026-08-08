@@ -63,18 +63,6 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 - Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID. KooCLI can often resolve Project ID from the configured region.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
 
-### Authentication Modes
-
-KooCLI supports multiple authentication modes. **Agent-safe modes are marked ✅; others must be configured by the user outside agent chat.**
-
-| Mode | Agent-Safe | Scenario |
-|------|:----------:|----------|
-| **Profile** | ✅ | `hcloud configure init --cli-profile=<name>` — interactive, recommended for agent sessions |
-| **ECS Agency** | ✅ | `hcloud <Service> <Op> --cli-mode=ecsAgency` — auto-obtains temp credentials from ECS metadata |
-| **Explicit Param** | ❌ | `hcloud <Service> <Op> --cli-access-key=<AK> --cli-secret-key=<SK>` — AK/SK on command line, DO NOT use in agent chat |
-| **AssumeRole** | ❌ | Cross-account delegation — must be pre-configured by user |
-| **SSO** | ❌ | `hcloud configure sso` — requires browser login, user-only |
-
 ## Safe Flow
 
 1. Check whether `hcloud` is installed.
