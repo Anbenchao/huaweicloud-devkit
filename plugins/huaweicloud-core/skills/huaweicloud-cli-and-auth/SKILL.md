@@ -66,8 +66,9 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 ## Safe Flow
 
 1. Check whether `hcloud` is installed.
-2. Ask the user to configure credentials outside the agent conversation when setup is needed.
-3. Inspect profile and region only through redacted tooling.
+2. On first run, KooCLI requires privacy agreement acceptance. If you see `同意并继续使用(y)/不同意并退出(N)`, respond `y`. Non-interactive terminals: `echo "y" | hcloud version` once.
+3. Ask the user to configure credentials outside the agent conversation when setup is needed.
+4. Inspect profile and region only through redacted tooling.
 4. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
 5. Use `--cli-output=json` for machine-readable responses when supported.
 6. For resource operations, include `--cli-region`, `--cli-profile`, and service-specific project information when required.
