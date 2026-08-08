@@ -25,6 +25,18 @@ version: 1
 
 > **Security**: Never pass AK/SK as command-line arguments (`--ak=...`). Always use `hcloud configure init` (interactive) or `hcloud configure set` with cached profile to avoid secrets in shell history.
 
+### Non-Interactive Setup (Agent/CI Environments)
+
+When the interactive TUI is unavailable (Agent tools, CI/CD), use `hcloud configure set` — this must be run outside agent chat by the user:
+
+```bash
+# User executes in their terminal (NOT in agent chat):
+hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>
+
+# Agent verifies:
+hcloud configure list
+```
+
 ## Critical Warnings
 | Trap | Why |
 |------|-----|
