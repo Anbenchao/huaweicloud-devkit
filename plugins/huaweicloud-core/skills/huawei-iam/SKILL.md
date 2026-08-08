@@ -76,6 +76,27 @@ Domain expertise for Huawei Cloud Identity and Access Management (IAM). Covers u
 - MUST add conditions to trust policies (g:SourceAccount, g:SourceUrn)
 - SHOULD rotate credentials every 90 days
 
+## Agencies (Cross-Service Delegation)
+
+Agencies allow one service to act on behalf of another. Common use cases:
+
+### FunctionGraph Agency (VPC Access)
+
+FunctionGraph needs an agency to access VPC resources (RDS, DCS, etc.):
+
+```bash
+# 1. Create agency with FunctionGraph trust
+hcloud IAM CreateAgency --agency_name=<name> --trust_domain_name=functiongraph
+
+# 2. Attach VPC Administrator role
+hcloud IAM GrantRoleToAgency --agency_name=<name> --role_id=<role-id>
+
+# 3. Use in CreateFunction
+hcloud FunctionGraph CreateFunction ... --app_xrole=<agency-name>
+```
+
+Common roles for FunctionGraph: VPC Administrator, RDS Administrator, DCS Administrator.
+
 ## MCP Tools
 
 - huaweicloud_list_operations service=IAM

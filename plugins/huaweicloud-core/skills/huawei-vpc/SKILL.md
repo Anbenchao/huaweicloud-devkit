@@ -35,7 +35,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | Create subnet | hcloud VPC CreateSubnet --subnet.name=<name> --subnet.vpc_id=<id> --subnet.cidr=192.168.1.0/24 --subnet.availability_zone=<az> | references/subnet.md |
 | Security group | hcloud VPC CreateSecurityGroup --security_group.name=<name> | references/security-group.md |
 | SG rule | hcloud VPC CreateSecurityGroupRule --security_group_rule.security_group_id=<id> --security_group_rule.direction=ingress --security_group_rule.protocol=tcp --security_group_rule.multiport=22 --security_group_rule.remote_ip_prefix=<cidr> | references/security-group.md |
-| Create EIP | hcloud EIP CreatePublicip --publicip.type=EIP --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | references/eip.md |
+| Create EIP | hcloud EIP CreatePublicip --publicip.type=5_bgp --bandwidth.size=5 --bandwidth.share_type=PER --bandwidth.name=<name> | Run `hcloud EIP CreatePublicip --help` to confirm valid type values per region |
 | Bind EIP to ECS | hcloud EIP AssociatePublicips --publicip_id=<id> --publicip.associate_instance_id=<ecs-id> --publicip.associate_instance_type=ecs | references/eip.md |
 | Unbind EIP | hcloud EIP UnbindPublicIp --publicip_id=<id> | references/eip.md |
 | List EIPs | hcloud EIP ListPublicips | |
@@ -49,6 +49,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | Subnet CIDR conflict | Overlapping with existing subnets -> Choose non-overlapping CIDR |
 | NAT gateway no internet | Route table missing default route -> Add 0.0.0.0/0 via NAT |
 | EIP quota exceeded | Default quota 10 per account -> Request quota increase |
+| EIP.7905 | Run `hcloud EIP ListPublicips --cli-region=<r>` first to check current usage |
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
 

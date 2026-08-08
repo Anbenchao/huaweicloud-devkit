@@ -108,6 +108,8 @@ hcloud APIG CreateThrottlingPolicyV2 --name=<n> --api_call_limits=1000
 | Add public EIP | `AddIngressEipV2` |
 | Create API group | `CreateApiGroupV2` |
 | Create API | `CreateApiV2` |
+| Update API | `UpdateApiV2` — change auth mode, path, etc. |
+| List APIs | `ListApisV2` |
 | Publish | `BatchPublishOrOfflineApiV2` |
 | List APIs | `ListApisV2` |
 

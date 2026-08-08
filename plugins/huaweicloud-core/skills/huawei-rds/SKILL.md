@@ -38,7 +38,7 @@ hcloud RDS <Operation> --cli-region=<region> [--key=value ...]
 | Engine version immutable | Cannot change MySQL to PostgreSQL in-place |
 | Automated backups use OBS | Backup storage incurs separate charges. Set retention period explicitly |
 | Storage auto-scaling off by default | Enable before storage runs out or instance goes read-only |
-| `--password` conflicts with KooCLI | Non-interactive needs `echo \| hcloud RDS CreateInstance ...` |
+| `--password` conflicts with KooCLI | Non-interactive: `printf "b\n" \| hcloud RDS CreateInstance ...` to select API param. Or use `--cli-jsonInput` |
 | Volume type must match flavor | General→CLOUDSSD; Dedicated→CLOUDSSD\|ESSD; ARM→ULTRAHIGH |
 | Flavor not in region | Always `ListFlavors` first. Spec codes vary by region |
 | Restore creates new instance | No in-place restore. Verify target flavor before restoring |
