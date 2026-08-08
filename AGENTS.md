@@ -120,6 +120,7 @@ Policy vocabulary lives in `plugins/huaweicloud-core/safety/policy.json`. Both `
 - KooCLI 7.x uses `--param=value`, not space-separated. Array params are 1-indexed (`nics.1.subnet_id`, not `.0`).
 - `hcloud` must be in PATH or `HCLOUD_BIN` set. Agent processes inherit the environment of their launcher.
 - Codex manifest (`plugin.json`) must NOT include a `hooks` field — it fails schema validation.
+- `npm version` only bumps `package.json`. When changing version, also update `plugins/huaweicloud-core/.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`. The `npm run validate` script enforces they match.
 - Skills are compact routing workflows, not service docs. Do not copy Huawei Cloud documentation into them. Point to `support.huaweicloud.com` instead.
 - For complex params (nested objects, arrays with special characters), prefer `--cli-jsonInput=<file>` over inline quoting to avoid shell escaping traps.
 - `HCLOUD_BIN` must be respected consistently across ALL tools and scripts (check_cli, doctor, runHcloud, etc.). Use `process.env.HCLOUD_BIN || 'hcloud'` everywhere, never hardcode `'hcloud'`.
