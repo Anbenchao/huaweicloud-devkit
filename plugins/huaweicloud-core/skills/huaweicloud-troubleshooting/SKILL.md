@@ -61,6 +61,20 @@ Use evidence before fixes. Do not guess service behavior when request IDs, regio
 | APIC.7201 | Missing security_group_id | Add `--security_group_id` param for APIG CreateInstanceV2 |
 | [NETWORK_ERROR] | Transient network failure | Retry with `maxRetries` param or wait and retry |
 
+## KooCLI Error Types
+
+KooCLI classifies errors into 5 types. The error type prefix in the message guides initial diagnosis:
+
+| Type | Meaning | First Check |
+|------|---------|-------------|
+| `[NETWORK_ERROR]` | HTTP request exception | Network connectivity, firewall, endpoint reachability |
+| `[CLI_ERROR]` | KooCLI internal error | Contact KooCLI support |
+| `[USE_ERROR]` | Incorrect command parameters | Run `--help`, check param names and format |
+| `[OPENAPI_ERROR]` | Cloud service API error | Check service docs, contact service support |
+| `[APIE_ERROR]` | API Explorer metadata error | Contact API Explorer support |
+
+Enable debug with `--cli-debug=true` to see the underlying HTTP request/response and pinpoint network or endpoint issues.
+
 ## Cross-Skill References
 
 - **IAM permissions**: See `huawei-iam`

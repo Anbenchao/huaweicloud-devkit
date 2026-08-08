@@ -63,6 +63,20 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 - Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID. KooCLI can often resolve Project ID from the configured region.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
 
+### Authentication Modes
+
+KooCLI supports multiple authentication modes. Select one based on the environment:
+
+| Mode | Scenario | Command |
+|------|----------|---------|
+| **Profile** | Agent sessions, multi-call | `hcloud configure init --cli-profile=<name>` |
+| **Explicit Param** | One-time, CI/CD | `hcloud <Service> <Op> --cli-access-key=<AK> --cli-secret-key=<SK>` |
+| **ECS Agency** | Inside ECS with IAM agency | `hcloud <Service> <Op> --cli-mode=ecsAgency` |
+| **AssumeRole** | Cross-account management | `hcloud <Service> <Op> --cli-agency-domain-id=<id> --cli-agency-name=<name> --cli-source-profile=<src>` |
+| **SSO** | SSO login | `hcloud configure sso` (interactive browser-based) |
+
+Explicit Param mode should NOT pass AK/SK in the agent conversation — the user must run it outside chat.
+
 ## Safe Flow
 
 1. Check whether `hcloud` is installed.
@@ -89,6 +103,22 @@ hcloud ECS CreateServers --cli-region=ap-southeast-3 --server.name=<name> --serv
 ```
 
 If a command needs an `adminPass` or other password field, do not leave plaintext secrets in shell history. Prefer local-only input or runtime injection.
+
+## Output Formatting
+
+```bash
+# JSON format (recommended for Agent)
+hcloud <Service> <Op> --cli-output=json
+
+# Table format (manual viewing)
+hcloud <Service> <Op> --cli-output=table
+
+# JMESPath filtering (extract specific fields)
+hcloud <Service> <ListOp> --cli-output=json --cli-query "items[?status=='ACTIVE'].{ID:id,Name:name}"
+
+# Debug mode (when commands fail)
+hcloud <Service> <Op> --cli-debug=true
+```
 
 ## Preferred Toolkit Tools
 
