@@ -37,7 +37,7 @@ test('runVersionCheck returns installed:false and errorCode on ENOENT', async ()
   assert.match(result.nextStep, /HCLOUD_BIN/);
 });
 
-test('TOOL_DEFINITIONS includes all 12 required tools', () => {
+test('TOOL_DEFINITIONS includes all 13 required tools', () => {
   const names = TOOL_DEFINITIONS.map((t) => t.name);
   const required = [
     'huaweicloud_check_cli',
@@ -52,6 +52,8 @@ test('TOOL_DEFINITIONS includes all 12 required tools', () => {
     'huaweicloud_retrieve_skill',
     'huaweicloud_list_regions',
     'huaweicloud_get_regional_availability',
+    'huaweicloud_search_marketplace',
+    'huaweicloud_setup_obs_config',
   ];
   for (const name of required) {
     assert.ok(names.includes(name), `Missing tool: ${name}`);
