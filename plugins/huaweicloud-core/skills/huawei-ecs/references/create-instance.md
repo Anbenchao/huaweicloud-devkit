@@ -9,16 +9,20 @@ hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
 
 ## 3. Find image
+
+```bash
+# Broad search — specific names may return empty in some regions
 hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=true --limit=20
+```
 
-Common image IDs (cn-south-1, verify with region):
-| Image | ID |
-|-------|----|
-| Ubuntu 22.04 | Query live via ListImages |
-| CentOS 8.2 64bit | Query live via ListImages |
-| EulerOS 2.9 64bit | Query live via ListImages |
+If searching by name (e.g. --name="Ubuntu") returns empty: use broad search without name filter, pick from results. Some regions only offer Huawei Cloud EulerOS (HCE).
 
-Always run ListImages to get the latest image IDs — they change over time.
+Common images (verify live per region):
+| Image | Region | ID |
+|-------|--------|----|
+| HCE 2.0 Standard | cn-north-4 | 7d940784-ac0a-425f-b3fa-8478f1a1df70 |
+| Ubuntu 22.04 | Query live | Query live |
+| CentOS 8.2 | Query live | Query live |
 
 ## 4. Verify or create VPC/subnet
 hcloud VPC ListVpcs --cli-region=<region>
@@ -26,7 +30,7 @@ hcloud VPC ListSubnets --vpc_id=<vpc-id> --cli-region=<region>
 If no VPC/subnet exists: load `huawei-vpc` skill → create VPC → create subnet (with DNS) → create security group → return here.
 
 ## 5. Create keypair (recommended over adminPass)
-hcloud ECS NovaCreateKeypair --keypair.name=<name>
+hcloud ECS NovaCreateKeypair --keypair_name=<name>
 Save the returned private key to a local file. The public key is auto-injected.
 
 Password alternative:

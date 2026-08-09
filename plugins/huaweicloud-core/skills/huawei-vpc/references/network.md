@@ -1,5 +1,29 @@
 # VPC Network Management Reference
 
+## DNS Addresses by Region
+
+Subnets without DNS configuration will fail cloud-init. Use these DNS addresses:
+
+| Region | Primary DNS | Secondary DNS |
+|--------|------------|---------------|
+| cn-north-1 | 100.125.1.250 | 100.125.129.250 |
+| cn-north-4 | 100.125.1.250 | 100.125.129.250 |
+| cn-east-3 | 100.125.1.250 | 100.125.129.250 |
+| cn-south-1 | 100.125.1.250 | 100.125.129.250 |
+| ap-southeast-3 | 100.125.1.250 | 100.125.129.250 |
+
+**Subnet create with DNS**:
+```bash
+hcloud VPC CreateSubnet \
+  --subnet.name=<name> \
+  --subnet.vpc_id=<id> \
+  --subnet.cidr=10.50.1.0/24 \
+  --subnet.gateway_ip=10.50.1.1 \
+  --subnet.availability_zone=<az> \
+  --subnet.dnsList.1=100.125.1.250 \
+  --subnet.dnsList.2=100.125.129.250
+```
+
 ## Nested Prefix Summary
 
 KooCLI 7.x VPC API requires nested prefixes:
@@ -23,7 +47,7 @@ hcloud EIP AssociatePublicips --publicip_id=<id> \
   --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT
 
 # Unbind
-hcloud EIP UnbindPublicIp --publicip_id=<id>
+hcloud EIP DisassociatePublicip --publicip_id=<id>
 
 # List
 hcloud EIP ListPublicips
