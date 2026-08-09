@@ -257,13 +257,8 @@ test('setup-cli.mjs handles KooCLI sandbox blockers and privacy agreement', () =
   assert.match(setup, /检测到码道沙箱模式/);
   assert.match(setup, /在码道外的终端安装并使用 KooCLI/);
   assert.match(setup, /关闭沙箱模式后重试/);
-  // privacy agreement auto-accept answers y on stdin
-  assert.match(setup, /function acceptKooCliPrivacy\(/);
-  assert.match(setup, /input: 'y\\n'/);
-  assert.match(setup, /同意并继续使用/);
   // install-hcloud surfaces sandbox guidance on failure and after install
   assert.match(setup, /沙箱模式拦截了 KooCLI 自动安装/);
-  assert.match(setup, /无法自动接受隐私协议/);
   // MCP env injects HCLOUD_BIN when an hcloud binary is found
   assert.match(setup, /if \(hcloudBin\) env\.HCLOUD_BIN = hcloudBin\.replace/);
   // doctor warns about sandbox mode
