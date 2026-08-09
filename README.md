@@ -1,7 +1,7 @@
 # HuaweiCloud DevKit
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml)
+[![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
 
 帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
@@ -34,7 +34,7 @@ npx --yes huaweicloud-devkit install --target codex
 
 ### Claude Code
 
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。Claude Code 会自动索引插件。
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。Claude Code 会自动索引插件。
 
 安装插件：
 
@@ -65,7 +65,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 
 ### Cursor
 
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。
 
 然后在**插件**面板中安装 **huaweicloud-core** 插件。
 
