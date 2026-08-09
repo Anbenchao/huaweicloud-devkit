@@ -338,7 +338,7 @@ async function cmdInstall() {
   console.log(`\n\x1b[32mInstallation complete!\x1b[0m`);
   console.log(`\n\x1b[1m\x1b[33m╔══════════════════════════════════════════════════════╗`);
   console.log(`\x1b[1m\x1b[33m║  MCP 工具在重启 OpenCode 会话后才生效                ║`);
-  console.log(`\x1b[1m\x1b[33m║  关闭当前会话 → 重新打开 → @huaweicloud-core        ║`);
+  console.log(`\x1b[1m\x1b[33m║  关闭当前会话 → 重新打开，直接描述华为云任务即可      ║`);
   console.log(`\x1b[1m\x1b[33m║  重启前请勿执行 hcloud 命令，避免 AK/SK 泄露         ║`);
   console.log(`\x1b[1m\x1b[33m╚══════════════════════════════════════════════════════╝\x1b[0m`);
 
@@ -355,7 +355,7 @@ async function cmdInstall() {
   // Write install marker for doctor to detect
   writeFileSync(join(opencodePluginsDir(), '.installed'), new Date().toISOString());
   if (target === 'opencode' || target === 'all') {
-    console.log('Or mention @huaweicloud-core in OpenCode');
+    console.log('Or describe your Huawei Cloud task in OpenCode');
   }
   if (target === 'codex' || target === 'all') {
     console.log('Or mention @huaweicloud-core in Codex');
@@ -485,7 +485,7 @@ async function cmdDoctor() {
     console.log('\x1b[33mFix failures above, then restart your OpenCode / Codex session.\x1b[0m');
   }
   if (fail === 0 && mcpConfigured) {
-    console.log('\n\x1b[32mAll checks passed.\x1b[0m Restart OpenCode and try @huaweicloud-core');
+    console.log('\n\x1b[32mAll checks passed.\x1b[0m Restart OpenCode, then describe your Huawei Cloud task');
   }
 
   // Detect "installed but not restarted" scenario
