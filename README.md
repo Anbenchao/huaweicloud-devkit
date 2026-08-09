@@ -30,7 +30,7 @@ npx --yes huaweicloud-devkit uninstall # 卸载
 npx --yes huaweicloud-devkit install --target codex
 ```
 
-> **注意：** 如果未检测到 Codex CLI，安装程序会自动跳过 Codex。
+> 需要先安装 Codex CLI。`--target all` 会在 Codex CLI 缺失时跳过 Codex。
 
 ### Claude Code
 
