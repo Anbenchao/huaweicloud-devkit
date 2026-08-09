@@ -537,14 +537,38 @@ async function cmdInstallHcloud() {
     : join(homedir(), '.local', 'bin');
 
   if (os === 'win32') {
-    console.log(`[Windows] Download and unzip to ${installDir}`);
     const url = `${baseUrl}/huaweicloud-cli-windows-amd64.zip`;
-    console.log(`  Download: ${url}`);
-    console.log(`  Unzip to: ${installDir}`);
-    console.log(`  Add to PATH: ${installDir}`);
-    console.log(`  Verify: hcloud version`);
-    console.log('\n\x1b[33mWindows auto-install not supported yet. Run commands above manually.\x1b[0m');
-    console.log(`\nFull guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_01.html`);
+    const zipPath = join(installDir, 'hcloud.zip');
+
+    console.log(`[Windows] Auto-installing to ${installDir}...`);
+
+    try {
+      mkdirSync(installDir, { recursive: true });
+
+      // Download
+      console.log(`  Downloading ${url}...`);
+      const psCmd = `[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '${url}' -OutFile '${zipPath}' -UseBasicParsing`;
+      spawnSync('powershell', ['-NoProfile', '-Command', psCmd], { stdio: 'inherit', windowsHide: true });
+
+      // Extract
+      console.log('  Extracting...');
+      spawnSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${installDir}' -Force`], { stdio: 'inherit', windowsHide: true });
+
+      // Clean up zip
+      rmSync(zipPath, { force: true });
+
+      // Add to PATH
+      console.log('  Adding to user PATH...');
+      spawnSync('setx', ['PATH', `${process.env.PATH};${installDir}`], { stdio: 'inherit', windowsHide: true });
+
+      console.log(`\n\x1b[32mInstall complete.\x1b[0m`);
+      console.log(`  Verify: ${join(installDir, 'hcloud.exe')} version`);
+      console.log('  Or restart terminal and: hcloud version');
+    } catch (e) {
+      console.log(`\n\x1b[33mAuto-install failed: ${e.message}\x1b[0m`);
+      console.log(`  Manual: download ${url}, unzip to ${installDir}, add to PATH`);
+      console.log(`  Guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_01.html`);
+    }
   } else if (os === 'linux') {
     console.log('[Linux] One-liner install:');
     console.log('  curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y');
