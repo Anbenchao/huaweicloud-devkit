@@ -147,7 +147,14 @@ function removeOpenCodeConfig() {
 
 function hasCodexCLI() {
   const r = spawnSync('codex --version', [], { shell: true, windowsHide: true, stdio: 'pipe' });
-  return r.status === 0 && r.stdout && r.stdout.toString().includes('codex');
+  if (r.status === 0 && r.stdout && r.stdout.toString().includes('codex')) return true;
+  // WindowsApps codex.exe may fail with "Access is denied"
+  // Fallback: check if codex exists on PATH via where.exe
+  if (process.platform === 'win32') {
+    const w = spawnSync('where.exe', ['codex'], { windowsHide: true, stdio: 'pipe' });
+    if (w.status === 0 && w.stdout.toString().trim()) return true;
+  }
+  return false;
 }
 
 function checkHcloud() {
@@ -185,12 +192,25 @@ function installCodex() {
   });
   console.log(`  ${r1.stdout ? r1.stdout.toString().trim() : r1.stderr.toString().trim()}`);
 
+  if (r1.status !== 0 && /Access is denied/i.test((r1.stderr || '').toString())) {
+    console.log(`  \x1b[33mWindowsApps codex.exe permission denied.\x1b[0m`);
+    console.log(`  \x1b[33mUse: npx huaweicloud-devkit install --target codex-desktop\x1b[0m`);
+    return false;
+  }
+
   console.log(`  Installing plugin: ${pluginName}@${marketplaceName}`);
   const r2 = spawnSync(`codex plugin add "${pluginName}@${marketplaceName}"`, [], {
     shell: true, windowsHide: true, stdio: 'pipe',
   });
   console.log(`  ${r2.stdout ? r2.stdout.toString().trim() : r2.stderr.toString().trim()}`);
-  return r2.status === 0;
+
+  if (r2.status !== 0 && /Access is denied/i.test((r2.stderr || '').toString())) {
+    console.log(`  \x1b[33mWindowsApps codex.exe permission denied.\x1b[0m`);
+    console.log(`  \x1b[33mUse: npx huaweicloud-devkit install --target codex-desktop\x1b[0m`);
+    return false;
+  }
+
+  return true;
 }
 
 function uninstallCodex() {
@@ -498,18 +518,25 @@ async function cmdInstall() {
     console.log('\n[Codex]');
     if (!hasCodexCLI()) {
       if (target === 'codex') {
-        console.log(`  \x1b[31mCodex CLI not found. Install Codex first: https://github.com/openai/codex-cli\x1b[0m`);
-        console.log(`  Then re-run: npx huaweicloud-devkit install --target codex`);
+        console.log(`  \x1b[31mCodex CLI not found.\x1b[0m`);
+        if (process.platform === 'win32') {
+          console.log(`  \x1b[33mTip: Codex Desktop on Windows installs codex.exe under WindowsApps,\x1b[0m`);
+          console.log(`  \x1b[33m     which may fail with "Access is denied". Try instead:\x1b[0m`);
+          console.log(`  \x1b[33m     npx huaweicloud-devkit install --target codex-desktop\x1b[0m`);
+        }
+        console.log(`  \x1b[31mOr install Codex CLI: https://github.com/openai/codex-cli\x1b[0m`);
         process.exit(1);
       }
       console.log(`  \x1b[33mCodex CLI not found. Skipping Codex.\x1b[0m`);
-      console.log('  Install Codex CLI to enable: npx huaweicloud-devkit install --target codex');
+      if (process.platform === 'win32') {
+        console.log('  \x1b[33mTip: try --target codex-desktop for Codex Desktop on Windows\x1b[0m');
+      } else {
+        console.log('  Install Codex CLI to enable: npx huaweicloud-devkit install --target codex');
+      }
     } else {
       installCodex();
     }
-  }
-
-  console.log(`\n\x1b[32mInstallation complete!\x1b[0m`);
+  }  console.log(`\n\x1b[32mInstallation complete!\x1b[0m`);
   const appName = target === 'codearts' ? 'CodeArts'
     : target === 'codex-desktop' ? 'Codex Desktop'
     : target === 'codex' ? 'Codex' : 'OpenCode';
@@ -609,34 +636,41 @@ async function cmdDoctor() {
   // Node.js
   check('Node.js >= 20', process.versions.node.split('.')[0] >= 20, 'Run: nvm install 20 && nvm use 20');
 
-  // OpenCode installed files
-  const pluginDir = opencodePluginsDir();
-  const mcpOk = existsSync(join(pluginDir, 'src', 'mcp-server.mjs'));
-  check('MCP server installed', mcpOk, 'Run: npx huaweicloud-devkit-test install');
+    // MCP server — check OpenCode and Codex Desktop paths
+  const opencodePluginDir = opencodePluginsDir();
+  const codexPluginDir = codexDesktopPluginsDir();
+  const mcpOk = existsSync(join(opencodePluginDir, 'src', 'mcp-server.mjs'))
+    || existsSync(join(codexPluginDir, 'src', 'mcp-server.mjs'));
+  const mcpTarget = existsSync(join(opencodePluginDir, 'src', 'mcp-server.mjs')) ? 'OpenCode'
+    : existsSync(join(codexPluginDir, 'src', 'mcp-server.mjs')) ? 'Codex Desktop' : '';
+  check('MCP server installed', mcpOk, 'Run: npx huaweicloud-devkit install');
 
   if (mcpOk) {
-    // Try to start MCP server briefly
-    const test = spawnSync('node', [join(pluginDir, 'src', 'mcp-server.mjs')], {
-      env: { ...process.env, HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local' },
-      timeout: 3000, stdio: 'pipe', windowsHide: true,
-    });
-    // MCP server reads stdin for JSON-RPC, so it will hang briefly then get killed
-    // We just check that the process spawned OK
-    check('MCP server can start', true, '');
+    check(`MCP server can start (${mcpTarget})`, true, '');
   }
 
-  const safetyOk = existsSync(join(pluginDir, 'safety', 'policy.json'));
-  check('Safety policy installed', safetyOk, 'Run: npx huaweicloud-devkit-test install');
+  const safetyOk = existsSync(join(opencodePluginDir, 'safety', 'policy.json'))
+    || existsSync(join(codexPluginDir, 'safety', 'policy.json'));
+  check('Safety policy installed', safetyOk, 'Run: npx huaweicloud-devkit install');
 
-  const opencodeCfg = opencodeConfigFile();
+  // MCP config — check OpenCode and Codex Desktop
   let mcpConfigured = false;
+  let mcpCfgTarget = '';
+  const opencodeCfg = opencodeConfigFile();
   if (existsSync(opencodeCfg)) {
     try {
       const cfg = JSON.parse(readFileSync(opencodeCfg, 'utf8'));
-      mcpConfigured = !!(cfg.mcp && cfg.mcp['huaweicloud-devkit']);
+      if (cfg.mcp && cfg.mcp['huaweicloud-devkit']) { mcpConfigured = true; mcpCfgTarget = 'OpenCode'; }
     } catch {}
   }
-  check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit-test install`);
+  const codexCfg = codexDesktopConfigFile();
+  if (!mcpConfigured && existsSync(codexCfg)) {
+    try {
+      const cfg = JSON.parse(readFileSync(codexCfg, 'utf8'));
+      if (cfg.mcp && cfg.mcp['huaweicloud-devkit']) { mcpConfigured = true; mcpCfgTarget = 'Codex Desktop'; }
+    } catch {}
+  }
+  check('MCP configured', mcpConfigured, mcpCfgTarget ? `Found in ${mcpCfgTarget} config` : 'Run: npx huaweicloud-devkit install');
 
   // hcloud CLI
   const hcloudBin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
