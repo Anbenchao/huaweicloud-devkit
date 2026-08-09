@@ -72,12 +72,9 @@ test('skills document KooCLI installation, operation discovery, region intent, a
   assert.match(safetySkill, /huaweicloud_run_approved_command/);
 
   // Verify KooCLI install URLs match official download URLs
-  const windowsUrl = 'huaweicloud-cli-windows-amd64.zip';
-  const linuxUrl = 'huaweicloud-cli-linux-amd64.tar.gz';
-  const macUrl = 'huaweicloud-cli-mac-arm64.tar.gz';
-  assert.match(cliSkill, new RegExp(windowsUrl.replace(/\./g, '\\.')), 'Windows download URL');
-  assert.match(cliSkill, new RegExp(linuxUrl.replace(/\./g, '\\.')), 'Linux download URL');
-  assert.match(cliSkill, new RegExp(macUrl.replace(/\./g, '\\.')), 'macOS download URL');
+  assert.ok(cliSkill.includes('huaweicloud-cli-windows-amd64.zip'), 'Windows download URL');
+  assert.ok(cliSkill.includes('huaweicloud-cli-linux-amd64.tar.gz'), 'Linux download URL');
+  assert.ok(cliSkill.includes('huaweicloud-cli-mac-arm64.tar.gz'), 'macOS download URL');
 });
 
 test('skill SKILL.md files meet minimum content quality bar', () => {
