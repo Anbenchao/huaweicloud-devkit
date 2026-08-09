@@ -1,4 +1,4 @@
-# HuaweiCloud Devkit 安装指南
+﻿# HuaweiCloud Devkit 安装指南
 
 ## 前置条件
 
@@ -55,8 +55,6 @@ npm run validate  # 校验插件包结构
 ```
 huaweicloud-devkit/
 ├── .agents/plugins/marketplace.json    # Codex 市场清单
-├── .claude-plugin/plugins/marketplace.json  # Claude 市场
-├── .cursor-plugin/plugins/marketplace.json  # Cursor 市场
 ├── plugins/huaweicloud-core/           # 插件主体
 │   ├── .codex-plugin/plugin.json
 │   ├── .claude-plugin/plugin.json

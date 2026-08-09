@@ -1,11 +1,11 @@
-# HuaweiCloud DevKit
+﻿# HuaweiCloud DevKit
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml)
 
 帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
-HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、Claude Code、Cursor、码道（CodeArts Agent）等主流 Agent。
+HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、码道（CodeArts Agent）等主流 Agent。
 
 ## 快速开始
 
@@ -32,15 +32,6 @@ npx --yes huaweicloud-devkit install --target codex
 
 > 需要先安装 Codex CLI。`--target all` 会在 Codex CLI 缺失时跳过 Codex。
 
-### Claude Code
-
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。Claude Code 会自动索引插件。
-
-安装插件：
-
-```
-/plugin install huaweicloud-core@huaweicloud-devkit
-```
 
 ### CodeArts Agent（码道）
 
@@ -63,11 +54,6 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 >
 > **认证**：KooCLI 就绪后，还需在码道外终端执行 `hcloud configure init` 配置 AK/SK 与区域，然后即可在码道中描述你的华为云任务。
 
-### Cursor
-
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。
-
-然后在**插件**面板中安装 **huaweicloud-core** 插件。
 
 ### 其他 Agent
 
@@ -135,7 +121,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 | 层级 | 机制 | 说明 |
 |------|------|------|
 | 技能层 | `SKILL.md` 流程文档 | 教会 Agent 正确的行为规则和安全用法 |
-| 钩子层 | `huaweicloud-safety.py` | PreToolUse Hook 阻断高风险工具调用（Claude Code、Cursor 可用） |
+| 钩子层 | `huaweicloud-safety.py` | PreToolUse Hook 阻断高风险工具调用 |
 | MCP 层 | `safety-policy.mjs` | Node.js 安全策略包装器，在所有 Agent 环境中强制执行 |
 
 详见 [`docs/safety-model.md`](docs/safety-model.md)。
