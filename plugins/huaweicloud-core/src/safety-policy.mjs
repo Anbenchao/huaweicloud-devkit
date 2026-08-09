@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { evaluateCommandRisk, mergeRiskDecision } from './risk-rule-engine.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const policyPath = join(__dirname, '..', 'safety', 'policy.json');
@@ -92,6 +93,18 @@ function isLocalMetadataCommand(args) {
   return args.some((arg) => /^(--help|-h|help|version|--version)$/i.test(String(arg)));
 }
 
+function commandRiskText(normalizedArgs, options = {}) {
+  return options.rawCommand || ['hcloud', ...normalizedArgs].join(' ');
+}
+
+function applyCommandRiskRules(base, normalizedArgs, options = {}) {
+  if (base.decision === 'deny' || options.skipRiskRules === true) {
+    return base;
+  }
+  const risk = evaluateCommandRisk(commandRiskText(normalizedArgs, options));
+  return mergeRiskDecision(base, risk);
+}
+
 export function classifyHcloudArgs(args, options = {}) {
   const policy = options.policy || DEFAULT_POLICY;
   const { service, operation, args: normalizedArgs } = commandOperation(args);
@@ -106,14 +119,14 @@ export function classifyHcloudArgs(args, options = {}) {
   }
 
   if (isLocalMetadataCommand(normalizedArgs)) {
-    return {
+    return applyCommandRiskRules({
       decision: 'allow',
       risk: 'local_metadata',
       reason: 'KooCLI local help and version commands are read-only and do not call Huawei Cloud resource APIs.',
       service,
       operation,
       args: normalizedArgs,
-    };
+    }, normalizedArgs, options);
   }
 
   if (service.toLowerCase() === 'configure') {
@@ -180,49 +193,49 @@ export function classifyHcloudArgs(args, options = {}) {
     };
   }
   if (isObsRead) {
-    return {
+    return applyCommandRiskRules({
       decision: 'allow',
       risk: 'read_only',
       reason: 'OBS read-only operation.',
       service,
       operation,
       args: normalizedArgs,
-    };
+    }, normalizedArgs, options);
   }
   if (isObsWrite && options.allowWrites) {
-    return {
+    return applyCommandRiskRules({
       decision: 'allow',
       risk: 'write',
       reason: 'OBS write operation approved by user.',
       service,
       operation,
       args: normalizedArgs,
-    };
+    }, normalizedArgs, options);
   }
 
   if (isExecution && options.allowWrites) {
-    return {
+    return applyCommandRiskRules({
       decision: 'allow',
       risk: 'execution',
       reason: 'Huawei Cloud execution/trigger operation approved by user.',
       service,
       operation,
       args: normalizedArgs,
-    };
+    }, normalizedArgs, options);
   }
 
   if (isWrite && options.allowWrites) {
-    return {
+    return applyCommandRiskRules({
       decision: 'allow',
       risk: 'write',
       reason: 'Huawei Cloud write operation approved by user.',
       service,
       operation,
       args: normalizedArgs,
-    };
+    }, normalizedArgs, options);
   }
 
-  return {
+  return applyCommandRiskRules({
     decision: 'allow',
     risk: readOnly ? 'read_only' : 'unknown_read',
     reason: readOnly
@@ -231,7 +244,7 @@ export function classifyHcloudArgs(args, options = {}) {
     service,
     operation,
     args: normalizedArgs,
-  };
+  }, normalizedArgs, options);
 }
 
 function splitSimpleCommand(command) {
@@ -261,7 +274,7 @@ export function classifyTextCommand(command, options = {}) {
   }
 
   if (/(^|\s)hcloud(\.exe)?\s+/i.test(text)) {
-    return classifyHcloudArgs(splitSimpleCommand(text), options);
+    return classifyHcloudArgs(splitSimpleCommand(text), { ...options, rawCommand: text });
   }
 
   if (/ShowSecretVersion|GetSecretValue|secret_string|secret_binary/i.test(text)) {

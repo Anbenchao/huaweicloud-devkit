@@ -20,6 +20,7 @@ assertExists(join(pluginRoot, '.mcp.json'));
 assertExists(join(pluginRoot, 'hooks', 'hooks.json'));
 assertExists(join(pluginRoot, 'hooks', 'huaweicloud-safety.py'));
 assertExists(join(pluginRoot, 'safety', 'policy.json'));
+assertExists(join(pluginRoot, 'safety', 'rules', 'cloud-risk-rules.json'));
 assertExists(join(root, 'integrations', 'opencode', 'opencode.json'));
 
 const manifest = readJson(join(pluginRoot, '.codex-plugin', 'plugin.json'));
@@ -53,6 +54,37 @@ for (const name of skills) {
   assert.match(skill, /^---\r?\nname: [a-z0-9-]+/);
   assert.match(skill, /\ndescription: /);
   assert.doesNotMatch(skill, /TODO|\[TODO/i);
+}
+
+const riskCatalog = readJson(join(pluginRoot, 'safety', 'rules', 'cloud-risk-rules.json'));
+assert.equal(riskCatalog.version, '0.1.0');
+assert.ok(Array.isArray(riskCatalog.rules));
+assert.ok(riskCatalog.rules.length >= 8);
+
+const privateMarkers = String(process.env.HUAWEICLOUD_DEVKIT_PRIVATE_MARKERS || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
+const publicRuleText = JSON.stringify(riskCatalog);
+for (const marker of privateMarkers) {
+  assert.ok(!publicRuleText.includes(marker), `Public risk rules contain private marker: ${marker}`);
+}
+
+const ruleIds = new Set();
+const allowedSeverities = new Set(['deny', 'warn', 'info']);
+const allowedStages = new Set(['command', 'artifact', 'deploy_plan']);
+for (const rule of riskCatalog.rules) {
+  assert.match(rule.id, /^hwc-[a-z0-9-]+$/);
+  assert.ok(!ruleIds.has(rule.id), `Duplicate risk rule id: ${rule.id}`);
+  ruleIds.add(rule.id);
+  assert.ok(allowedSeverities.has(rule.severity), `${rule.id} has invalid severity`);
+  assert.ok(Array.isArray(rule.stages) && rule.stages.length > 0, `${rule.id} has no stages`);
+  for (const stage of rule.stages) {
+    assert.ok(allowedStages.has(stage), `${rule.id} has invalid stage: ${stage}`);
+  }
+  assert.ok(rule.match && (rule.match.any || rule.match.all), `${rule.id} has no match block`);
+  assert.ok(rule.message && rule.remediation, `${rule.id} has no user guidance`);
+  assert.doesNotMatch(JSON.stringify(rule), /\baccountId\b|\bticketId\b|\brawText\b|\binternalSource\b/i);
 }
 
 console.log(`Validated HuaweiCloud Devkit with ${skills.length} skills.`);

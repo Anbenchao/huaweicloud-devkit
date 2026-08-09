@@ -20,6 +20,8 @@ Use this skill as the OpenCode entry point. Prefer the full skill set under `plu
 
 Never ask the user to paste credentials. Never read `.hcloud` or `.huaweicloud` files into context. Plan writes first, ask for explicit approval, then verify with read-only checks.
 
+For commands that assemble Huawei Cloud parameters through variables, string concatenation, subshells, encoded payloads, or generated scripts, inspect the final expanded command text before execution. If OpenCode cannot determine the final values, ask for explicit review or run the planning/check tool on the expanded command.
+
 ## KooCLI Basics
 
 - Install guide: `https://support.huaweicloud.com/qs-hcli/hcli_02_003.html`.
