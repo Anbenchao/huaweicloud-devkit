@@ -60,9 +60,14 @@ function detectCodeartsSandbox() {
 // Locate an existing hcloud executable (HCLOUD_BIN, ~/hcloud on Windows, ~/.local/bin elsewhere).
 function findHcloudBin() {
   if (process.env.HCLOUD_BIN && existsSync(process.env.HCLOUD_BIN)) return process.env.HCLOUD_BIN;
-  const rel = platform() === 'win32' ? join('hcloud', 'hcloud.exe') : join('.local', 'bin', 'hcloud');
-  const candidate = join(homedir(), rel);
-  return existsSync(candidate) ? candidate : null;
+  const isWin = platform() === 'win32';
+  const candidates = isWin
+    ? [join(homedir(), 'hcloud', 'hcloud.exe')]
+    : [join(homedir(), '.local', 'bin', 'hcloud'), join(homedir(), 'hcloud', 'hcloud')];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return null;
 }
 
 function printSandboxWarning(reason) {
