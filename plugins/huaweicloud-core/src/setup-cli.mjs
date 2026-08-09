@@ -63,7 +63,7 @@ function findHcloudBin() {
   const isWin = platform() === 'win32';
   const candidates = isWin
     ? [join(homedir(), 'hcloud', 'hcloud.exe')]
-    : [join(homedir(), '.local', 'bin', 'hcloud'), join(homedir(), 'hcloud', 'hcloud')];
+    : [join(homedir(), '.local', 'bin', 'hcloud'), join(homedir(), 'hcloud', 'hcloud'), join(homedir(), 'hcloud', 'hcloud.exe')];
   for (const c of candidates) {
     if (existsSync(c)) return c;
   }
