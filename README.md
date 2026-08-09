@@ -27,7 +27,7 @@ npx --yes huaweicloud-devkit uninstall # 卸载
 ### Codex
 
 ```bash
-npx --yes huaweicloud-devkit install --target codex     # 暂用于测试
+npx --yes huaweicloud-devkit install --target codex
 ```
 
 > **注意：** 如果未检测到 Codex CLI，安装程序会自动跳过 Codex。
