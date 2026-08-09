@@ -157,7 +157,7 @@ function checkHcloud() {
     if (statSync(bin).size < 1024) return false;
   } catch { return false; }
   try {
-    const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+    const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
     const out = (r.stdout ? r.stdout.toString() : '') + (r.stderr ? r.stderr.toString() : '');
     return r.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(out);
   } catch {
@@ -619,7 +619,7 @@ async function cmdDoctor() {
 
   // hcloud CLI
   const hcloudBin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
-  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
   const hcloudOut = (hcloudCheck.stdout || '').toString() + (hcloudCheck.stderr || '').toString();
   const hcloudOk = hcloudCheck.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(hcloudOut);
   check('hcloud CLI installed', hcloudOk, 'Run: npx huaweicloud-devkit install-hcloud');
