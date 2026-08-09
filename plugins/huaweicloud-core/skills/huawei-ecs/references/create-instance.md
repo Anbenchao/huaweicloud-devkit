@@ -30,7 +30,7 @@ hcloud VPC ListSubnets --vpc_id=<vpc-id> --cli-region=<region>
 If no VPC/subnet exists: load `huawei-vpc` skill → create VPC → create subnet (with DNS) → create security group → return here.
 
 ## 5. Create keypair (recommended over adminPass)
-hcloud ECS NovaCreateKeypair --keypair_name=<name>
+hcloud ECS NovaCreateKeypair --keypair.name=<name>
 Save the returned private key to a local file. The public key is auto-injected.
 
 Password alternative:
@@ -61,7 +61,23 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
-## 7. EIP (optional)
+## 7. EIP (two methods)
+
+### Method A: Inline with CreateServers (Recommended)
+Add EIP parameters to the `CreateServers` command in step 6:
+
+```bash
+hcloud ECS CreateServers \
+  --server.publicip.eip.iptype=<type> \
+  --server.publicip.eip.bandwidth.sharetype=<share-type> \
+  --server.publicip.eip.bandwidth.size=<size> \
+  --server.publicip.eip.bandwidth.chargemode=traffic \
+  ...
+```
+
+> **Trap**: Parameter names differ from `EIP CreatePublicip`. Use `iptype` (not `type`), `sharetype` (not `share_type`), and `chargemode` (not `charging_mode`). Always verify with `hcloud ECS CreateServers --help`.
+
+### Method B: Create and bind separately
 hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
 
 # Get the ECS network port ID

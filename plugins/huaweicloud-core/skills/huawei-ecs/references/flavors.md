@@ -3,7 +3,20 @@
 **Always discover flavors dynamically before recommending a specific flavor name.** Flavor availability varies by region and changes over time.
 
 ## Step 1: List available flavors
-hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
+
+Use JMESPath to filter in-line — raw output returns hundreds of records and floods context:
+
+```bash
+# Filter by family prefix (e.g. ac7), return name + specs only
+hcloud ECS ListFlavors --cli-region=<region> --cli-output=json \
+  --cli-query="flavors[?contains(name, 'ac7')].{name:name, vcpus:vcpus, ram:ram}"
+
+# Filter by vCPU range
+hcloud ECS ListFlavors --cli-region=<region> --cli-output=json \
+  --cli-query="flavors[?vcpus >= '2' && vcpus <= '4'].{name:name, vcpus:vcpus, ram:ram}"
+```
+
+> Always use `--cli-query` with JMESPath to narrow results. Never run bare `ListFlavors` without filtering.
 
 ## Step 2: Filter by scenario
 

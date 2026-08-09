@@ -98,8 +98,11 @@ Prefer these tools over raw hcloud CLI — they enforce safety policies:
 
 - huaweicloud_list_operations service=ECS
 - huaweicloud_run_readonly_command for discovery (auto-redacts output)
+- huaweicloud_plan_cli_command for command planning (returns command text + safety classification)
 - huaweicloud_run_approved_command for writes (requires exact command approval)
 - huaweicloud_check_cli to verify hcloud is available
+
+> **approvedCommand trap**: `huaweicloud_run_approved_command` validates that `approvedCommand` matches the planned command EXACTLY (including `<redacted>` placeholders). Always use the `command` field value returned by `huaweicloud_plan_cli_command` verbatim — never reconstruct or retype it. Mismatches cause rejection with "approvedCommand must exactly match the planned hcloud command."
 
 ## Without MCP (Fallback)
 
