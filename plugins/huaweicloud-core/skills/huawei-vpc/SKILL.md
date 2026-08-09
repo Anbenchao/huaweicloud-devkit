@@ -58,7 +58,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
 | ECS cloud-init fails silently (port 80/443 closed) | Subnet likely has no DNS. Check `hcloud VPC ShowSubnet --subnet_id=<id>` → `dnsList` empty? Rebuild subnet with `--subnet.primary_dns=<dns1> --subnet.secondary_dns=<dns2>`. DNS addresses per region: `hcloud VPC CreateSubnet --help` |
-| SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction |
+| SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction. If SSH is blocked, bootstrap via cloud-init user_data instead: see `huawei-ecs` — no SSH needed |
 
 ## Security Considerations
 
