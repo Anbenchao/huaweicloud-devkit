@@ -10,6 +10,8 @@ version: 1
 
 Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
 
+> **Multi-version APIs**: KooCLI may print a warning like "ListVpcs有多个版本,默认使用该API版本v3" before the actual response. The text BEFORE the first `{` is the version selection notice — parse JSON starting from `{` only. This is normal behavior, not an error.
+
 ## Overview
 
 Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet lifecycle, security groups, EIP management, NAT gateways, VPN, and network ACLs.

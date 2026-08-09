@@ -84,6 +84,7 @@ Abort if the result set is larger than `--limit` and ask the user to narrow the 
 | Insufficient resources | Stock depleted -> Change flavor or AZ |
 | AuthFailure | Expired AK/SK -> hcloud configure init |
 | APIGW.0802 / region permission | IAM user has no access to this region -> IAM console → User → Permissions → add region, or switch to another region |
+| Cannot SSH (port 22 open) | SCP policy may be blocking SSH. Check `SYS.0403` errors in command output -> Use cloud-init/user_data for initial setup instead. See `references/create-instance.md` §Bootstrap |
 
 ## Security Considerations
 
