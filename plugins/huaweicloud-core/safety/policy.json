@@ -52,8 +52,19 @@
                                    "Disassociate",
                                    "Attach",
                                    "Detach",
-                                   "Enable",
-                                   "Disable"
+                                    "Enable",
+                                    "Disable",
+                                    "Set",
+                                    "Put",
+                                    "Upload",
+                                    "Install",
+                                    "Publish",
+                                    "Bind",
+                                    "Unbind",
+                                    "Invoke",
+                                    "Execute",
+                                    "Trigger",
+                                    "Deploy"
                                ],
     "readOperationPrefixes":  [
                                   "List",

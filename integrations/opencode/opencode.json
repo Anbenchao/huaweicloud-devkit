@@ -1,12 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "_note": "This file must be merged into ~/.config/opencode/opencode.jsonc. Update the path below to an absolute path pointing to plugins/huaweicloud-core/src/mcp-server.mjs in your checkout.",
+  "_note": "Merge this into ~/.config/opencode/opencode.jsonc. Replace the path with the absolute path to your mcp-server.mjs installation.",
   "mcp": {
     "huaweicloud": {
       "type": "local",
       "command": [
         "node",
-        "../../plugins/huaweicloud-core/src/mcp-server.mjs"
+        "<绝对路径>/plugins/huaweicloud-core/src/mcp-server.mjs"
       ],
       "enabled": true
     }

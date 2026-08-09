@@ -9,23 +9,28 @@ hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
 
 ## 3. Find image
-hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=未注册 --limit=20
 
-Common image IDs (cn-south-1, verify with region):
-| Image | ID |
-|-------|----|
-| Ubuntu 22.04 | Query live via ListImages |
-| CentOS 8.2 64bit | Query live via ListImages |
-| EulerOS 2.9 64bit | Query live via ListImages |
+```bash
+# Broad search — specific names may return empty in some regions
+hcloud IMS ListImages --cli-region=<region> --__imagetype=gold --__isregistered=true --limit=20
+```
 
-Always run ListImages to get the latest image IDs — they change over time.
+If searching by name (e.g. --name="Ubuntu") returns empty: use broad search without name filter, pick from results. Some regions only offer Huawei Cloud EulerOS (HCE).
 
-## 4. Verify VPC/subnet
+Common images (verify live per region):
+| Image | Region | ID |
+|-------|--------|----|
+| HCE 2.0 Standard | cn-north-4 | 7d940784-ac0a-425f-b3fa-8478f1a1df70 |
+| Ubuntu 22.04 | Query live | Query live |
+| CentOS 8.2 | Query live | Query live |
+
+## 4. Verify or create VPC/subnet
 hcloud VPC ListVpcs --cli-region=<region>
 hcloud VPC ListSubnets --vpc_id=<vpc-id> --cli-region=<region>
+If no VPC/subnet exists: load `huawei-vpc` skill → create VPC → create subnet (with DNS) → create security group → return here.
 
 ## 5. Create keypair (recommended over adminPass)
-hcloud DEW CreateKeypair --name=<keypair-name>
+hcloud ECS NovaCreateKeypair --keypair_name=<name>
 Save the returned private key to a local file. The public key is auto-injected.
 
 Password alternative:
@@ -34,15 +39,53 @@ Password alternative:
 - Passwords are logged in shell history — this is a security risk
 
 ## 6. Create instance
-hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD --server.root_volume.size=40 --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
+hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=<type> --server.root_volume.size=<minsize> --server.vpcid=<vpc-id> --server.availability_zone=<az> --server.key_name=<keypair-name> --server.count=1
+
+### Bootstrap with user_data (cloud-init)
+
+Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**:
+
+```bash
+# Encode the script
+user_data=$(cat << 'SCRIPT' | base64
+#!/bin/bash
+# Your bootstrap commands here.
+# Output logs: /var/log/cloud-init-output.log
+SCRIPT
+)
+
+hcloud ECS CreateServers ... --server.user_data=$user_data
+```
+
+> **Security**: Never embed secrets (passwords, AK/SK, tokens) in user_data. It is stored unencrypted and readable from within the instance via IMDS. Fetch secrets at boot from DEW/CSMS instead.
+>
+> **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
 ## 7. EIP (optional)
-hcloud EIP CreatePublicip --bandwidth.size=5 --bandwidth.share_type=PER
-hcloud EIP BindPublicIp --publicip_id=<eip-id> --server_id=<instance-id>
+hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
+
+```bash
+# Get the ECS network port ID
+hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
+# → addresses.<vpc-id>[].OS-EXT-IPS:port_id
+
+# Bind EIP via port
+hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT
+```
 
 ## 8. Verify
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
 Expected: status=ACTIVE
+
+### Verify HTTP accessibility (if EIP bound)
+
+```bash
+# Get the EIP address from instance details
+hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
+# → addresses.<vpc-id>[].OS-EXT-IPS:addr
+
+curl http://<eip-address>
+# Expected: HTTP 200 (if port 80 open and web server installed)
 
 ## 9. Delete instance (with cleanup)
 hcloud ECS DeleteServers --servers.1.id=<instance-id> --delete_publicip=true --delete_volume=true

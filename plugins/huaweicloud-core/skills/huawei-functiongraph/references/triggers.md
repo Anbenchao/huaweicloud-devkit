@@ -54,7 +54,14 @@ These are labeled optional by `--help` but are **required** for DEDICATEDGATEWAY
 | `--event_data.env_id` | API environment ID |
 | `--event_data.instance_id` | APIG dedicated instance ID |
 | `--event_data.group_id` | API group ID |
-| `--event_data.name` | API name (regex: no hyphens) |
+| `--event_data.name` | API name — **hyphens (`-`) are DISALLOWED**. Use underscores (`_`) instead. |
+
+### Error Mapping
+
+| Error | Root Cause → Fix |
+|-------|-----------------|
+| FSS.1417 | Missing `instance_id`, `group_id`, `protocol`, `env_name`, or `env_id`. These are labeled optional but REQUIRED. |
+| API name regex fail | Rename API — remove hyphens (`-`), use `[a-zA-Z0-9_]+` only. |
 
 ### Example
 
@@ -129,3 +136,7 @@ hcloud FunctionGraph CreateFunctionTrigger \
 hcloud FunctionGraph ListFunctionTriggers --function_urn=<urn>
 hcloud FunctionGraph DeleteFunctionTrigger --function_urn=<urn> --trigger_type_code=<type> --trigger_id=<id>
 ```
+
+> Deleting a trigger does NOT cascade-delete the associated APIG API. After `DeleteFunctionTrigger`, also run `hcloud APIG ListApisV2 --instance_id=<id>` and delete orphaned APIs to avoid resource residue.
+>
+> **APIG event format**: When using DEDICATEDGATEWAY, the event body is Base64 encoded and uses a non-standard structure. See `apig-event-format.md` for handler templates.

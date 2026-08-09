@@ -56,6 +56,34 @@ Design docs in `docs/` use `huawei-*` and plan 20+ service skills. The **actual 
 
 The skill provides the correct **service name and operation names** (which agents cannot reliably discover). Parameters come from `--help` (which is self-documenting and never stale).
 
+**Three-class parameter value rule.** When a command in a SKILL.md or reference file contains a concrete value (not a `<placeholder>`), classify it before committing:
+
+| Class | Definition | Action |
+|-------|-----------|--------|
+| **HELPFUL** | `--help` cannot reveal this knowledge | **Keep** the concrete value |
+| **UNNECESSARY** | `--help` already documents this correctly | **Replace** with `<placeholder>` |
+| **WRONG** | Contradicts what `--help` says | **Fix immediately** |
+
+```
+HELPFUL examples (keep):
+  --publicip.associate_instance_type=PORT   # ECS→PORT mapping is non-obvious
+  --x_cff_request_version=v0                # v0=raw, v1=APIG-wrapped semantics
+  --delete_publicip=true                    # default=false leaks EIP; teach override
+  --code_type=inline                        # zip unreliable on KooCLI
+  --loadbalancer_provider=elb               # elb=public, lvs=internal-only
+
+UNNECESSARY examples (replace with placeholder):
+  --publicip.type=5_bgp       → <type>       # --help lists valid types
+  --bandwidth.size=5          → <size>       # user-determined
+  --security_group_rule.direction=ingress → <direction>  # --help lists ingress/egress
+  --server.root_volume.volumetype=SSD → <type>          # --help lists SSD/SAS/…
+  --cli-region=cn-north-4     → <region>     # example region
+```
+
+**Duplication rule:** If the same UNNECESSARY value repeats across 3+ files, fix all occurrences together. Single-occurrence values in reference files are acceptable tradeoffs for teaching clarity.
+
+**Reference files vs SKILL.md:** SKILL.md is the routing layer (~80 lines) — prefer placeholders or omit inline values entirely. `references/*.md` are teaching files — complete working commands are expected, but UNNECESSARY values should still use placeholders unless the value itself is the teaching point.
+
 **Only document non-obvious traps.** If `--help` already explains a parameter correctly, don't repeat it. Document what `--help` gets wrong:
 - Parameters marked optional that are actually required (e.g., `protocol`/`sl_domain`/`env_name`/`env_id` for DEDICATEDGATEWAY)
 - Deprecated values (e.g., `APIG` trigger type, use `DEDICATEDGATEWAY`)
@@ -92,7 +120,13 @@ Policy vocabulary lives in `plugins/huaweicloud-core/safety/policy.json`. Both `
 - KooCLI 7.x uses `--param=value`, not space-separated. Array params are 1-indexed (`nics.1.subnet_id`, not `.0`).
 - `hcloud` must be in PATH or `HCLOUD_BIN` set. Agent processes inherit the environment of their launcher.
 - Codex manifest (`plugin.json`) must NOT include a `hooks` field — it fails schema validation.
+- `npm version` only bumps `package.json`. When changing version, also update `plugins/huaweicloud-core/.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`. The `npm run validate` script enforces they match.
 - Skills are compact routing workflows, not service docs. Do not copy Huawei Cloud documentation into them. Point to `support.huaweicloud.com` instead.
 - For complex params (nested objects, arrays with special characters), prefer `--cli-jsonInput=<file>` over inline quoting to avoid shell escaping traps.
+- `HCLOUD_BIN` must be respected consistently across ALL tools and scripts (check_cli, doctor, runHcloud, etc.). Use `process.env.HCLOUD_BIN || 'hcloud'` everywhere, never hardcode `'hcloud'`.
+- OBS via KooCLI uses obsutil-style commands: `hcloud OBS help` (not `--help`), subcommands like `mb`/`cp`/`rm`/`chattri`. Always use `-f` to avoid interactive prompts that hang agents.
+- Bucket ACL does NOT cascade to objects. For static websites, set both bucket-level AND object-level `-acl=public-read`.
+- `InvokeFunction` / `Execute` / `Trigger` / `Deploy` operations are classified as write (require approval) — they have execution side effects even without data mutation.
+- Codex plugin marketplace name is read from `.agents/plugins/marketplace.json`. `getMarketplaceName()` must match, never hardcode.
 - OpenCode integration lives in `integrations/opencode/` (separate from the plugin).
 - Node >= 20 required, ESM only.

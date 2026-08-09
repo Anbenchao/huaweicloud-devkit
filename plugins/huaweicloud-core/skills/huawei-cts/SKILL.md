@@ -8,30 +8,48 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud CTS <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+
+## Overview
+
+Domain expertise for Cloud Trace Service. Covers trackers, traces, notifications, and resource tags.
 
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| Tracker must have OBS bucket | Create OBS bucket before enabling tracker |
-| Trace data retained 7 days by default | Use OBS for long-term retention |
-| Organization tracker affects all accounts | Admin consent needed |
+| Tracker required for traces | Must create a tracker before traces are recorded |
+| OBS bucket prerequisite | Tracker needs an OBS bucket for log delivery |
+| 7-day retention default | Trace data retained 7 days by default. Create LTS tracker for longer retention |
+| Organization tracker | Cross-account auditing requires organization tracker |
 
 ## Common Workflows
-| Task | Command |
-|------|---------|
-| List trackers | hcloud CTS ListTrackers --tracker_type=system --cli-region=<r> |
-| Create tracker | hcloud CTS CreateTracker --tracker_name=<n> --bucket_name=<bucket> --file_prefix_name=<prefix> |
-| Query traces | hcloud CTS ListTraces --tracker_name=<n> --service_type=ECS |
-| Delete tracker | hcloud CTS DeleteTracker --tracker_name=<n> |
+
+| Task | Operation |
+|------|-----------|
+| List operations | `ListOperations --cli-region=<r> --project_id=<p>` |
+| List traces | `ListTraces --cli-region=<r> --project_id=<p>` |
+| Create tracker | `CreateTracker --cli-region=<r> --project_id=<p>` |
+| List trackers | `ListTrackers --cli-region=<r> --project_id=<p>` |
+| Delete tracker | `DeleteTracker --cli-region=<r> --project_id=<p>` |
+| Create notification | `CreateNotification --cli-region=<r> --project_id=<p>` |
+| List notifications | `ListNotifications --cli-region=<r> --project_id=<p>` |
+| List trace resources | `ListTraceResources --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| No traces showing | Wait 5-15 minutes after operation |
-| OBS permission denied | Check tracker OBS bucket policy |
+| No traces found | Check tracker is created and enabled. Filter by time range |
+| Tracker creation fails | Ensure OBS bucket exists and has correct permissions |
 
 ## Security
-- MUST enable CTS tracker for all regions
-- MUST configure trace file encryption (KMS)
-- MUST restrict OBS bucket access to authorized users
+
+- SHOULD enable CTS for all production accounts
+- MUST use OBS server-side encryption for trace logs
+
+## Cross-Skill References
+
+- **OBS**: See `huawei-obs` for tracker log delivery bucket

@@ -10,6 +10,13 @@ export function planHcloudCommand(args, options = {}) {
   const classification = classifyHcloudArgs(normalizedArgs, options);
   const command = ['hcloud', ...normalizedArgs].map(quoteShellArg).join(' ');
   const warnings = planningWarnings(normalizedArgs);
+  const paramValidation = validateRequiredParams(normalizedArgs);
+  if (paramValidation.missing.length > 0) {
+    warnings.push('Missing required parameters: ' + paramValidation.missing.join(', '));
+    if (paramValidation.hints && paramValidation.hints.length > 0) {
+      warnings.push('Find valid values: ' + paramValidation.hints.join('; '));
+    }
+  }
   return {
     executable: 'hcloud',
     args: redactSecrets(normalizedArgs),
@@ -49,16 +56,26 @@ function runHcloudOnce(plan, options) {
   const forceKillAfterMs = options.forceKillAfterMs ?? DEFAULT_FORCE_KILL_AFTER_MS;
   const executable = options.executable || options.env?.HCLOUD_BIN || process.env.HCLOUD_BIN || 'hcloud';
   const executableArgs = Array.isArray(options.executableArgs) ? options.executableArgs.map(String) : [];
+  const cwd = options.cwd || undefined;
 
   return new Promise((resolve) => {
     const child = spawn(executable, [...executableArgs, ...plan.rawArgs], {
       shell: false,
       windowsHide: true,
+      cwd,
       env: {
         ...process.env,
         ...options.env,
       },
     });
+    if (options.stdin) {
+      if (typeof options.stdin === 'function') {
+        options.stdin(child.stdin);
+      } else {
+        child.stdin.write(String(options.stdin));
+        child.stdin.end();
+      }
+    }
     let stdout = '';
     let stderr = '';
     let timedOut = false;
@@ -119,8 +136,22 @@ function runHcloudOnce(plan, options) {
         });
         return;
       }
+      const apiError = extractApiError(stdout);
+      if (apiError) {
+        finish({
+          ok: false,
+          exitCode: code,
+          signal,
+          errorCode: apiError.errorCode,
+          errorMessage: apiError.errorMessage,
+          stdout: redactOutput(stdout),
+          stderr: redactOutput(stderr),
+          plan,
+        });
+        return;
+      }
       finish({
-        ok: code === 0,
+        ok: code === 0 || (code !== 0 && /successfully|succ?ess.*\[200\]|create bucket successfully|upload successfully/i.test(stdout + stderr)),
         exitCode: code,
         signal,
         stdout: redactOutput(stdout),
@@ -159,8 +190,73 @@ function planningWarnings(args) {
   return warnings;
 }
 
+const REQUIRED_PARAMS = {
+  'ECS CreateServers': ['server.flavorRef', 'server.imageRef', 'server.nics.1.subnet_id'],
+  'VPC CreateVpc': ['vpc.cidr'],
+  'VPC CreateSubnet': ['subnet.vpc_id', 'subnet.cidr'],
+  'VPC CreateSecurityGroupRule': ['security_group_rule.security_group_id', 'security_group_rule.direction', 'security_group_rule.protocol'],
+  'EIP CreatePublicip': ['bandwidth.share_type', 'publicip.type'],
+  'FunctionGraph CreateFunction': ['func_name', 'runtime', 'handler', 'memory_size', 'package', 'timeout'],
+  'FunctionGraph CreateFunctionTrigger': ['function_urn', 'trigger_type_code'],
+  'APIG CreateInstanceV2': ['spec_id'],
+  'OBS mb': ['obs://'],
+  'OBS rm': ['obs://'],
+};
+
+const PARAM_VALUE_HINTS = {
+  'server.flavorRef': 'Run `hcloud ECS ListFlavors --cli-region=<r>` to find valid flavors',
+  'server.imageRef': 'Run `hcloud IMS ListImages --cli-region=<r> --__imagetype=gold` to find valid image IDs',
+  'server.nics.1.subnet_id': 'Run `hcloud VPC ListSubnets --cli-region=<r>` to find subnet IDs',
+  'subnet.vpc_id': 'Run `hcloud VPC ListVpcs --cli-region=<r>` to find VPC IDs',
+  'func_name': 'Function name must be unique within project',
+  'runtime': 'Run `hcloud FunctionGraph ListRuntimes` to see available runtimes',
+  'spec_id': 'APIG spec: BASIC (no public IP) or PROFESSIONAL (requires --loadbalancer_provider)',
+  'obs://': 'Bucket name must be globally unique and DNS-compliant (lowercase, numbers, hyphens only)',
+};
+
+function validateRequiredParams(args) {
+  if (!args || args.length < 2) return { valid: true, missing: [], hints: [] };
+  const key = `${args[0]} ${args[1]}`;
+  const required = REQUIRED_PARAMS[key];
+  if (!required) return { valid: true, missing: [], hints: [] };
+  const argsStr = args.join(' ');
+  const missing = required.filter((param) => !argsStr.includes(param));
+  const hints = missing.map((param) => PARAM_VALUE_HINTS[param]).filter(Boolean);
+  return { valid: missing.length === 0, missing, hints };
+}
+
+function extractApiError(stdout) {
+  let text = String(stdout || '');
+  // Strip KooCLI multi-version prefix lines (e.g. "ListVpcs有多个版本,默认使用该API版本v3…")
+  const bracketIdx = text.indexOf('{');
+  if (bracketIdx > 0) text = text.substring(bracketIdx);
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.error_code || parsed.errorCode) {
+      return {
+        errorCode: parsed.error_code || parsed.errorCode || 'UNKNOWN',
+        errorMessage: parsed.error_msg || parsed.errorMsg || parsed.message || '',
+      };
+    }
+    if (parsed.error && typeof parsed.error === 'object') {
+      return {
+        errorCode: parsed.error.code || parsed.error.error_code || 'UNKNOWN',
+        errorMessage: parsed.error.message || parsed.error.error_msg || '',
+      };
+    }
+  } catch {}
+  const ecMatch = text.match(/"error_code"\s*:\s*"([^"]+)"/);
+  const emMatch = text.match(/"error_msg"\s*:\s*"([^"]+)"/);
+  if (ecMatch) {
+    return { errorCode: ecMatch[1], errorMessage: emMatch ? emMatch[1] : '' };
+  }
+  return null;
+}
+
 export function redactOutput(output) {
-  const text = String(output || '');
+  let text = String(output || '');
+  const bracketIdx = text.indexOf('{');
+  if (bracketIdx > 0) text = text.substring(bracketIdx);
   try {
     return JSON.stringify(redactSecrets(JSON.parse(text)), null, 2);
   } catch {

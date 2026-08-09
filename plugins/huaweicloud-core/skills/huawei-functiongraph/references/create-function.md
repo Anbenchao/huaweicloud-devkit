@@ -1,40 +1,71 @@
-# CreateFunction
+# FunctionGraph Function Creation Reference
 
-**Always run `hcloud FunctionGraph CreateFunction --help` first** for exact parameter names and requirements.
+## Runtime Options
 
-## Code Types (`--code_type`)
+| Runtime | Handler Format | Example |
+|---------|---------------|---------|
+| Python3.9 | `index.handler` | `def handler(event, context): return {"statusCode": 200}` |
+| Python3.10 | `index.handler` | Same as 3.9 |
+| Node.js 18 | `index.handler` | `exports.handler = async (event, context) => ({statusCode: 200})` |
+| Java 8/11/17 | `com.example.Handler::handleRequest` | Java class method |
+| Go 1.x | `handler` | Go function name |
+| C# (.NET Core) | `CsharpDemo::CsharpDemo.Function::Handler` | Namespace.Class::Method |
 
-| Type | Use Case | Key Param |
-|------|----------|-----------|
-| `inline` | Small demos (<10KB) | `--func_code.file` = base64 code |
-| `zip` | Local package | `--code_filename` = filename only, **no path**. `cd` to zip directory first |
-| `obs` | Large packages | `--code_url` = OBS object URL |
-| `jar` | Java JARs | `--code_filename` = filename only |
-| `Custom-Image-Swr` | Container images | `--code_url` = SWR image URI |
+## Create Function (inline)
 
-## Gotchas
-
-- `--code_filename` is **filename only**, not a path. If the zip is at `/tmp/function.zip`, you must `cd /tmp` first, then use `--code_filename=function.zip`.
-- Inline code must be base64-encoded and < 10KB.
-- `--package` must be `default` for FunctionGraph-console-managed functions.
-
-## Function Code Templates
-
-**Python (index.py):**
-```python
-def handler(event, context):
-    return {
-        "statusCode": 200,
-        "body": "Hello FunctionGraph!"
-    }
+```bash
+hcloud FunctionGraph CreateFunction \
+  --func_name=<name> \
+  --package=default \
+  --runtime=Python3.10 \
+  --handler=index.handler \
+  --memory_size=128 \
+  --timeout=3 \
+  --code_type=inline \
+  --func_code.file=<base64-encoded-code> \
+  --cli-region=<region>
 ```
 
-**Node.js (index.js):**
-```js
-exports.handler = async (event, context) => {
-    return {
-        statusCode: 200,
-        body: "Hello FunctionGraph!"
-    };
-};
+| Param | Required | Range/Default |
+|-------|----------|---------------|
+| `--func_name` | Yes | 1-60 chars |
+| `--runtime` | Yes | See runtime options above |
+| `--handler` | Yes | Per runtime |
+| `--memory_size` | No | 128-4096 MB, default 128 |
+| `--timeout` | No | 1-900s, default 3 |
+
+## ZIP Upload Warning
+
+`--code_type=zip --code_filename=xxx.zip` **succeeds even with non-existent file** — function created with empty code. Prefer `code_type=inline` for simple functions. If using zip, verify `code_size > 0` after creation and invoke the function to confirm output.
+
+## Required IAM Permissions
+
+- `functiongraph:function:createFunction` — Create
+- `functiongraph:function:list` — List
+- `functiongraph:function:getConfig` — Read config
+- `functiongraph:function:invoke` — Invoke
+
+Grant `FunctionGraph FullAccess` role or custom policy.
+
+## Error Codes
+
+| Error | Root Cause -> Fix |
+|-------|-------------------|
+| FSS.0400 | `:latest` suffix on URN. Strip it |
+| FSS.1417 | Missing DEDICATEDGATEWAY params |
+| FSS.0403 | Insufficient IAM permission |
+| FSS.1020 | Missing `--app_xrole` when binding VPC. Create IAM agency with `trust_domain_name=functiongraph`. See `huawei-iam` skill → Agencies section |
+
+## VPC + Agency Configuration
+
+To access VPC-internal resources from FunctionGraph:
+
+```bash
+# 1. Create agency (see huawei-iam skill)
+hcloud IAM CreateAgency --agency_name=<name> --trust_domain_name=functiongraph
+# 2. Grant role (e.g., VPC Administrator)
+hcloud IAM GrantRoleToAgency --agency_name=<name> --role_id=<role-id>
+# 3. Use in CreateFunction
+hcloud FunctionGraph CreateFunction --func_vpc.vpc_id=<vpc> --func_vpc.subnet_id=<subnet> --app_xrole=<name> ...
 ```
+| QuotaExceeded | Max 10 functions per project per region |

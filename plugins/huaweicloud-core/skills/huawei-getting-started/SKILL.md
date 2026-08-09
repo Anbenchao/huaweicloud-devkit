@@ -18,11 +18,24 @@ version: 1
 
 ## First-Time Setup
 1. **Install KooCLI** using command above
-2. **Configure credentials**: `hcloud configure init` (interactive, prompts for AK/SK/region safely)
-3. **Verify**: `hcloud configure list` to confirm profile, then `hcloud ECS ListServersDetails --cli-region=cn-north-4`
-4. For detailed auth guidance, see `huaweicloud-cli-and-auth` skill
+2. **Accept privacy policy** (first run only): KooCLI requires one-time privacy agreement. Run `hcloud version` and respond `y` to the prompt. For non-interactive terminals, use `echo "y" | hcloud version`
+3. **Configure credentials**: `hcloud configure init` (interactive, prompts for AK/SK/region safely)
+4. **Verify**: `hcloud configure list` to confirm profile, then `hcloud ECS ListServersDetails --cli-region=cn-north-4`
+5. For detailed auth guidance, see `huaweicloud-cli-and-auth` skill
 
 > **Security**: Never pass AK/SK as command-line arguments (`--ak=...`). Always use `hcloud configure init` (interactive) or `hcloud configure set` with cached profile to avoid secrets in shell history.
+
+### Non-Interactive Setup (Agent/CI Environments)
+
+When the interactive TUI is unavailable (Agent tools, CI/CD), use `hcloud configure set` — this must be run outside agent chat by the user:
+
+```bash
+# User executes in their terminal (NOT in agent chat):
+hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>
+
+# Agent verifies:
+hcloud configure list
+```
 
 ## Critical Warnings
 | Trap | Why |
@@ -30,6 +43,7 @@ version: 1
 | AK/SK must be kept secret | Never commit to git or share |
 | Default region applies to all commands | Override with --cli-region= per command |
 | Some services region-specific | Not all services available in all regions |
+| Privacy policy blocks first run | KooCLI requires one-time `y` confirmation. Non-interactive terminals need `echo "y" \| hcloud <cmd>` |
 
 ## What Can I Do? (Quick Index)
 | Goal | Skill |

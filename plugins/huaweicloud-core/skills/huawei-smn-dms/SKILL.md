@@ -4,34 +4,66 @@ description: "Use when creating or managing SMN topics/subscriptions/messages or
 version: 1
 ---
 
-# Huawei Cloud SMN & DMS
+# Huawei Cloud SMN / DMS
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
-Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
+Always run `hcloud SMN <Operation> --help` or `hcloud DMS <Operation> --help` before constructing commands.
+
+## Overview
+
+Domain expertise for SMN (Simple Message Notification) and DMS (Distributed Message Service). SMN is used for notifications and alerts. DMS covers Kafka, RabbitMQ, and RocketMQ instances.
+
+## SMN
 
 ## Critical Warnings
+
 | Trap | Why |
 |------|-----|
-| SMN subscriptions must be confirmed | HTTP/HTTPS endpoints need manual confirmation |
-| DMS Kafka version immutable | Cannot upgrade minor version in-place |
-| Message retention has costs | Longer retention increases storage charges |
+| Subscription confirmation | HTTP/HTTPS subscriptions need endpoint ping-back confirmation |
+| Email subscription delay | Email subscriptions require user to click confirmation link |
+| SMS charge per message | Template SMS incurs per-delivery charges |
 
-## Common Workflows
-| Task | Command |
-|------|---------|
-| Create SMN topic | hcloud SMN CreateTopic --name=<n> --display_name=<d> --cli-region=<r> |
-| Publish message | hcloud SMN PublishMessage --topic_urn=<urn> --subject=<s> --message=<m> |
-| List Kafka instances | hcloud DMS ListInstances --engine=kafka --cli-region=<r> |
-| Create Kafka topic | hcloud DMS CreateInstanceTopic --instance_id=<id> --topics='[{"name":"t1","partition":3}]' |
+### Common Workflows
+
+| Task | Operation |
+|------|-----------|
+| List topics | `ListTopics --cli-region=<r> --project_id=<p>` |
+| Create topic | `CreateTopic --cli-region=<r> --project_id=<p>` |
+| Add subscription | `AddSubscription --cli-region=<r> --project_id=<p>` |
+| List subscriptions | `ListSubscriptions --cli-region=<r> --project_id=<p>` |
+| Create message template | `CreateMessageTemplate --cli-region=<r> --project_id=<p>` |
+| Publish message | `PublishMessage --cli-region=<r> --project_id=<p>` |
+| Delete topic | `DeleteTopic --cli-region=<r> --project_id=<p>` |
+
+## DMS
+
+### Service Types
+
+| Type | KooCLI Service |
+|------|---------------|
+| Kafka | `hcloud DMS` |
+| RabbitMQ | `hcloud DMS` |
+| RocketMQ | `hcloud DMS` |
+
+### Common Workflows
+
+| Task | Operation |
+|------|-----------|
+| List instances | `ListInstances --cli-region=<r> --project_id=<p>` |
+| Create Kafka instance | `CreateInstance --cli-region=<r> --project_id=<p>` |
+| List Kafka topics | `ListTopics --cli-region=<r> --project_id=<p>` |
+
+Discover exact parameters with `--help` before executing any command.
 
 ## Troubleshooting
+
 | Error | Fix |
 |-------|-----|
-| Subscription not confirmed | Check endpoint/email for confirmation link |
-| DMS connection refused | Verify VPC/subnet and security group rules |
+| Subscription not confirmed | SMN subscriptions need endpoint/user confirmation |
+| DMS instance creation fails | Check VPC/subnet availability and engine version |
 
-## Security
-- MUST use HTTPS endpoints for SMN subscriptions
-- MUST enable DMS access control (ACL)
-- MUST store SMN/DMS credentials in DEW/CSMS
+## Cross-Skill References
+
+- **CES alarms**: See `huawei-cloud-eye` for SMN-based alarm notifications
+- **VPC**: See `huawei-vpc` for DMS instance networking

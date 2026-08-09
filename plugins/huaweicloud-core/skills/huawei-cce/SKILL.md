@@ -18,6 +18,7 @@ Domain expertise for CCE (Cloud Container Engine) and SWR (Software Repository f
 
 | Trap | Why |
 |------|-----|
+| **KooCLI 7.x: CreateCluster/CreateNodePool broken** | OPENAPI_ERROR in KooCLI 7.2.12. Use `CreateAutopilotCluster` for serverless, or Python SDK for VM clusters |
 | Cluster type immutable | Cannot change hybrid/traditional after creation |
 | Master managed by Huawei | No SSH to master. Use kubectl or kubectl-cce |
 | Network model affects pod IP | VPC network gives pods VPC IPs |
@@ -35,7 +36,7 @@ Domain expertise for CCE (Cloud Container Engine) and SWR (Software Repository f
 | List node pools | `ListNodePools` | CCE |
 | Create node pool | `CreateNodePool` | CCE |
 | List nodes | `ListNodes` | CCE |
-| Get kubeconfig | `CreateKubeConfig` | CCE |
+| Get kubeconfig | `CreateKubernetesClusterCert` | CCE |
 | List addons | `ListAddonInstances` | CCE |
 | Docker login (SWR) | `CreateAuthorizationToken` | SWR |
 | Create SWR org | `CreateNamespace` | SWR |
@@ -43,6 +44,8 @@ Domain expertise for CCE (Cloud Container Engine) and SWR (Software Repository f
 | List repos | `ListReposDetails` | SWR |
 
 ## SWR Image Push Workflow
+
+**Prerequisite**: User/agency must have `sts::createServiceBearerToken` IAM permission. Without it, `CreateAuthorizationToken` returns `SVCSTG.SWR.4030170 Insufficient permissions`. Grant via IAM console or attach SWR Admin role.
 
 ```bash
 # 1. Docker login to SWR
@@ -77,6 +80,7 @@ See `hcloud CCI --help` for full operation list.
 | kubectl connection refused | Verify cluster Running; use `kubectl cce` (no EIP needed) |
 | Node pool creation failed | Check VPC/subnet availability and flavor capacity |
 | Docker push 401 | Re-run `CreateAuthorizationToken` (token expired) |
+| SVCSTG.SWR.4030170 | Missing `sts::createServiceBearerToken` IAM permission. Grant SWR Admin role or add policy |
 | Addon install fails | Use `metadata.uid` from `ShowAddonInstance`, not name |
 | `kubectl cce` not found | Install plugin: `kubectl cce` uses AK/SK, no kubeconfig required |
 

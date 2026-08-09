@@ -12,33 +12,72 @@ Use KooCLI `hcloud` for local inspection and reviewed operations. Never ask the 
 
 ## Install KooCLI
 
-- Official install guide: `https://support.huaweicloud.com/qs-hcli/hcli_02_003.html`.
-- Windows: download and unzip KooCLI, for example to `%USERPROFILE%\hcloud`, then add that directory to the user `PATH`.
-- Linux: install into the user path when possible, for example `~/.local/bin/hcloud`, so no `sudo` is needed. The official Linux package is available from Huawei Cloud's documented download page; common amd64 package URL: `https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-linux-amd64.tar.gz`.
-- Agent processes find executables through their own `PATH`. If OpenCode/Codex cannot find `hcloud`, restart the agent after updating `PATH`, or set `HCLOUD_BIN` to the full `hcloud` executable path.
-- Verify with `hcloud version`.
+Official guide: `https://support.huaweicloud.com/qs-hcli/hcli_02_003.html`.
+
+### Windows
+1. Download and unzip: `https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-windows-amd64.zip`
+2. Extract to `%USERPROFILE%\hcloud`, add to user `PATH`
+3. Verify: `hcloud version`
+
+### Linux (amd64 / arm64)
+One-liner (recommended):
+```bash
+curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y
+```
+Or manual download:
+```bash
+# amd64
+curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-linux-amd64.tar.gz"
+tar -zxvf huaweicloud-cli-linux-amd64.tar.gz
+# arm64
+curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-linux-arm64.tar.gz"
+tar -zxvf huaweicloud-cli-linux-arm64.tar.gz
+```
+Move to PATH: `mv $(pwd)/hcloud ~/.local/bin/`
+Verify: `hcloud version`
+
+### macOS (amd64 / arm64)
+One-liner (recommended):
+```bash
+curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y
+```
+Or manual download:
+```bash
+# amd64
+curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-mac-amd64.tar.gz"
+tar -zxvf huaweicloud-cli-mac-amd64.tar.gz
+# arm64 (Apple Silicon)
+curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/huaweicloud-cli-mac-arm64.tar.gz"
+tar -zxvf huaweicloud-cli-mac-arm64.tar.gz
+```
+Move to PATH: `mv $(pwd)/hcloud /usr/local/bin/`
+Verify: `hcloud version`
+
+Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `hcloud`, restart after updating `PATH`, or set `HCLOUD_BIN`.
 
 ## Configure Credentials Outside Chat
 
 - Create AK/SK in the Huawei Cloud console under `My Credentials -> Access Keys`.
-- Prefer interactive setup: `hcloud configure init`.
-- Non-interactive setup is local only: `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>`.
-- Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID. KooCLI can often resolve Project ID from the configured region.
+- **Interactive** (preferred): `hcloud configure init` — prompts safely for AK/SK/region.
+- **Non-interactive** (Agent/CI environments): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` — user must execute outside agent chat.
+- Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
+- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x. Always use `hcloud configure set`.
 
 ## Safe Flow
 
 1. Check whether `hcloud` is installed.
-2. Ask the user to configure credentials outside the agent conversation when setup is needed.
-3. Inspect profile and region only through redacted tooling.
-4. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
-5. Use `--cli-output=json` for machine-readable responses when supported.
-6. For resource operations, include `--cli-region`, `--cli-profile`, and service-specific project information when required.
-7. Classify every command before running it:
+2. **KooCLI first-run privacy agreement**: On a fresh KooCLI install, `hcloud` blocks with `同意并继续使用(y)/不同意并退出(N)` and fails with `[USE_ERROR]您输入的是无效字符` in non-interactive mode. Detection: check command output for these strings. Ask the user: "KooCLI needs to accept its privacy agreement. May I accept it on your behalf?" If the user agrees, run `huaweicloud_run_readonly_command` with `args=["version"]` and `stdin="y\n"`. This accepts the agreement once, after which hcloud works normally.
+3. Ask the user to configure credentials outside the agent conversation when setup is needed.
+4. Inspect profile and region only through redacted tooling.
+5. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
+6. Use `--cli-output=json` for machine-readable responses when supported.
+7. For resource operations, include `--cli-region`, `--cli-profile`, and service-specific project information when required.
+8. Classify every command before running it:
    - Read-only: `List*`, `Show*`, `Get*`, `Describe*`.
    - Write: `Create*`, `Delete*`, `Update*`, `Resize*`, `Start*`, `Stop*`, `Authorize*`, and similar.
    - Secret: any operation returning secret string, binary secret, token, or password.
-8. For write operations, show the exact command and ask for explicit approval.
+9. For write operations, show the exact command and ask for explicit approval.
 
 ## KooCLI Syntax Notes
 
@@ -48,10 +87,26 @@ Use KooCLI `hcloud` for local inspection and reviewed operations. Never ask the 
 - Minimal create shape to refine after help lookup:
 
 ```bash
-hcloud ECS CreateServers --cli-region=ap-southeast-3 --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=SSD
+hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.flavorRef=<flavor-id> --server.imageRef=<image-id> --server.nics.1.subnet_id=<subnet-id> --server.root_volume.volumetype=<type>
 ```
 
 If a command needs an `adminPass` or other password field, do not leave plaintext secrets in shell history. Prefer local-only input or runtime injection.
+
+## Output Formatting
+
+```bash
+# JSON format (recommended for Agent)
+hcloud <Service> <Op> --cli-output=json
+
+# Table format (manual viewing)
+hcloud <Service> <Op> --cli-output=table
+
+# JMESPath filtering (extract specific fields)
+hcloud <Service> <ListOp> --cli-output=json --cli-query "items[?status=='ACTIVE'].{ID:id,Name:name}"
+
+# Debug mode (when commands fail)
+hcloud <Service> <Op> --cli-debug=true
+```
 
 ## Preferred Toolkit Tools
 

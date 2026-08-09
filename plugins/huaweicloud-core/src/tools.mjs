@@ -3,9 +3,21 @@ import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { searchMarketplace } from './search-market.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SKILLS_ROOT = join(__dirname, '..', 'skills');
+const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
+function opencodeSkillsDir() {
+  const home = homedir();
+  return join(home, '.config', 'opencode', 'skills');
+}
+function resolveSkillsRoot() {
+  if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
+  if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
+  return SKILLS_ROOT_DEV;
+}
+const SKILLS_ROOT = resolveSkillsRoot();
 
 export const TOOL_DEFINITIONS = [
   {
@@ -53,6 +65,10 @@ export const TOOL_DEFINITIONS = [
         maxRetries: {
           type: 'number',
           description: 'Optional retry count for transient network errors. Defaults to 1.',
+        },
+        cwd: {
+          type: 'string',
+          description: 'Optional working directory for the hcloud process.',
         },
       },
     },
@@ -102,6 +118,10 @@ export const TOOL_DEFINITIONS = [
         maxRetries: {
           type: 'number',
           description: 'Optional retry count for transient network errors. Defaults to 1.',
+        },
+        cwd: {
+          type: 'string',
+          description: 'Optional working directory for the hcloud process.',
         },
       },
     },
@@ -188,6 +208,17 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_search_marketplace',
+    description: 'Search the Huawei Cloud agent skill marketplace for available skills. Returns scored results with names, categories, and descriptions. Use when built-in skills are insufficient or the user asks what skills exist.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query across skill name, description, triggers, and service.' },
+        category: { type: 'string', description: 'Optional category filter: computing, storage, network, security, devtools, monitoring, etc.' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -200,6 +231,8 @@ export async function callTool(name, args = {}) {
       return runHcloud(args.args || [], {
         timeoutMs: args.timeoutMs,
         maxRetries: args.maxRetries,
+        cwd: args.cwd,
+        stdin: args.stdin,
       });
     case 'huaweicloud_list_operations':
       return listOperations(args.service, { timeoutMs: args.timeoutMs });
@@ -219,6 +252,8 @@ export async function callTool(name, args = {}) {
       return getRegionalAvailability(args.service || '', args.region || '');
         case 'huaweicloud_explain_error':
       return explainError(args);
+    case 'huaweicloud_search_marketplace':
+      return searchMarketplace(args.query || '', args.category || '');
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -233,13 +268,15 @@ export async function runVersionCheck(options = {}) {
   const isSpawnError = /ENOENT|SPAWN_ERROR/i.test(errorText) || result.code === 'SPAWN_ERROR';
   return {
     installed: result.ok,
+    authenticated: result.ok && !/配置文件中不存在配置项|USE_ERROR.*配置/i.test(result.stdout || ''),
     errorCode: isSpawnError ? 'HCLOUD_NOT_FOUND' : undefined,
     output: result.ok ? result.stdout : errorText,
     nextStep: result.ok
       ? 'Use huaweicloud_show_profile_redacted to inspect the active KooCLI profile safely.'
       : isSpawnError
-        ? 'hcloud executable not found. If hcloud is already installed, set the HCLOUD_BIN environment variable to the full path of hcloud (e.g., C:\\Users\\sunzy\\hcloud\\hcloud.exe on Windows, or /usr/local/bin/hcloud on Linux/macOS). Then restart the agent session. Otherwise, install KooCLI from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html.'
-        : 'Install Huawei Cloud KooCLI from https://support.huaweicloud.com/qs-hcli/hcli_02_003.html. If hcloud is not on PATH, set HCLOUD_BIN to the hcloud executable path. Configure credentials outside the agent conversation.',
+        ? 'hcloud executable not found. Set HCLOUD_BIN to the full hcloud path, or install KooCLI: npx huaweicloud-devkit install-hcloud. Then restart the agent.'
+        : 'Install Huawei Cloud KooCLI: npx huaweicloud-devkit install-hcloud. Configure credentials outside the agent conversation.',
+    authHint: 'If hcloud is installed but commands fail with "配置文件中不存在配置项", run `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` outside agent chat to configure credentials.',
   };
 }
 
@@ -263,29 +300,49 @@ async function showProfileRedacted(profile) {
   }
   return {
     ok: result.ok,
-    note: 'Profile information was returned through the toolkit redaction pipeline.',
+    note: result.ok
+      ? 'Profile information was returned through the toolkit redaction pipeline.'
+      : 'Failed to retrieve profile — hcloud may not be installed or configured.',
     result: redactSecrets(result),
   };
 }
+
+const SERVICE_EXAMPLES = {
+  ECS: { list: 'ECS ListServersDetails', create: 'ECS CreateServers', show: 'IMS GlanceShowImage' },
+  VPC: { list: 'VPC ListVpcs', create: 'VPC CreateVpc', show: 'VPC ShowVpc' },
+  FunctionGraph: { list: 'FunctionGraph ListFunctions', create: 'FunctionGraph CreateFunction', show: 'FunctionGraph ShowFunctionConfig' },
+  APIG: { list: 'APIG ListInstancesV2', create: 'APIG CreateInstanceV2', show: 'APIG ShowDetailsOfInstanceV2' },
+  OBS: { list: 'OBS ls', create: 'OBS mb obs://<bucket>', show: 'OBS stat obs://<bucket>/<key>' },
+  RDS: { list: 'RDS ListInstances', create: 'RDS CreateInstance', show: 'RDS ShowInstance' },
+  CES: { list: 'CES ListAlarms', create: 'CES CreateAlarm', show: 'CES ListMetrics' },
+  GaussDB: { list: 'GaussDB ListInstances', create: 'GaussDB CreateInstance', show: 'GaussDB ShowInstance' },
+  DDS: { list: 'DDS ListInstances', create: 'DDS CreateInstance', show: 'DDS ShowInstance' },
+  DCS: { list: 'DCS ListInstances', create: 'DCS CreateInstance', show: 'DCS ShowInstance' },
+};
 
 async function listOperations(service, options = {}) {
   const serviceName = String(service || '').trim();
   if (!/^[A-Za-z][A-Za-z0-9-]{1,63}$/.test(serviceName)) {
     throw new Error('service must be a KooCLI service name such as ECS, VPC, IMS, OBS, RDS, or CDN.');
   }
-  const result = await runHcloud([serviceName, '--help'], {
+  const isObs = /^obs$/i.test(serviceName);
+  const svc = isObs ? 'obs' : serviceName;
+  const args = isObs ? ['obs', 'help'] : [svc, '--help'];
+  let result = await runHcloud(args, {
     timeoutMs: options.timeoutMs,
     maxRetries: 0,
   });
+  if (!result.ok && !isObs) {
+    result = await runHcloud([svc, 'help'], {
+      timeoutMs: options.timeoutMs,
+      maxRetries: 0,
+    });
+  }
   return {
     service: serviceName,
-    command: `hcloud ${serviceName} --help`,
+    command: isObs ? 'hcloud obs help' : `hcloud ${svc} --help`,
     selectionRule: 'Use this help text to select the exact KooCLI operation name before planning any service command.',
-    examples: {
-      listEcsInstances: 'ECS ListServersDetails',
-      createEcsInstance: 'ECS CreateServers',
-      showImage: 'IMS GlanceShowImage',
-    },
+    examples: SERVICE_EXAMPLES[serviceName.toUpperCase()] || { note: `No cached examples for ${serviceName}. Use the help text above to discover available operations.` },
     result,
   };
 }
@@ -294,21 +351,61 @@ async function runApprovedCommand(args = {}) {
   if (args.approvedByUser !== true) {
     throw new Error('approvedByUser must be true after explicit user approval for this exact command.');
   }
+  const strictPlan = planHcloudCommand(args.args || [], { allowWrites: false });
   const plan = planHcloudCommand(args.args || [], { allowWrites: true });
   if (String(args.approvedCommand || '') !== plan.command) {
     throw new Error('approvedCommand must exactly match the planned hcloud command.');
   }
-  return runHcloud(args.args || [], {
+  const result = await runHcloud(args.args || [], {
     allowWrites: true,
     timeoutMs: args.timeoutMs,
     maxRetries: args.maxRetries,
+    cwd: args.cwd,
+    stdin: args.stdin,
   });
+  result.approved = true;
+  result.plan = strictPlan;
+  return result;
 }
 
 function serviceCatalog(intent = '') {
+  const it = String(intent).toLowerCase();
+  const routeMap = [
+    { keywords: ['ecs', 'server', 'vm', 'instance', 'compute', 'flavor', 'image'], skills: ['huawei-ecs'], services: ['ECS'] },
+    { keywords: ['vpc', 'subnet', 'network', 'security group', 'eip', 'nat', 'vpn', 'bandwidth'], skills: ['huawei-vpc'], services: ['VPC', 'EIP'] },
+    { keywords: ['obs', 'bucket', 'storage', 'object', 'static website', 'static site', 'hosting'], skills: ['huawei-obs'], services: ['OBS'] },
+    { keywords: ['functiongraph', 'serverless', 'function', 'lambda', 'trigger', 'faas'], skills: ['huawei-functiongraph'], services: ['FunctionGraph'] },
+    { keywords: ['cce', 'kubernetes', 'k8s', 'container', 'cluster', 'node pool', 'swr', 'docker', 'image registry'], skills: ['huawei-cce'], services: ['CCE', 'SWR'] },
+    { keywords: ['apig', 'api gateway', 'publish', 'throttle'], skills: ['huawei-apig'], services: ['APIG'] },
+    { keywords: ['rds', 'mysql', 'postgresql', 'database', 'db'], skills: ['huawei-rds'], services: ['RDS'] },
+    { keywords: ['gaussdb', 'distributed', 'sharding', 'opengauss'], skills: ['huawei-gaussdb'], services: ['GaussDB'] },
+    { keywords: ['iam', 'permission', 'policy', 'role', 'user', 'ak/sk', 'access key', 'agency'], skills: ['huawei-iam'], services: ['IAM'] },
+    { keywords: ['dew', 'secret', 'kms', 'encrypt', 'decrypt', 'certificate', 'csms'], skills: ['huawei-dew'], services: ['CSMS', 'KMS'] },
+    { keywords: ['modelarts', 'ai', 'model', 'training', 'inference', 'machine learning'], skills: ['huawei-modelarts'], services: ['ModelArts'] },
+    { keywords: ['billing', 'cost', 'bill', 'budget', 'expense', 'bss'], skills: ['huawei-billing'], services: ['BSS'] },
+    { keywords: ['waf', 'aad', 'ddos', 'firewall', 'web protection'], skills: ['huawei-waf-aad'], services: ['WAF', 'AAD'] },
+    { keywords: ['smn', 'dms', 'notification', 'message', 'kafka', 'rabbitmq'], skills: ['huawei-smn-dms'], services: ['SMN', 'DMS'] },
+    { keywords: ['ces', 'monitor', 'alarm', 'metric', 'dashboard', 'cloud eye'], skills: ['huawei-cloud-eye'], services: ['CES'] },
+    { keywords: ['cts', 'audit', 'trace', 'tracker'], skills: ['huawei-cts'], services: ['CTS'] },
+    { keywords: ['cbr', 'backup', 'restore', 'vault', 'snapshot'], skills: ['huawei-cbr'], services: ['CBR'] },
+    { keywords: ['deployment', 'deploy', 'ci/cd', 'pipeline', 'release'], skills: ['huawei-deployment'], services: ['CloudDeploy'] },
+    { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
+];
+  const matched = [];
+  const tokens = it.split(/[\s,./-]+/).filter((t) => t.length > 0);
+  for (const route of routeMap) {
+    if (route.keywords.some((kw) => tokens.includes(kw))) {
+      matched.push(route);
+    }
+  }
+  const recommendedSkills = [...new Set(matched.flatMap((r) => r.skills))];
+  const recommendedServices = [...new Set(matched.flatMap((r) => r.services))].slice(0, 5);
+
   return {
     intent,
-    recommendedOrder: [
+    recommendedSkills: recommendedSkills.length ? recommendedSkills : ['Use huaweicloud-core to route intent.'],
+    recommendedServices: recommendedServices.length ? recommendedServices : ['Run hcloud --help to list available services.'],
+    capabilityOrder: [
       'Huawei Cloud Skills for task-specific workflows and examples',
       'KooCLI hcloud for local authenticated operations and quick inspection',
       'Huawei Cloud API documentation for exact request and response contracts',
@@ -330,33 +427,94 @@ function serviceCatalog(intent = '') {
 function explainError({ service = 'unknown', errorCode = '', message = '', requestId = '' } = {}) {
   const combined = `${errorCode} ${message}`.toLowerCase();
   const suggestions = [];
+  const svc = String(service).toLowerCase();
 
-  if (/auth|token|credential|ak|sk|401|403|unauthorized|forbidden/i.test(combined)) {
-    suggestions.push('Check KooCLI profile, region, project_id, and IAM permissions without printing secrets.');
+  const SERVICE_ALIASES = {
+    'functiongraph': 'FSS',
+    'fgs': 'FSS',
+  };
+  const patternKey = SERVICE_ALIASES[svc] || service;
+
+  const hwErrorPatterns = {
+    OBS: {
+      'InvalidAccessKeyId': 'OBS uses AK/SK directly (not IAM tokens). Verify AK/SK validity, OBS endpoint, and OBS permissions.',
+      'UserRestricted': 'This IAM user is restricted from OBS operations (403). Check IAM console → Users → Permissions: grant OBS bucket/object actions, or use an unrestricted account. If the account is a sub-account, the main account may have imposed restrictions.',
+    },
+    APIG: {
+      'APIC.7241': 'The enterprise_project_id is required for enterprise accounts. Add --enterprise_project_id=0.',
+      'APIC.7242': 'The EIP binding method depends on loadbalancer_provider. Use AddIngressEipV2 for elb, AddEipV2 for lvs.',
+      'APIC.7256': 'Bandwidth minimum is 5 Mbps. Use --bandwidth_size=5 or higher.',
+      'APIC.7310': 'available_zone_ids must use AZ codes (e.g. ap-southeast-3a), NOT UUIDs from ListAvailableZonesV2.',
+    },
+    FSS: {
+      'FSS.0403': 'Missing FunctionGraph IAM permissions. Attach FunctionGraph FullAccess role or grant specific actions.',
+      'FSS.1078': '--code_filename is filename-only (no path). cd to the file directory before running the command.',
+      'FSS.1417': 'event_data field validation failed. Check parameter format: use dotted key=value, verify required hidden-optional fields.',
+    },
+    VPC: {
+      'VPC.0301': 'Bandwidth name is required for PER type EIPs, even though --help marks it optional.',
+    },
+    APIGW: {
+      'APIGW.0802': 'The current IAM user has no permissions in the requested region. Go to IAM console → Users → Permissions → add the target region, or switch to a different region.',
+    },
+  };
+  if (hwErrorPatterns[patternKey] && hwErrorPatterns[patternKey][errorCode]) {
+    suggestions.push(hwErrorPatterns[patternKey][errorCode]);
+  }
+  const svcPatterns = hwErrorPatterns[patternKey] || {};
+  for (const [code, tip] of Object.entries(svcPatterns)) {
+    if (errorCode && code.includes(errorCode)) {
+      if (!suggestions.includes(tip)) suggestions.push(tip);
+    }
+  }
+
+  if (/auth|token|credential|ak|sk|401|403|unauthorized|forbidden|Incorrect IAM/i.test(combined)) {
+    if (svc === 'obs') {
+      suggestions.push('OBS uses AK/SK directly, not IAM tokens. Verify AK/SK validity and OBS bucket permissions via hcloud configure list or the Huawei Cloud console.');
+    } else {
+      suggestions.push('Check KooCLI profile, region, project_id, and IAM permissions without printing secrets.');
+    }
+  }
+  if (/APIGW\.(\d+)/i.test(errorCode)) {
+    suggestions.push('APIGW.' + (errorCode.match(/APIGW\.(\d+)/i) || [])[1] + ': API Gateway layer error. ' + (errorCode === 'APIGW.0802' ? 'IAM user has no region permissions — check IAM console → User → Permissions → add target region.' : 'Verify the API request, region endpoint, and IAM permissions.'));
   }
   if (/region|endpoint|project/i.test(combined)) {
     suggestions.push('Confirm the service endpoint, region, and project_id match the target resource.');
   }
-  if (/quota|limit|insufficient/i.test(combined)) {
-    suggestions.push('Check quota and resource limits before retrying a create or scale operation.');
+  if (/quota|limit|insufficient|reach the limit/i.test(combined)) {
+    suggestions.push('Check quota and resource limits before retrying a create or scale operation. Consider switching accounts or requesting a quota increase.');
   }
   if (/not.?found|404/i.test(combined)) {
-    suggestions.push('List resources in the same region/project and verify the resource identifier.');
+    if (/list.?regions/i.test(svc)) {
+      suggestions.push('Use hcloud IAM KeystoneListRegions (not list-regions).');
+    } else {
+      suggestions.push('List resources in the same region/project and verify the resource identifier.');
+    }
   }
   if (!suggestions.length) {
     suggestions.push('Collect service name, operation, region, project_id, request_id, and the full redacted error message.');
   }
 
+  if (requestId) {
+    suggestions.push('Provide the Request ID (' + requestId + ') when contacting Huawei Cloud support.');
+  }
+
+  const uniqueSuggestions = suggestions.filter((s, i, arr) => {
+    return !arr.slice(0, i).some((prev) =>
+      prev.substring(0, 50).toLowerCase() === s.substring(0, 50).toLowerCase());
+  });
+
   return {
     service,
     errorCode,
     requestId,
-    suggestions,
+    suggestions: uniqueSuggestions,
   };
 }
 
 async function searchDocs(query, topic = 'all') {
   const q = String(query || '').toLowerCase();
+  const tokens = q.split(/\s+/).filter((t) => t.length > 0);
   const results = [];
   try {
     if (existsSync(SKILLS_ROOT)) {
@@ -377,11 +535,16 @@ async function searchDocs(query, topic = 'all') {
           const descMatch = fm.match(/^description:\s*(.+)$/m);
           if (descMatch) description = descMatch[1].trim();
         }
-        if (topic !== 'all' && !name.includes(topic) && !description.toLowerCase().includes(topic)) continue;
-        const relevance =
-          (description.toLowerCase().includes(q) ? 3 : 0) +
-          (name.toLowerCase().includes(q) ? 2 : 0) +
-          (content.toLowerCase().includes(q) ? 1 : 0);
+        if (topic !== 'all') {
+          const topicLower = topic.toLowerCase();
+          if (!name.toLowerCase().includes(topicLower) && !description.toLowerCase().includes(topicLower)) continue;
+        }
+        const descLower = description.toLowerCase();
+        const nameLower = name.toLowerCase();
+        const contentLower = content.toLowerCase();
+        const relevance = tokens.reduce((score, token) => {
+          return score + (descLower.includes(token) ? 3 : 0) + (nameLower.includes(token) ? 2 : 0) + (contentLower.includes(token) ? 1 : 0);
+        }, 0);
         if (relevance > 0) {
           results.push({
             source: "skills/" + dir + "/SKILL.md",
@@ -412,7 +575,12 @@ async function retrieveSkill(name) {
   const content = readFileSync(skillPath, 'utf8');
   const references = [];
   const refDir = join(SKILLS_ROOT, skillName, 'references');
-  if (existsSync(refDir)) readdirSync(refDir).forEach((f) => references.push(f));
+  if (existsSync(refDir)) {
+    readdirSync(refDir).forEach((f) => {
+      const refPath = join(refDir, f);
+      references.push({ filename: f, content: readFileSync(refPath, 'utf8').substring(0, 4000) });
+    });
+  }
   const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   let version = 1, description = '';
   if (frontmatter) {
@@ -426,13 +594,25 @@ async function retrieveSkill(name) {
 }
 
 async function listRegions() {
-  const result = await runHcloud(['iam', 'list-regions'], { timeoutMs: 30000, maxRetries: 0 })
+  const result = await runHcloud(['IAM', 'KeystoneListRegions'], { timeoutMs: 30000, maxRetries: 0 })
     .catch((err) => ({ ok: false, error: err.message }));
   if (!result.ok) {
     return {
       ok: false,
       error: result.error || 'Failed to list regions.',
       fallback: 'Check https://developer.huaweicloud.com/endpoint for available regions.',
+      staticRegions: [
+        { id: 'cn-north-1', description: '华北-北京一' },
+        { id: 'cn-north-4', description: '华北-北京四' },
+        { id: 'cn-east-3', description: '华东-上海一' },
+        { id: 'cn-east-2', description: '华东-上海二' },
+        { id: 'cn-south-1', description: '华南-广州' },
+        { id: 'ap-southeast-1', description: '香港' },
+        { id: 'ap-southeast-3', description: '新加坡' },
+        { id: 'ap-southeast-2', description: '曼谷' },
+        { id: 'af-south-1', description: '约翰内斯堡' },
+      ],
+      note: 'hcloud unavailable. Showing static region list. For the complete list, visit the fallback URL.',
     };
   }
   let regions = [];
@@ -457,27 +637,33 @@ async function getRegionalAvailability(service, region) {
   const reg = String(region || '').toLowerCase().trim();
   if (!svc || !reg) return { ok: false, error: 'Both service and region are required.' };
   const known = {
-    ecs: ['cn-south-1','cn-north-4','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','af-south-1'],
-    obs: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
-    vpc: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    ecs: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','ap-southeast-4','af-south-1','tr-west-1','sa-brazil-1','la-north-2','na-mexico-1','me-east-1'],
+    obs: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','af-south-1'],
+    vpc: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1','ap-southeast-4','af-south-1','tr-west-1','sa-brazil-1','la-north-2','me-east-1'],
     iam: ['global'],
-    rds: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3','ap-southeast-1'],
+    rds: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     gaussdb: ['cn-south-1','cn-north-4','cn-east-3'],
-    cce: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    cce: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     modelarts: ['cn-south-1','cn-north-4','cn-east-3'],
-    functiongraph: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    functiongraph: ['cn-south-1','cn-north-4','cn-north-1','cn-east-3','cn-east-2','ap-southeast-3','ap-southeast-2','ap-southeast-1'],
     dew: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     smn: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     ces: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
     cts: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    apig: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    cbr: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    dds: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
+    dcs: ['cn-south-1','cn-north-4','cn-east-3','ap-southeast-3'],
   };
-  const found = known[svc] || [];
-  const available = found.includes(reg) || found.includes('global');
+  if (!known[svc]) return { ok: false, service: svc, region: reg, available: false, note: 'Service ' + svc + ' is not in the regional availability cache. Run hcloud ' + svc.toUpperCase() + ' --help to verify, or check https://developer.huaweicloud.com/endpoint.' };
+  const available = known[svc].includes(reg) || known[svc].includes('global');
   return {
     ok: true, service: svc, region: reg, available,
     note: available
       ? svc + ' is available in ' + reg + '.'
       : svc + ' availability in ' + reg + ' could not be confirmed. Verify at https://developer.huaweicloud.com/endpoint.',
+    sourcedFrom: 'static cache, update via npm package upgrade',
+    disclaimer: 'This result reflects service-level availability only. It does NOT guarantee that your IAM user has permissions in this region. Account-level restrictions (e.g., APIGW.0802) may block actual API calls even when the service is available.',
   };
 }
 
