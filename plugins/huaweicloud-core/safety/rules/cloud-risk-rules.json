@@ -47,6 +47,22 @@
       "remediation": "Use runtime secret references, user-side inspection, or redacted metadata checks instead of returning secret values to the agent."
     },
     {
+      "id": "hwc-command-encoded-shell-exec",
+      "title": "Encoded payload piped to shell",
+      "category": "execution",
+      "severity": "deny",
+      "stages": ["command"],
+      "match": {
+        "all": [
+          { "field": "text", "regex": "(base64\\s+(-d|--decode)|xxd\\s+-r|certutil\\s+-decode|FromBase64String|hex\\s*decode)" },
+          { "field": "text", "regex": "(\\||;|&&)" },
+          { "field": "text", "regex": "\\b(bash|sh|zsh|powershell|pwsh|cmd|python|node)\\b" }
+        ]
+      },
+      "message": "The command decodes an encoded payload and pipes it into an interpreter.",
+      "remediation": "Decode payloads into a reviewable file first, inspect the content, then execute only explicit reviewed commands."
+    },
+    {
       "id": "hwc-network-public-admin-port",
       "title": "Public admin port exposure",
       "category": "public_exposure",
@@ -54,7 +70,7 @@
       "stages": ["command", "artifact", "deploy_plan"],
       "match": {
         "all": [
-          { "field": "text", "regex": "(0\\.0\\.0\\.0/0|::/0|remote_ip_prefix\\s*[=:]\\s*0\\.0\\.0\\.0/0|cidr\\s*[=:]\\s*0\\.0\\.0\\.0/0)" },
+          { "field": "text", "regex": "(0\\.0\\.0\\.0\\s*/\\s*0|::\\s*/\\s*0|remote_ip_prefix\\s*[=:]\\s*0\\.0\\.0\\.0\\s*/\\s*0|cidr\\s*[=:]\\s*0\\.0\\.0\\.0\\s*/\\s*0)" },
           { "field": "text", "regex": "(port_range_min|port_range_max|from_port|to_port|port|\\b22\\b|\\b3389\\b|\\b3306\\b|\\b5432\\b|\\b6379\\b|\\b9200\\b)" }
         ]
       },
@@ -69,9 +85,11 @@
       "stages": ["command", "artifact", "deploy_plan"],
       "match": {
         "all": [
-          { "field": "text", "regex": "(OBS|obs://|bucket|object|Statement|Principal)" },
-          { "field": "text", "regex": "(Anonymous|Everyone|\\\"Principal\\\"\\s*:\\s*\\\"\\*\\\"|AllUsers)" },
-          { "field": "text", "regex": "(PutObject|DeleteObject|PutBucketPolicy|FULL_CONTROL|WRITE|obs:object:PutObject|obs:bucket:PutBucketPolicy)" }
+          { "field": "text", "regex": "(OBS|obs://|bucket|object|Statement|Principal)" }
+        ],
+        "any": [
+          { "field": "text", "regex": "((Anonymous|Everyone|\\\"Principal\\\"\\s*:\\s*\\\"\\*\\\"|AllUsers).*(PutObject|DeleteObject|PutBucketPolicy|FULL_CONTROL|WRITE|obs:object:PutObject|obs:bucket:PutBucketPolicy)|(PutObject|DeleteObject|PutBucketPolicy|FULL_CONTROL|WRITE|obs:object:PutObject|obs:bucket:PutBucketPolicy).*(Anonymous|Everyone|\\\"Principal\\\"\\s*:\\s*\\\"\\*\\\"|AllUsers))" },
+          { "field": "text", "regex": "(-acl\\s*=?\\s*public-read-write|acl\\s*[=:]\\s*[\\\"']?public-read-write|public-write)" }
         ]
       },
       "message": "The change may grant anonymous write or full-control access to OBS data.",
@@ -86,7 +104,7 @@
       "match": {
         "all": [
           { "field": "text", "regex": "(FunctionGraph|APIG|CreateTrigger|CreateApi|DEDICATEDGATEWAY|API Gateway)" },
-          { "field": "text", "regex": "(public|PUBLIC|0\\.0\\.0\\.0/0|auth\\s*[=:]\\s*(NONE|none|false)|security_authentication\\s*[=:]\\s*(NONE|none))" }
+          { "field": "text", "regex": "(public|PUBLIC|0\\.0\\.0\\.0\\s*/\\s*0|auth[\\\"']?\\s*[=:]\\s*[\\\"']?(NONE|none|false)|security_authentication[\\\"']?\\s*[=:]\\s*[\\\"']?(NONE|none))" }
         ]
       },
       "message": "The generated FunctionGraph or API Gateway path may be publicly reachable without authentication.",
@@ -101,7 +119,7 @@
       "match": {
         "all": [
           { "field": "text", "regex": "(IAM|policy|role|agency|Statement|Action)" },
-          { "field": "text", "regex": "(\\\"Action\\\"\\s*:\\s*\\\"\\*\\\"|Action\\s*[=:]\\s*\\*|AdministratorAccess|FullAccess)" },
+          { "field": "text", "regex": "(\\\"Action\\\"\\s*:\\s*(\\\"(\\*|\\*:\\*)\\\"|\\[\\s*\\\"(\\*|\\*:\\*)\\\")|Action\\s*[=:]\\s*(\\*|\\*:\\*)|AdministratorAccess|FullAccess)" },
           { "field": "text", "regex": "(\\\"Effect\\\"\\s*:\\s*\\\"Allow\\\"|Effect\\s*[=:]\\s*Allow)" }
         ]
       },

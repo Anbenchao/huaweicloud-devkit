@@ -15,7 +15,8 @@ function readFrames() {
     const headerEnd = buffer.indexOf('\r\n\r\n');
     if (headerEnd !== -1) {
       useContentLengthFraming = true;
-      parseContentLengthFrame(headerEnd);
+      const consumed = parseContentLengthFrame(headerEnd);
+      if (!consumed) return;
       continue;
     }
 
@@ -37,15 +38,16 @@ function parseContentLengthFrame(headerEnd) {
   const match = header.match(/Content-Length:\s*(\d+)/i);
   if (!match) {
     buffer = Buffer.alloc(0);
-    return;
+    return true;
   }
   const length = Number(match[1]);
   const bodyStart = headerEnd + 4;
   const bodyEnd = bodyStart + length;
-  if (buffer.length < bodyEnd) return;
+  if (buffer.length < bodyEnd) return false;
   const body = buffer.subarray(bodyStart, bodyEnd).toString('utf8');
   buffer = buffer.subarray(bodyEnd);
   void handleMessage(JSON.parse(body));
+  return true;
 }
 
 async function handleMessage(message) {

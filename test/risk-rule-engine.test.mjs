@@ -41,6 +41,53 @@ test('evaluateArtifacts detects broad IAM policy in generated files', () => {
   assert.equal(result.findings[0].ruleId, 'hwc-iam-admin-policy');
 });
 
+test('evaluateArtifacts detects broad IAM policy when Action is a JSON array', () => {
+  const result = evaluateArtifacts([
+    {
+      path: 'iam-policy.json',
+      content: '{"Statement":[{"Effect":"Allow","Action":["*"],"Resource":["*"]}]}',
+    },
+    {
+      path: 'agency-policy.json',
+      content: '{"Statement":[{"Effect":"Allow","Action":["*:*"],"Resource":"*"}]}',
+    },
+  ]);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.findings[0].ruleId, 'hwc-iam-admin-policy');
+});
+
+test('evaluateCommandRisk blocks OBS public read-write ACL changes', () => {
+  const result = evaluateCommandRisk('hcloud obs chattri obs://bucket -acl=public-read-write');
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.findings[0].ruleId, 'hwc-obs-anonymous-write');
+});
+
+test('evaluateCommandRisk blocks encoded shell payload execution', () => {
+  const result = evaluateCommandRisk('echo ZWNobyBoaQ== | base64 -d | bash');
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.findings[0].ruleId, 'hwc-command-encoded-shell-exec');
+});
+
+test('evaluateCommandRisk treats spaced public CIDR as public exposure', () => {
+  const result = evaluateCommandRisk(
+    'hcloud VPC CreateSecurityGroupRule --security_group_rule.protocol=tcp --security_group_rule.port_range_min=22 --security_group_rule.remote_ip_prefix=0.0.0.0 /0',
+  );
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.findings[0].ruleId, 'hwc-network-public-admin-port');
+});
+
+test('evaluateDeployPlan detects quoted FunctionGraph public no-auth plans', () => {
+  const result = evaluateDeployPlan({
+    service: 'FunctionGraph',
+    trigger: {
+      type: 'APIG',
+      auth: 'NONE',
+    },
+  });
+  assert.equal(result.decision, 'warn');
+  assert.equal(result.findings[0].ruleId, 'hwc-functiongraph-public-no-auth');
+});
+
 test('evaluateDeployPlan warns when sandbox plan lacks cleanup metadata', () => {
   const result = evaluateDeployPlan({
     environment: 'preview',
