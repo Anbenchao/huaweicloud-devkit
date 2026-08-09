@@ -5,7 +5,7 @@
 
 帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
-HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、Claude Code、Cursor 等主流 Agent。
+HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、Claude Code、Cursor、码道（CodeArts Agent）等主流 Agent。
 
 ## 快速开始
 
@@ -41,6 +41,27 @@ npx --yes huaweicloud-devkit install --target codex
 ```
 /plugin install huaweicloud-core@huaweicloud-devkit
 ```
+
+### CodeArts Agent（码道）
+
+码道没有插件市场，通过技能 + MCP 机制适配：
+
+```bash
+npx --yes huaweicloud-devkit install --target codearts
+```
+
+自动安装 27 个技能到 `~/.codeartsdoer/skills/` 与项目级 `.codeartsdoer/skills/`，MCP 服务器注册到用户级与项目级 `.codeartsdoer/mcp/mcp_settings.json`。若本机已存在 KooCLI（`~/hcloud/hcloud.exe`），会自动将 `HCLOUD_BIN` 注入 MCP 配置。安装后**重启会话**使 MCP 工具生效。
+
+```bash
+npx --yes huaweicloud-devkit install-hcloud   # 安装 KooCLI（自动接受隐私协议）
+npx --yes huaweicloud-devkit doctor           # 自检：hcloud、MCP、技能、沙箱模式
+npx --yes huaweicloud-devkit status --target codearts   # 查看码道安装状态
+npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
+```
+
+> **沙箱模式**：码道默认 `bash_mode: sandbox` 会阻止 KooCLI 写入配置目录（如 `~/.hcloud/root`），导致隐私协议无法持久化、KooCLI 无法运行。`install-hcloud` 会自动检测沙箱模式并给出明确指引——请在**码道外终端**安装使用 KooCLI，或在码道设置中关闭沙箱模式（设置 → 权限 → Bash 模式）后重试。
+>
+> **认证**：KooCLI 就绪后，还需在码道外终端执行 `hcloud configure init` 配置 AK/SK 与区域，然后即可在码道中描述你的华为云任务。
 
 ### Cursor
 

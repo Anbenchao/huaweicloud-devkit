@@ -37,6 +37,58 @@ function codexDesktopCommandsDir() { return join(homedir(), '.agents', 'commands
 function codexDesktopPluginsDir() { return join(homedir(), '.agents', 'huaweicloud-plugins'); }
 function codexDesktopConfigFile() { return join(homedir(), '.agents', 'opencode.json'); }
 
+function codeartsSkillsDir() { return join(homedir(), '.codeartsdoer', 'skills'); }
+function codeartsMcpSettingsDir() { return join(homedir(), '.codeartsdoer', 'mcp'); }
+function codeartsMcpSettingsFile() { return join(codeartsMcpSettingsDir(), 'mcp_settings.json'); }
+function codeartsProjectDir() { return join(process.cwd(), '.codeartsdoer'); }
+function codeartsProjectSkillsDir() { return join(codeartsProjectDir(), 'skills'); }
+function codeartsProjectMcpSettingsFile() { return join(codeartsProjectDir(), 'mcp', 'mcp_settings.json'); }
+function codeartsPluginsDir() { return join(homedir(), '.codeartsdoer', 'huaweicloud-plugins'); }
+
+// Detect CodeArts sandbox mode (bash_mode in permission config).
+function detectCodeartsSandbox() {
+  try {
+    const configPath = join(homedir(), '.codeartsdoer', 'codearts-data', 'storage', 'permission', 'config.json');
+    if (!existsSync(configPath)) return null;
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    return typeof config.bash_mode === 'string' ? config.bash_mode : null;
+  } catch {
+    return null;
+  }
+}
+
+// Locate an existing hcloud executable (HCLOUD_BIN, ~/hcloud on Windows, ~/.local/bin elsewhere).
+function findHcloudBin() {
+  if (process.env.HCLOUD_BIN && existsSync(process.env.HCLOUD_BIN)) return process.env.HCLOUD_BIN;
+  const rel = platform() === 'win32' ? join('hcloud', 'hcloud.exe') : join('.local', 'bin', 'hcloud');
+  const candidate = join(homedir(), rel);
+  return existsSync(candidate) ? candidate : null;
+}
+
+function printSandboxWarning(reason) {
+  console.log(`\n\x1b[1m\x1b[31m⚠ 检测到码道沙箱模式 (bash_mode: sandbox)\x1b[0m`);
+  console.log(`\x1b[31m  ${reason}\x1b[0m`);
+  console.log(`\x1b[31m  请任选其一继续:\x1b[0m`);
+  console.log(`\x1b[31m  A. 在码道外的终端安装并使用 KooCLI (推荐):`);
+  console.log(`\x1b[31m     https://support.huaweicloud.com/qs-hcli/hcli_02_003.html`);
+  console.log(`\x1b[31m  B. 在码道设置中关闭沙箱模式后重试 (设置 → 权限 → Bash 模式)`);
+  console.log(`\x1b[31m  关闭沙箱后重新运行: npx huaweicloud-devkit install-hcloud\x1b[0m`);
+}
+
+// Try to auto-accept the KooCLI privacy agreement by answering 'y' on stdin.
+// Returns true when hcloud runs without re-prompting for the agreement.
+function acceptKooCliPrivacy(hcloudBin) {
+  const run = () => spawnSync(hcloudBin, ['version'], {
+    encoding: 'utf8', timeout: 10000, windowsHide: true, input: 'y\n',
+  });
+  const first = run();
+  const out = (first.stdout || '') + (first.stderr || '');
+  if (!/同意并继续使用|agree/i.test(out)) return first.status === 0;
+  const second = run();
+  const out2 = (second.stdout || '') + (second.stderr || '');
+  return second.status === 0 && !/同意并继续使用/.test(out2);
+}
+
 function checkNode() {
   const v = process.versions.node.split('.').map(Number);
   if (v[0] < 20) {
@@ -103,8 +155,10 @@ function hasCodexCLI() {
 }
 
 function checkHcloud() {
-  const r = spawnSync('hcloud version', [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
-  return r.status === 0 && /KooCLI|Current.*version/i.test(r.stdout ? r.stdout.toString() : '');
+  const bin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
+  const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+  const out = (r.stdout ? r.stdout.toString() : '') + (r.stderr ? r.stderr.toString() : '');
+  return r.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(out);
 }
 
 function getMarketplaceName() {
@@ -274,6 +328,96 @@ function uninstallCodexDesktop() {
   }
 }
 
+function registerCodeartsMcp(configPath) {
+  const mcpPath = join(codeartsPluginsDir(), 'src', 'mcp-server.mjs').replace(/\\/g, '/');
+  let config = {};
+  if (existsSync(configPath)) {
+    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
+  }
+  config.mcpServers = config.mcpServers || {};
+  const env = { HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local' };
+  const hcloudBin = findHcloudBin();
+  if (hcloudBin) env.HCLOUD_BIN = hcloudBin.replace(/\\/g, '/');
+  config.mcpServers.huaweicloud = {
+    command: 'node',
+    args: [mcpPath],
+    env,
+    enabled: true,
+  };
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log(`  MCP config updated: ${configPath}`);
+}
+
+async function installCodeArts() {
+  const skillsSrc = join(PLUGIN_ROOT, 'skills');
+  const srcDir = join(PLUGIN_ROOT, 'src');
+  const safetyDir = join(PLUGIN_ROOT, 'safety');
+
+  copyDir(skillsSrc, codeartsSkillsDir());
+  console.log(`  Skills -> ${codeartsSkillsDir()}`);
+  copyDir(skillsSrc, codeartsProjectSkillsDir());
+  console.log(`  Skills -> ${codeartsProjectSkillsDir()}`);
+
+  const pluginDest = codeartsPluginsDir();
+  copyDir(srcDir, join(pluginDest, 'src'));
+  console.log(`  MCP Server -> ${join(pluginDest, 'src')}`);
+  copyDir(safetyDir, join(pluginDest, 'safety'));
+  console.log(`  Safety Policy -> ${join(pluginDest, 'safety')}`);
+
+  registerCodeartsMcp(codeartsMcpSettingsFile());
+  registerCodeartsMcp(codeartsProjectMcpSettingsFile());
+}
+
+function uninstallCodeArts() {
+  let removed = 0;
+  for (const skillsDir of [codeartsSkillsDir(), codeartsProjectSkillsDir()]) {
+    if (!existsSync(skillsDir)) continue;
+    for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
+      if (entry.name.startsWith('huawei')) {
+        removeIfExists(join(skillsDir, entry.name));
+        removed++;
+      }
+    }
+  }
+  if (removed > 0) console.log(`  Removed ${removed} skills`);
+
+  if (removeIfExists(codeartsPluginsDir())) {
+    console.log('  Removed MCP server and safety policy');
+  }
+  for (const configPath of [codeartsMcpSettingsFile(), codeartsProjectMcpSettingsFile()]) {
+    if (!existsSync(configPath)) continue;
+    let config = {};
+    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
+    if (config.mcpServers?.huaweicloud) {
+      delete config.mcpServers.huaweicloud;
+      if (Object.keys(config.mcpServers).length === 0) delete config.mcpServers;
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      console.log(`  Config cleaned: ${configPath}`);
+    }
+  }
+}
+
+function codeartsStatus() {
+  const pluginDir = codeartsPluginsDir();
+  console.log(`  MCP Server: ${existsSync(join(pluginDir, 'src', 'mcp-server.mjs')) ? '\x1b[32mInstalled\x1b[0m' : '\x1b[31mNot installed\x1b[0m'}`);
+  console.log(`  Safety Policy: ${existsSync(join(pluginDir, 'safety', 'policy.json')) ? '\x1b[32mInstalled\x1b[0m' : '\x1b[31mNot installed\x1b[0m'}`);
+  let skillCount = 0;
+  if (existsSync(codeartsSkillsDir())) {
+    skillCount = readdirSync(codeartsSkillsDir(), { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name.startsWith('huawei')).length;
+  }
+  console.log(`  Skills: ${skillCount > 0 ? `\x1b[32m${skillCount} installed\x1b[0m` : '\x1b[31mNot installed\x1b[0m'}`);
+  if (existsSync(codeartsMcpSettingsFile())) {
+    try {
+      const config = JSON.parse(readFileSync(codeartsMcpSettingsFile(), 'utf8'));
+      console.log(`  MCP config: ${config.mcpServers?.huaweicloud ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
+    } catch {
+      console.log(`  MCP config: \x1b[31mInvalid\x1b[0m`);
+    }
+  }
+}
+
 function opencodeStatus() {
   const pluginDir = opencodePluginsDir();
   const skillsDir = opencodeSkillsDir();
@@ -302,6 +446,7 @@ function parseTarget() {
   const val = (process.argv[idx + 1] || '').toLowerCase();
   if (val === 'codex') return 'codex';
   if (val === 'codex-desktop') return 'codex-desktop';
+  if (val === 'codearts') return 'codearts';
   if (val === 'all') return 'all';
   return 'opencode';
 }
@@ -320,6 +465,10 @@ async function cmdInstall() {
     console.log('\n[Codex Desktop]');
     await installCodexDesktop();
   }
+  if (target === 'codearts' || target === 'all') {
+    console.log('\n[CodeArts]');
+    await installCodeArts();
+  }
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
     if (!hasCodexCLI()) {
@@ -336,8 +485,12 @@ async function cmdInstall() {
   }
 
   console.log(`\n\x1b[32mInstallation complete!\x1b[0m`);
+  const appName = target === 'codearts' ? 'CodeArts'
+    : target === 'codex-desktop' ? 'Codex Desktop'
+    : target === 'codex' ? 'Codex' : 'OpenCode';
+  const pad = ' '.repeat(24 - appName.length);
   console.log(`\n\x1b[1m\x1b[33m╔══════════════════════════════════════════════════════╗`);
-  console.log(`\x1b[1m\x1b[33m║  MCP 工具在重启 OpenCode 会话后才生效                ║`);
+  console.log(`\x1b[1m\x1b[33m║  MCP 工具在重启 ${appName} 会话后才生效${pad}║`);
   console.log(`\x1b[1m\x1b[33m║  关闭当前会话 → 重新打开，直接描述华为云任务即可      ║`);
   console.log(`\x1b[1m\x1b[33m║  重启前请勿执行 hcloud 命令，避免 AK/SK 泄露         ║`);
   console.log(`\x1b[1m\x1b[33m╚══════════════════════════════════════════════════════╝\x1b[0m`);
@@ -353,9 +506,13 @@ async function cmdInstall() {
   console.log(`\nAfter restart + hcloud setup, run: npx huaweicloud-devkit doctor`);
 
   // Write install marker for doctor to detect
-  writeFileSync(join(opencodePluginsDir(), '.installed'), new Date().toISOString());
+  const markerDir = target === 'codearts' ? codeartsPluginsDir() : opencodePluginsDir();
+  writeFileSync(join(markerDir, '.installed'), new Date().toISOString());
   if (target === 'opencode' || target === 'all') {
     console.log('Or describe your Huawei Cloud task in OpenCode');
+  }
+  if (target === 'codearts' || target === 'all') {
+    console.log('Or describe your Huawei Cloud task in CodeArts');
   }
   if (target === 'codex' || target === 'all') {
     console.log('Or mention @huaweicloud-core in Codex');
@@ -370,6 +527,10 @@ async function cmdUninstall() {
   if (target === 'opencode' || target === 'all') {
     console.log('[OpenCode]');
     await uninstallOpenCode();
+  }
+  if (target === 'codearts' || target === 'all') {
+    console.log('\n[CodeArts]');
+    uninstallCodeArts();
   }
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
@@ -391,6 +552,10 @@ async function cmdStatus() {
   if (target === 'opencode' || target === 'all') {
     console.log('[OpenCode]');
     opencodeStatus();
+  }
+  if (target === 'codearts' || target === 'all') {
+    console.log('\n[CodeArts]');
+    codeartsStatus();
   }
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
@@ -449,10 +614,20 @@ async function cmdDoctor() {
   check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit-test install`);
 
   // hcloud CLI
-  const hcloudBin = process.env.HCLOUD_BIN || 'hcloud';
-  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
-  const hcloudOk = hcloudCheck.status === 0 && hcloudCheck.stdout.toString().includes('KooCLI');
+  const hcloudBin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
+  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+  const hcloudOut = (hcloudCheck.stdout || '').toString() + (hcloudCheck.stderr || '').toString();
+  const hcloudOk = hcloudCheck.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(hcloudOut);
   check('hcloud CLI installed', hcloudOk, 'Run: npx huaweicloud-devkit install-hcloud');
+
+  // CodeArts sandbox mode warning
+  const sandboxMode = detectCodeartsSandbox();
+  if (sandboxMode === 'sandbox') {
+    console.log(`  \x1b[33m[WARN]\x1b[0m CodeArts sandbox mode active (bash_mode: sandbox)`);
+    console.log(`        KooCLI may fail to write config in ~/.hcloud/ and hang on the privacy agreement.`);
+    console.log(`        Fix: disable sandbox (Settings → Permissions) or use a terminal outside CodeArts.`);
+    warn++;
+  }
 
   if (hcloudOk) {
     const ver = (hcloudCheck.stdout.toString().match(/(\d+\.\d+\.\d+)/) || [])[1] || 'unknown';
@@ -465,7 +640,7 @@ async function cmdDoctor() {
   }
 
   // Skills
-  const skillsOptions = [opencodeSkillsDir(), codexDesktopSkillsDir()];
+  const skillsOptions = [opencodeSkillsDir(), codexDesktopSkillsDir(), codeartsSkillsDir()];
   let skillCount = 0, skillsDir = '';
   for (const dir of skillsOptions) {
     if (!existsSync(dir)) continue;
@@ -561,11 +736,14 @@ async function cmdInstallHcloud() {
       // Download
       console.log(`  Downloading ${url}...`);
       const psCmd = `[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '${url}' -OutFile '${zipPath}' -UseBasicParsing`;
-      spawnSync('powershell', ['-NoProfile', '-Command', psCmd], { stdio: 'inherit', windowsHide: true });
+      const dl = spawnSync('powershell', ['-NoProfile', '-Command', psCmd], { stdio: 'inherit', windowsHide: true, timeout: 180000 });
+      if (dl.status !== 0) throw new Error(`下载失败 (PowerShell exit ${dl.status})`);
 
       // Extract
       console.log('  Extracting...');
-      spawnSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${installDir}' -Force`], { stdio: 'inherit', windowsHide: true });
+      const ex = spawnSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${installDir}' -Force`], { stdio: 'inherit', windowsHide: true, timeout: 60000 });
+      if (ex.status !== 0) throw new Error(`解压失败 (PowerShell exit ${ex.status})`);
+      if (!existsSync(join(installDir, 'hcloud.exe'))) throw new Error('hcloud.exe 未生成，可能已被安全软件拦截');
 
       // Clean up zip
       rmSync(zipPath, { force: true });
@@ -576,11 +754,29 @@ async function cmdInstallHcloud() {
 
       console.log(`\n\x1b[32mInstall complete.\x1b[0m`);
       console.log(`  Verify: ${join(installDir, 'hcloud.exe')} version`);
+
+      // Auto-accept the KooCLI privacy agreement so first run does not hang
+      console.log('\n  Accepting KooCLI privacy agreement...');
+      const hcloudBin = join(installDir, 'hcloud.exe');
+      if (acceptKooCliPrivacy(hcloudBin)) {
+        console.log('  \x1b[32mPrivacy agreement accepted. KooCLI ready.\x1b[0m');
+      } else {
+        console.log('  \x1b[33m无法自动接受隐私协议（可能因沙箱阻止写入配置目录）。\x1b[0m');
+        if (detectCodeartsSandbox() === 'sandbox') {
+          printSandboxWarning('KooCLI 需要写入配置目录 (如 ~/.hcloud/root) 以保存隐私协议同意状态，但沙箱模式阻止了写入。');
+        } else {
+          console.log('  请在码道外终端运行一次: hcloud version 并按提示输入 y');
+        }
+      }
+
       console.log('  Or restart terminal and: hcloud version');
     } catch (e) {
       console.log(`\n\x1b[33mAuto-install failed: ${e.message}\x1b[0m`);
       console.log(`  Manual: download ${url}, unzip to ${installDir}, add to PATH`);
       console.log(`  Guide: https://support.huaweicloud.com/qs-hcli/hcli_02_003_01.html`);
+      if (detectCodeartsSandbox() === 'sandbox') {
+        printSandboxWarning('沙箱模式拦截了 KooCLI 自动安装（无法创建/写入安装目录）。');
+      }
     }
   } else if (os === 'linux') {
     console.log('[Linux] One-liner install:');
@@ -646,7 +842,7 @@ async function main() {
     case '-h':
     default:
       console.log(BANNER);
-      console.log('Usage: npx huaweicloud-devkit <command> [--target <opencode|codex|all>]\n');
+      console.log('Usage: npx huaweicloud-devkit <command> [--target <opencode|codex|codearts|all>]\n');
       console.log('Commands:');
       console.log('  install      Install skills, MCP server, safety policy');
       console.log('  uninstall    Remove installed files');
@@ -657,10 +853,11 @@ async function main() {
       console.log('  install-hcloud  Show KooCLI install commands for your OS');
       console.log('  help         Show this help');
       console.log('\nOptions:');
-      console.log('  --target     Target agent: opencode (default), codex, all');
+      console.log('  --target     Target agent: opencode (default), codex, codearts, all');
       console.log('\nExamples:');
       console.log('  npx huaweicloud-devkit install');
       console.log('  npx huaweicloud-devkit install --target codex');
+      console.log('  npx huaweicloud-devkit install --target codearts');
       console.log('  npx huaweicloud-devkit install --target all');
       break;
   }
