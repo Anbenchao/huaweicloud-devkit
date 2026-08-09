@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir, platform } from 'node:os';
@@ -161,9 +161,17 @@ function hasCodexCLI() {
 
 function checkHcloud() {
   const bin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
-  const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
-  const out = (r.stdout ? r.stdout.toString() : '') + (r.stderr ? r.stderr.toString() : '');
-  return r.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(out);
+  if (!existsSync(bin)) return false;
+  try {
+    if (statSync(bin).size < 1024) return false;
+  } catch { return false; }
+  try {
+    const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+    const out = (r.stdout ? r.stdout.toString() : '') + (r.stderr ? r.stderr.toString() : '');
+    return r.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(out);
+  } catch {
+    return false;
+  }
 }
 
 function getMarketplaceName() {
