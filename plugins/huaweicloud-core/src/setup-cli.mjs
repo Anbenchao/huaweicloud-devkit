@@ -85,20 +85,6 @@ function printSandboxWarning(reason) {
   console.log(`\x1b[31m  关闭沙箱后重新运行: npx huaweicloud-devkit install-hcloud\x1b[0m`);
 }
 
-// Try to auto-accept the KooCLI privacy agreement by answering 'y' on stdin.
-// Returns true when hcloud runs without re-prompting for the agreement.
-function acceptKooCliPrivacy(hcloudBin) {
-  const run = () => spawnSync(hcloudBin, ['version'], {
-    encoding: 'utf8', timeout: 10000, windowsHide: true, input: 'y\n',
-  });
-  const first = run();
-  const out = (first.stdout || '') + (first.stderr || '');
-  if (!/同意并继续使用|agree/i.test(out)) return first.status === 0;
-  const second = run();
-  const out2 = (second.stdout || '') + (second.stderr || '');
-  return second.status === 0 && !/同意并继续使用/.test(out2);
-}
-
 function checkNode() {
   const v = process.versions.node.split('.').map(Number);
   if (v[0] < 20) {
@@ -178,7 +164,7 @@ function checkHcloud() {
     if (statSync(bin).size < 1024) return false;
   } catch { return false; }
   try {
-    const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+    const r = spawnSync(`"${bin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
     const out = (r.stdout ? r.stdout.toString() : '') + (r.stderr ? r.stderr.toString() : '');
     return r.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(out);
   } catch {
@@ -688,7 +674,7 @@ async function cmdDoctor() {
 
   // hcloud CLI
   const hcloudBin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
-  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000, input: 'y\n' });
+  const hcloudCheck = spawnSync(`"${hcloudBin}" version`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
   const hcloudOut = (hcloudCheck.stdout || '').toString() + (hcloudCheck.stderr || '').toString();
   const hcloudOk = hcloudCheck.status === 0 && /KooCLI|Current.*version|当前KooCLI/i.test(hcloudOut);
   check('hcloud CLI installed', hcloudOk, 'Run: npx huaweicloud-devkit install-hcloud');
@@ -828,18 +814,25 @@ async function cmdInstallHcloud() {
       console.log(`\n\x1b[32mInstall complete.\x1b[0m`);
       console.log(`  Verify: ${join(installDir, 'hcloud.exe')} version`);
 
-      // Auto-accept the KooCLI privacy agreement so first run does not hang
-      console.log('\n  Accepting KooCLI privacy agreement...');
       const hcloudBin = join(installDir, 'hcloud.exe');
-      if (acceptKooCliPrivacy(hcloudBin)) {
-        console.log('  \x1b[32mPrivacy agreement accepted. KooCLI ready.\x1b[0m');
-      } else {
-        console.log('  \x1b[33m无法自动接受隐私协议（可能因沙箱阻止写入配置目录）。\x1b[0m');
-        if (detectCodeartsSandbox() === 'sandbox') {
-          printSandboxWarning('KooCLI 需要写入配置目录 (如 ~/.hcloud/root) 以保存隐私协议同意状态，但沙箱模式阻止了写入。');
+
+      // Ask user before accepting the privacy agreement — never auto-accept.
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const agree = await new Promise((resolve) => {
+        rl.question('\n  KooCLI requires accepting its privacy agreement. Do you accept? (y/N) ', (answer) => {
+          rl.close();
+          resolve(/^\s*y\s*$/i.test(answer));
+        });
+      });
+      if (agree) {
+        const r = spawnSync(hcloudBin, ['version'], { input: 'y\n', encoding: 'utf8', timeout: 10000, windowsHide: true });
+        if (r.status === 0) {
+          console.log('  \x1b[32mPrivacy agreement accepted. KooCLI ready.\x1b[0m');
         } else {
-          console.log('  请在码道外终端运行一次: hcloud version 并按提示输入 y');
+          console.log('  \x1b[33m无法写入配置目录。请在码道外终端运行: echo "y" | hcloud version\x1b[0m');
         }
+      } else {
+        console.log('  \x1b[33m请手动接受隐私协议：在终端运行 hcloud version 并按提示操作\x1b[0m');
       }
 
       console.log('  Or restart terminal and: hcloud version');

@@ -44,7 +44,7 @@ hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.fla
 
 ### Bootstrap with user_data (cloud-init)
 
-Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**:
+Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**. This is also the recommended bootstrap path when SCP policies block SSH access — user_data serves as the full deployment path, no SSH needed.
 
 ```bash
 # Encode the script

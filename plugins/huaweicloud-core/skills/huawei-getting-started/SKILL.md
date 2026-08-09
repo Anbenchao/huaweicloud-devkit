@@ -18,7 +18,7 @@ version: 1
 
 ## First-Time Setup
 1. **Install KooCLI** using command above
-2. **Accept privacy policy** (first run only): KooCLI requires one-time privacy agreement. Run `hcloud version` and respond `y` to the prompt. For non-interactive terminals, use `echo "y" | hcloud version`
+2. **Accept privacy policy** (first run only): KooCLI requires one-time privacy agreement. Run `hcloud version` to read the agreement, then respond `y` to accept. Do not pipe `echo "y" |` — you must review the terms first.
 3. **Configure credentials**: `hcloud configure init` (interactive, prompts for AK/SK/region safely)
 4. **Verify**: `hcloud configure list` to confirm profile, then `hcloud ECS ListServersDetails --cli-region=cn-north-4`
 5. For detailed auth guidance, see `huaweicloud-cli-and-auth` skill
@@ -43,7 +43,7 @@ hcloud configure list
 | AK/SK must be kept secret | Never commit to git or share |
 | Default region applies to all commands | Override with --cli-region= per command |
 | Some services region-specific | Not all services available in all regions |
-| Privacy policy blocks first run | KooCLI requires one-time `y` confirmation. Non-interactive terminals need `echo "y" \| hcloud <cmd>` |
+| Privacy policy blocks first run | Run `hcloud version` to read and accept the agreement. Review the terms before responding `y` |
 
 ## What Can I Do? (Quick Index)
 | Goal | Skill |
