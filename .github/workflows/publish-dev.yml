@@ -36,6 +36,15 @@ jobs:
           npm version prerelease --preid=dev --no-git-tag-version
           echo "dev version: $(node -p "require('./package.json').version")"
 
+      - name: Validate version is a dev prerelease
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "${VERSION}" != *-dev.* ]]; then
+            echo "::error::Version ${VERSION} is NOT a dev prerelease (expected e.g. 0.1.24-dev.0). Refusing to publish a formal version as dist-tag next."
+            exit 1
+          fi
+          echo "OK: ${VERSION} is a dev prerelease"
+
       - name: Publish to npm (dist-tag next)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
