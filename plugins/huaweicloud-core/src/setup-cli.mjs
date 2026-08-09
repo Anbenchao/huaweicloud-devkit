@@ -19,7 +19,7 @@ try {
 const BANNER = `
 ╔══════════════════════════════════════════════╗
 ║     HuaweiCloud DevKit v${pkgVersion}${' '.repeat(Math.max(0, 22 - String(pkgVersion).length))}║
-║     https://github.com/huaweicloud-mate   ║
+║     https://github.com/huaweicloud   ║
 ╚══════════════════════════════════════════════╝
 `;
 

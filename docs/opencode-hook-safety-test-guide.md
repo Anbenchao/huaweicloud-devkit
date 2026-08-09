@@ -42,7 +42,7 @@ node --version
 如果机器上还没有仓库：
 
 ```bash
-git clone -b dev-hooks git@github.com:huaweicloud-mate/huaweicloud-devkit.git
+git clone -b dev-hooks git@github.com:huaweicloud/HuaweiCloud-Devkit.git
 cd huaweicloud-devkit
 ```
 
