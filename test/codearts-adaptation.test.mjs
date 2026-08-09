@@ -78,8 +78,8 @@ test('codearts install writes correct mcp_settings.json at user and project leve
     ]) {
       const config = mcpConfig(configPath);
       assert.ok(config, `mcp config exists: ${configPath}`);
-      const server = config.mcpServers?.huaweicloud;
-      assert.ok(server, `huaweicloud server registered in ${configPath}`);
+      const server = config.mcpServers?.['huaweicloud-devkit'];
+      assert.ok(server, `huaweicloud-devkit server registered in ${configPath}`);
       assert.equal(server.command, 'node');
       assert.ok(
         server.args[0].endsWith('huaweicloud-plugins/src/mcp-server.mjs'),
@@ -128,8 +128,8 @@ test('codearts uninstall removes skills, plugins, and MCP config', () => {
     assert.equal(countSkills(join(home, '.codeartsdoer', 'skills')), 0, 'user skills removed');
     assert.equal(countSkills(join(cwd, '.codeartsdoer', 'skills')), 0, 'project skills removed');
     assert.ok(!existsSync(join(home, '.codeartsdoer', 'huaweicloud-plugins')), 'plugins dir removed');
-    assert.ok(!mcpConfig(join(home, '.codeartsdoer', 'mcp', 'mcp_settings.json'))?.mcpServers?.huaweicloud, 'user MCP config cleaned');
-    assert.ok(!mcpConfig(join(cwd, '.codeartsdoer', 'mcp', 'mcp_settings.json'))?.mcpServers?.huaweicloud, 'project MCP config cleaned');
+    assert.ok(!mcpConfig(join(home, '.codeartsdoer', 'mcp', 'mcp_settings.json'))?.mcpServers?.['huaweicloud-devkit'], 'user MCP config cleaned');
+    assert.ok(!mcpConfig(join(cwd, '.codeartsdoer', 'mcp', 'mcp_settings.json'))?.mcpServers?.['huaweicloud-devkit'], 'project MCP config cleaned');
   } finally {
     rmSync(home, { recursive: true, force: true });
     rmSync(cwd, { recursive: true, force: true });
@@ -147,7 +147,7 @@ test('codearts install respects existing unrelated MCP servers on uninstall', ()
     const res = runCli(home, cwd, ['uninstall', '--target', 'codearts']);
     assert.equal(res.status, 0, res.stderr);
     const config = mcpConfig(configPath);
-    assert.ok(!config.mcpServers?.huaweicloud, 'huaweicloud removed');
+    assert.ok(!config.mcpServers?.['huaweicloud-devkit'], 'huaweicloud-devkit removed');
     assert.ok(config.mcpServers?.other, 'unrelated server preserved');
   } finally {
     rmSync(home, { recursive: true, force: true });
@@ -169,7 +169,7 @@ test('codearts install injects HCLOUD_BIN into MCP env when hcloud exists', () =
 
     const config = mcpConfig(join(home, '.codeartsdoer', 'mcp', 'mcp_settings.json'));
     const expected = join(binDir, binName).replace(/\\/g, '/');
-    assert.equal(config.mcpServers.huaweicloud.env.HCLOUD_BIN, expected);
+    assert.equal(config.mcpServers['huaweicloud-devkit'].env.HCLOUD_BIN, expected);
   } finally {
     rmSync(home, { recursive: true, force: true });
     rmSync(cwd, { recursive: true, force: true });

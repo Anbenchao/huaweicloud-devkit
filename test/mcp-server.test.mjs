@@ -51,6 +51,24 @@ function createClient() {
         });
       });
     },
+    requestInChunks(method, params = {}, bodyBytesInFirstChunk = 1) {
+      const id = Math.floor(Math.random() * 1_000_000);
+      const payload = frame({ jsonrpc: '2.0', id, method, params });
+      const bodyStart = payload.indexOf('\r\n\r\n') + 4;
+      const splitAt = bodyStart + bodyBytesInFirstChunk;
+      const first = payload.slice(0, splitAt);
+      const second = payload.slice(splitAt);
+      child.stdin.write(first);
+      setTimeout(() => child.stdin.write(second), 50);
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`Timed out waiting for split ${method}`)), 2000);
+        pending.set(id, (message) => {
+          clearTimeout(timer);
+          pending.delete(id);
+          resolve(message);
+        });
+      });
+    },
     close() {
       child.kill();
     },
@@ -83,6 +101,23 @@ test('MCP server initializes, lists tools, and plans CLI commands', async () => 
     });
     assert.equal(planned.result.isError, false);
     assert.match(planned.result.content[0].text, /NovaListServers/);
+  } finally {
+    client.close();
+  }
+});
+
+test('MCP server waits for incomplete Content-Length frames instead of spinning', async () => {
+  const client = createClient();
+  try {
+    const payload = {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'split-client', version: '0.0.0' },
+    };
+
+    const initialized = await client.requestInChunks('initialize', payload, 8);
+
+    assert.equal(initialized.result.serverInfo.name, 'huaweicloud-devkit');
   } finally {
     client.close();
   }

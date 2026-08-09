@@ -9,7 +9,7 @@
       "Read",
       "Interactive"
     ],
-    "websiteURL": "https://github.com/huaweicloud-mate/huaweicloud-devkit",
+    "websiteURL": "https://github.com/huaweicloud/HuaweiCloud-Devkit",
     "brandColor": "#C7000B",
     "defaultPrompt": [
       "Help me choose the right Huawei Cloud capability.",
@@ -23,12 +23,12 @@
   "version": "0.1.24",
   "author": {
     "name": "HuaweiCloud Mate",
-    "url": "https://github.com/huaweicloud-mate"
+    "url": "https://github.com/huaweicloud"
   },
   "hooks": "./hooks/",
   "name": "huaweicloud-core",
-  "homepage": "https://github.com/huaweicloud-mate/huaweicloud-devkit",
-  "repository": "https://github.com/huaweicloud-mate/huaweicloud-devkit",
+  "homepage": "https://github.com/huaweicloud/HuaweiCloud-Devkit",
+  "repository": "https://github.com/huaweicloud/HuaweiCloud-Devkit",
   "license": "Apache-2.0",
   "keywords": [
     "huaweicloud",

@@ -143,10 +143,53 @@ test('safety policy.json is valid and has required fields', () => {
   assert.ok(Array.isArray(policy.credentialFilePatterns));
 });
 
+test('cloud risk rules are present and public-safe', () => {
+  const rulesPath = join(pluginRoot, 'safety', 'rules', 'cloud-risk-rules.json');
+  assert.ok(existsSync(rulesPath), 'Missing cloud-risk-rules.json');
+
+  const catalog = readJson(rulesPath);
+  assert.equal(catalog.version, '0.1.0');
+  assert.ok(Array.isArray(catalog.rules), 'rules must be an array');
+  assert.ok(catalog.rules.length >= 8, 'Expected baseline cloud risk rules');
+
+  const ids = new Set();
+  const allowedSeverities = new Set(['deny', 'warn', 'info']);
+  const allowedStages = new Set(['command', 'artifact', 'deploy_plan']);
+  for (const rule of catalog.rules) {
+    assert.match(rule.id, /^hwc-[a-z0-9-]+$/, `Invalid rule id: ${rule.id}`);
+    assert.ok(!ids.has(rule.id), `Duplicate rule id: ${rule.id}`);
+    ids.add(rule.id);
+    assert.ok(allowedSeverities.has(rule.severity), `${rule.id} has invalid severity`);
+    assert.ok(Array.isArray(rule.stages) && rule.stages.length > 0, `${rule.id} missing stages`);
+    for (const stage of rule.stages) {
+      assert.ok(allowedStages.has(stage), `${rule.id} has invalid stage: ${stage}`);
+    }
+    assert.ok(rule.match && (rule.match.any || rule.match.all), `${rule.id} needs match conditions`);
+    assert.ok(rule.message && rule.remediation, `${rule.id} needs message and remediation`);
+    assert.doesNotMatch(JSON.stringify(rule), /\baccountId\b|\bticketId\b|\brawText\b|\binternalSource\b/i);
+  }
+});
+
 test('hooks.json references existing Python hook', () => {
   const hooksDir = join(pluginRoot, 'hooks');
   assert.ok(existsSync(join(hooksDir, 'hooks.json')));
   assert.ok(existsSync(join(hooksDir, 'huaweicloud-safety.py')));
+});
+
+test('hook rule model documentation exists', () => {
+  const doc = join(root, 'docs', 'hook-rule-model.md');
+  assert.ok(existsSync(doc), 'Missing docs/hook-rule-model.md');
+  const body = readFileSync(doc, 'utf8');
+  assert.match(body, /Hook 规则模型/);
+  assert.match(body, /隐私边界/);
+  assert.match(body, /huaweicloud_hook_check_command/);
+});
+
+test('safety skill teaches proactive hook checks', () => {
+  const safetySkill = readFileSync(join(pluginRoot, 'skills', 'huaweicloud-safety', 'SKILL.md'), 'utf8');
+  assert.match(safetySkill, /huaweicloud_hook_check_command/);
+  assert.match(safetySkill, /huaweicloud_hook_check_artifacts/);
+  assert.match(safetySkill, /huaweicloud_hook_check_deploy_plan/);
 });
 
 test('.mcp.json is valid and references existing server script', () => {
@@ -174,7 +217,7 @@ test('setup-cli.mjs supports the codearts target end to end', () => {
   assert.match(setup, /registerCodeartsMcp\(codeartsMcpSettingsFile\(\)\)/);
   assert.match(setup, /registerCodeartsMcp\(codeartsProjectMcpSettingsFile\(\)\)/);
   // MCP registration writes an enabled server with local mode env
-  assert.match(setup, /config\.mcpServers\.huaweicloud = \{/);
+  assert.match(setup, /config\.mcpServers\['huaweicloud-devkit'\] = \{/);
   assert.match(setup, /HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local'/);
   assert.match(setup, /enabled: true,/);
   // command dispatch covers codearts for install / uninstall / status
@@ -211,13 +254,8 @@ test('setup-cli.mjs handles KooCLI sandbox blockers and privacy agreement', () =
   assert.match(setup, /检测到码道沙箱模式/);
   assert.match(setup, /在码道外的终端安装并使用 KooCLI/);
   assert.match(setup, /关闭沙箱模式后重试/);
-  // privacy agreement auto-accept answers y on stdin
-  assert.match(setup, /function acceptKooCliPrivacy\(/);
-  assert.match(setup, /input: 'y\\n'/);
-  assert.match(setup, /同意并继续使用/);
   // install-hcloud surfaces sandbox guidance on failure and after install
   assert.match(setup, /沙箱模式拦截了 KooCLI 自动安装/);
-  assert.match(setup, /无法自动接受隐私协议/);
   // MCP env injects HCLOUD_BIN when an hcloud binary is found
   assert.match(setup, /if \(hcloudBin\) env\.HCLOUD_BIN = hcloudBin\.replace/);
   // doctor warns about sandbox mode

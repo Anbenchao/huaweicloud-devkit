@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Huawei Cloud DevKit documentation
-    url: https://github.com/huaweicloud-mate/huaweicloud-devkit
+    url: https://github.com/huaweicloud/HuaweiCloud-Devkit
     about: Read the README and user guide before opening an issue.

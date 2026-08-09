@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "huaweicloud": {
+    "huaweicloud-devkit": {
       "command": "node",
       "args": [
         "./src/mcp-server.mjs"

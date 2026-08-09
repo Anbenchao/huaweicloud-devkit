@@ -57,7 +57,7 @@ description: 每晚自动回归测试 huaweicloud-devkit 插件的指引能力�
 - 删除该实例（含磁盘）→ 验证列表无残留
 
 **场景 B：静态网页部署 OBS**
-- 本地构建仓库 `git@github.com:huaweicloud-mate/huaweicloud-open-capability-home.git`（clone 到 /tmp 即可，npm install + npm run build）
+- 本地构建仓库 `git@github.com:huaweicloud/huaweicloud-open-capability-home.git`（clone 到 /tmp 即可，npm install + npm run build）
 - 上传到 `obs://openplatform-prod/devkit/`（harness 注意 obsutil 目录语义：本地目录名会成为前缀；先 `-dryRun` 验证键名）
 - 对象公共读 `-acl=public-read`；curl 验证 200
 - 验证后删除 `devkit/` 目录并确认 0 残留

@@ -4,6 +4,7 @@
 
 ## 1. Discover flavors
 hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
+Filter for `os_extra_specs.cond:operation:status == normal` — most results are abandoned. See references/flavors.md.
 
 ## 2. Find availability zones
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
@@ -30,7 +31,7 @@ hcloud VPC ListSubnets --vpc_id=<vpc-id> --cli-region=<region>
 If no VPC/subnet exists: load `huawei-vpc` skill → create VPC → create subnet (with DNS) → create security group → return here.
 
 ## 5. Create keypair (recommended over adminPass)
-hcloud ECS NovaCreateKeypair --keypair_name=<name>
+hcloud ECS NovaCreateKeypair --keypair.name=<name>
 Save the returned private key to a local file. The public key is auto-injected.
 
 Password alternative:
@@ -43,7 +44,7 @@ hcloud ECS CreateServers --cli-region=<region> --server.name=<name> --server.fla
 
 ### Bootstrap with user_data (cloud-init)
 
-Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**:
+Use `--server.user_data` to run a cloud-init script at first boot. The value must be **base64-encoded**. This is also the recommended bootstrap path when SCP policies block SSH access — user_data serves as the full deployment path, no SSH needed.
 
 ```bash
 # Encode the script
@@ -61,7 +62,23 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 >
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
-## 7. EIP (optional)
+## 7. EIP (two methods)
+
+### Method A: Inline with CreateServers (Recommended)
+Add EIP parameters to the `CreateServers` command in step 6:
+
+```bash
+hcloud ECS CreateServers \
+  --server.publicip.eip.iptype=<type> \
+  --server.publicip.eip.bandwidth.sharetype=<share-type> \
+  --server.publicip.eip.bandwidth.size=<size> \
+  --server.publicip.eip.bandwidth.chargemode=traffic \
+  ...
+```
+
+> **Trap**: Parameter names differ from `EIP CreatePublicip`. Use `iptype` (not `type`), `sharetype` (not `share_type`), and `chargemode` (not `charging_mode`). Always verify with `hcloud ECS CreateServers --help`.
+
+### Method B: Create and bind separately
 hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
 
 ```bash
