@@ -38,6 +38,16 @@ Use this skill before any Huawei Cloud action that may expose secrets, change re
 - Approved tool path: use `huaweicloud_run_approved_command` only when the exact planned command has been shown and the user explicitly approved that exact command.
 - After a write, verify with `huaweicloud_run_readonly_command` or another read-only check.
 
+## Proactive Hook Checks
+
+Before executing, deploying, or handing generated cloud artifacts to the user, run the matching check when available:
+
+- `huaweicloud_hook_check_command` for shell or KooCLI command text.
+- `huaweicloud_hook_check_artifacts` for generated policy, IaC, config, workflow, or deployment files.
+- `huaweicloud_hook_check_deploy_plan` for sandbox, preview, FunctionGraph, ECS, CCE, APIG, OBS, IAM, or cost-affecting plans.
+
+If the result is `deny`, repair the command, artifact, or deployment plan before execution. If the result is `warn`, show the warning to the user and repair or ask for explicit confirmation.
+
 ## Safe Alternatives
 
 - Use redacted profile inspection instead of raw `hcloud configure show`.

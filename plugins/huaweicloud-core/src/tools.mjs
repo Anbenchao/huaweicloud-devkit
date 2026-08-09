@@ -1,5 +1,6 @@
 import { planHcloudCommand, runHcloud } from './hcloud-cli.mjs';
 import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
+import { evaluateArtifacts, evaluateCommandRisk, evaluateDeployPlan } from './risk-rule-engine.mjs';
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -145,6 +146,51 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'huaweicloud_hook_check_command',
+    description: 'Check a planned shell or hcloud command against Huawei Cloud hook risk rules without executing it.',
+    inputSchema: {
+      type: 'object',
+      required: ['command'],
+      properties: {
+        command: { type: 'string', description: 'The exact command text to inspect.' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_hook_check_artifacts',
+    description: 'Check generated code, IaC, policy, or config artifacts against Huawei Cloud hook risk rules.',
+    inputSchema: {
+      type: 'object',
+      required: ['artifacts'],
+      properties: {
+        artifacts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['path', 'content'],
+            properties: {
+              path: { type: 'string' },
+              content: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_hook_check_deploy_plan',
+    description: 'Check a structured or textual deployment plan for Huawei Cloud sandbox, exposure, IAM, and cost risks.',
+    inputSchema: {
+      type: 'object',
+      required: ['plan'],
+      properties: {
+        plan: {
+          description: 'Deployment plan as an object, array, or string.',
+        },
+      },
+    },
+  },
+  {
     name: 'huaweicloud_service_catalog',
     description: 'Return the recommended capability sources for Huawei Cloud agent tasks.',
     inputSchema: {
@@ -255,6 +301,12 @@ export async function callTool(name, args = {}) {
       return runApprovedCommand(args);
     case 'huaweicloud_show_profile_redacted':
       return showProfileRedacted(args.profile);
+    case 'huaweicloud_hook_check_command':
+      return hookResult(evaluateCommandRisk(args.command || ''));
+    case 'huaweicloud_hook_check_artifacts':
+      return hookResult(evaluateArtifacts(args.artifacts || []));
+    case 'huaweicloud_hook_check_deploy_plan':
+      return hookResult(evaluateDeployPlan(args.plan || {}));
     case 'huaweicloud_service_catalog':
       return serviceCatalog(args.intent);
     case 'huaweicloud_search_docs':
@@ -274,6 +326,19 @@ export async function callTool(name, args = {}) {
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+}
+
+function hookResult(result) {
+  return {
+    ok: result.decision !== 'deny',
+    decision: result.decision,
+    findings: result.findings,
+    nextStep: result.decision === 'deny'
+      ? 'Revise the command, artifact, or deployment plan before execution.'
+      : result.decision === 'warn'
+        ? 'Review the warnings with the user before proceeding.'
+        : 'No Huawei Cloud hook risk rule matched.',
+  };
 }
 
 export async function runVersionCheck(options = {}) {

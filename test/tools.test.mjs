@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import {
+  callTool,
   runVersionCheck,
   TOOL_DEFINITIONS,
 } from '../plugins/huaweicloud-core/src/tools.mjs';
@@ -70,4 +71,45 @@ test('TOOL_DEFINITIONS expose cwd parameter on run tools', () => {
   const approvedTool = TOOL_DEFINITIONS.find((t) => t.name === 'huaweicloud_run_approved_command');
   assert.ok(Object.hasOwn(approvedTool.inputSchema.properties, 'cwd'),
     'run_approved_command should have cwd param');
+});
+
+test('TOOL_DEFINITIONS includes proactive hook check tools', () => {
+  const names = TOOL_DEFINITIONS.map((tool) => tool.name);
+  assert.ok(names.includes('huaweicloud_hook_check_command'));
+  assert.ok(names.includes('huaweicloud_hook_check_artifacts'));
+  assert.ok(names.includes('huaweicloud_hook_check_deploy_plan'));
+});
+
+test('huaweicloud_hook_check_command returns deny finding', async () => {
+  const result = await callTool('huaweicloud_hook_check_command', {
+    command: 'hcloud VPC CreateSecurityGroupRule --security_group_rule.port_range_min=22 --security_group_rule.remote_ip_prefix=0.0.0.0/0',
+  });
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.ok, false);
+  assert.equal(result.findings[0].ruleId, 'hwc-network-public-admin-port');
+});
+
+test('huaweicloud_hook_check_artifacts detects broad IAM policy', async () => {
+  const result = await callTool('huaweicloud_hook_check_artifacts', {
+    artifacts: [
+      {
+        path: 'policy.json',
+        content: '{"Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}',
+      },
+    ],
+  });
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.findings[0].ruleId, 'hwc-iam-admin-policy');
+});
+
+test('huaweicloud_hook_check_deploy_plan warns on sandbox without ttl', async () => {
+  const result = await callTool('huaweicloud_hook_check_deploy_plan', {
+    plan: {
+      environment: 'preview',
+      resources: [{ service: 'FunctionGraph', action: 'CreateFunction' }],
+    },
+  });
+  assert.equal(result.decision, 'warn');
+  assert.equal(result.ok, true);
+  assert.equal(result.findings[0].ruleId, 'hwc-sandbox-missing-ttl');
 });

@@ -146,10 +146,53 @@ test('safety policy.json is valid and has required fields', () => {
   assert.ok(Array.isArray(policy.credentialFilePatterns));
 });
 
+test('cloud risk rules are present and public-safe', () => {
+  const rulesPath = join(pluginRoot, 'safety', 'rules', 'cloud-risk-rules.json');
+  assert.ok(existsSync(rulesPath), 'Missing cloud-risk-rules.json');
+
+  const catalog = readJson(rulesPath);
+  assert.equal(catalog.version, '0.1.0');
+  assert.ok(Array.isArray(catalog.rules), 'rules must be an array');
+  assert.ok(catalog.rules.length >= 8, 'Expected baseline cloud risk rules');
+
+  const ids = new Set();
+  const allowedSeverities = new Set(['deny', 'warn', 'info']);
+  const allowedStages = new Set(['command', 'artifact', 'deploy_plan']);
+  for (const rule of catalog.rules) {
+    assert.match(rule.id, /^hwc-[a-z0-9-]+$/, `Invalid rule id: ${rule.id}`);
+    assert.ok(!ids.has(rule.id), `Duplicate rule id: ${rule.id}`);
+    ids.add(rule.id);
+    assert.ok(allowedSeverities.has(rule.severity), `${rule.id} has invalid severity`);
+    assert.ok(Array.isArray(rule.stages) && rule.stages.length > 0, `${rule.id} missing stages`);
+    for (const stage of rule.stages) {
+      assert.ok(allowedStages.has(stage), `${rule.id} has invalid stage: ${stage}`);
+    }
+    assert.ok(rule.match && (rule.match.any || rule.match.all), `${rule.id} needs match conditions`);
+    assert.ok(rule.message && rule.remediation, `${rule.id} needs message and remediation`);
+    assert.doesNotMatch(JSON.stringify(rule), /\baccountId\b|\bticketId\b|\brawText\b|\binternalSource\b/i);
+  }
+});
+
 test('hooks.json references existing Python hook', () => {
   const hooksDir = join(pluginRoot, 'hooks');
   assert.ok(existsSync(join(hooksDir, 'hooks.json')));
   assert.ok(existsSync(join(hooksDir, 'huaweicloud-safety.py')));
+});
+
+test('hook rule model documentation exists', () => {
+  const doc = join(root, 'docs', 'hook-rule-model.md');
+  assert.ok(existsSync(doc), 'Missing docs/hook-rule-model.md');
+  const body = readFileSync(doc, 'utf8');
+  assert.match(body, /Hook 规则模型/);
+  assert.match(body, /隐私边界/);
+  assert.match(body, /huaweicloud_hook_check_command/);
+});
+
+test('safety skill teaches proactive hook checks', () => {
+  const safetySkill = readFileSync(join(pluginRoot, 'skills', 'huaweicloud-safety', 'SKILL.md'), 'utf8');
+  assert.match(safetySkill, /huaweicloud_hook_check_command/);
+  assert.match(safetySkill, /huaweicloud_hook_check_artifacts/);
+  assert.match(safetySkill, /huaweicloud_hook_check_deploy_plan/);
 });
 
 test('.mcp.json is valid and references existing server script', () => {

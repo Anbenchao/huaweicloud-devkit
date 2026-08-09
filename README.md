@@ -123,7 +123,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 
 - **安全优先执行** — 所有 `hcloud` 命令执行前自动分类（读/写/密钥），写操作需用户明确批准。
 - **输出脱敏** — 凭证形态的值（AK/SK、Token、密码）自动替换为 `***REDACTED***`。
-- **12 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释等。
+- **16 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释、Hook 风险检查等。
 - **零运行时依赖** — 纯 Node.js（>= 20），无需 npm install。
 
 详见 [MCP 工具表](#mcp-工具)。
@@ -154,6 +154,9 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 | CLI | `huaweicloud_run_readonly_command` | 执行只读命令并脱敏输出 |
 | CLI | `huaweicloud_run_approved_command` | 经用户明确批准后执行写命令 |
 | 安全 | `huaweicloud_show_profile_redacted` | 安全查看 KooCLI 配置（凭证脱敏） |
+| 安全 | `huaweicloud_hook_check_command` | 执行前检查 Shell/KooCLI 命令风险 |
+| 安全 | `huaweicloud_hook_check_artifacts` | 检查生成的代码、IaC、IAM/OBS 策略和配置文件风险 |
+| 安全 | `huaweicloud_hook_check_deploy_plan` | 检查沙箱、预览环境和云资源部署计划风险 |
 | 路由 | `huaweicloud_service_catalog` | 返回推荐的能力来源排序 |
 | 排错 | `huaweicloud_explain_error` | 解释错误码并建议诊断步骤 |
 
