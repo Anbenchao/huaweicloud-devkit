@@ -12,8 +12,13 @@ function opencodeSkillsDir() {
   const home = homedir();
   return join(home, '.config', 'opencode', 'skills');
 }
+function codeartsSkillsDir() {
+  const home = homedir();
+  return join(home, '.codeartsdoer', 'skills');
+}
 function resolveSkillsRoot() {
   if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
+  if (existsSync(codeartsSkillsDir())) return codeartsSkillsDir();
   if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
   return SKILLS_ROOT_DEV;
 }
