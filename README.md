@@ -150,6 +150,13 @@ npm run validate
 | 路由 | huaweicloud_service_catalog | 返回推荐的能力来源 |
 | 排错 | huaweicloud_explain_error | 解释错误并建议诊断步骤 |
 
+## 发布流程
+
+发布采用两步 workflow，全部在 GitHub Actions 中完成：
+
+1. **Prepare Release**（手动触发，选 `patch` / `minor` / `major`）：自动 bump 版本、跑质量门、推 `release/vX.Y.Z` 分支并创建 PR，CI 全绿后自动合并进 `main`。
+2. **Publish Release**（PR 合并后手动触发）：读取 `main` 版本，创建并推送 `vX.Y.Z` tag，生成 GitHub Release；tag 触发 `CD Production`，经 `production` 环境人工审批后发布到 npm（包名 `huaweicloud-devkit`）。
+
 ## 许可证
 
 Apache-2.0
