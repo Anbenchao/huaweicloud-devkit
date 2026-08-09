@@ -12,22 +12,22 @@ HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工
 ### OpenCode
 
 ```bash
-npx --yes huaweicloud-devkit-test install     # 暂用于测试
+npx --yes huaweicloud-devkit install
 ```
 
 自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
 
 ```bash
-npx --yes huaweicloud-devkit-test doctor   # 自检：hcloud、MCP、技能、认证
-npx --yes huaweicloud-devkit-test status   # 查看安装状态
-npx --yes huaweicloud-devkit-test update   # 更新到最新版
-npx --yes huaweicloud-devkit-test uninstall # 卸载
+npx --yes huaweicloud-devkit doctor   # 自检：hcloud、MCP、技能、认证
+npx --yes huaweicloud-devkit status   # 查看安装状态
+npx --yes huaweicloud-devkit update   # 更新到最新版
+npx --yes huaweicloud-devkit uninstall # 卸载
 ```
 
 ### Codex
 
 ```bash
-npx --yes huaweicloud-devkit-test install --target codex     # 暂用于测试
+npx --yes huaweicloud-devkit install --target codex     # 暂用于测试
 ```
 
 > **注意：** 如果未检测到 Codex CLI，安装程序会自动跳过 Codex。
@@ -67,7 +67,7 @@ npx --yes huaweicloud-devkit-test install --target codex     # 暂用于测试
 然后安装技能：
 
 ```bash
-npx --yes huaweicloud-devkit-test install     # 暂用于测试
+npx --yes huaweicloud-devkit install
 ```
 
 > **前置条件：** 需要安装 [KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)（`hcloud`）并完成认证。MCP 服务器需要 Node.js >= 20。如果 `hcloud` 不在 `PATH` 中，请设置 `HCLOUD_BIN` 环境变量指向完整路径。
