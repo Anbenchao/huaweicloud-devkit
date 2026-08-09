@@ -205,7 +205,7 @@ test('setup-cli.mjs handles KooCLI sandbox blockers and privacy agreement', () =
   // hcloud lookup covers HCLOUD_BIN and ~/hcloud on Windows
   assert.match(setup, /function findHcloudBin\(\)/);
   assert.match(setup, /process\.env\.HCLOUD_BIN/);
-  assert.match(setup, /join\('hcloud', 'hcloud\.exe'\)/);
+  assert.match(setup, /homedir\(\), 'hcloud', 'hcloud\.exe'/);
   // sandbox warning prompts user to install externally or disable sandbox
   assert.match(setup, /function printSandboxWarning\(/);
   assert.match(setup, /检测到码道沙箱模式/);
