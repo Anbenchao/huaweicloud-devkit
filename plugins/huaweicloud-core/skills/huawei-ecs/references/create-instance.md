@@ -58,7 +58,7 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 ```
 
 > **Security**: Never embed secrets (passwords, AK/SK, tokens) in user_data. It is stored unencrypted and readable from within the instance via IMDS. Fetch secrets at boot from DEW/CSMS instead.
-
+>
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
 ## 7. EIP (optional)
