@@ -39,3 +39,14 @@ Flavor family names are region-dependent. Example discrepancies seen in testing:
 - Other regions may have s6/m6/g6 families
 
 Always run ListFlavors and pick from actual results.
+
+## Step 3: Filter out abandoned / sold-out specs
+
+`ListFlavors` returns ALL specs including abandoned ones. Before selecting a spec, check the `os_extra_specs` field in the JSON response:
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `os_extra_specs.cond:operation:status` | `normal`, `abandon`, `sellout` | Only `normal` specs can be created. `abandon` = deprecated, `sellout` = out of stock |
+| `os_extra_specs.cond:operation:az` | e.g. `cn-north-4g(normal)` | Spec is available in this AZ. Multiple entries = multiple AZ support |
+
+Selecting an `abandon` or `sellout` spec will fail with `Ecs.0019` at creation time — there is no pre-flight validation in `ListFlavors`.

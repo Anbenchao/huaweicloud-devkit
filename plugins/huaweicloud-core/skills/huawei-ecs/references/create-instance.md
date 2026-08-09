@@ -4,6 +4,7 @@
 
 ## 1. Discover flavors
 hcloud ECS ListFlavors --cli-region=<region> --cli-output=json
+Filter for `os_extra_specs.cond:operation:status == normal` — most results are abandoned. See references/flavors.md.
 
 ## 2. Find availability zones
 hcloud ECS NovaListAvailabilityZones --cli-region=<region>
