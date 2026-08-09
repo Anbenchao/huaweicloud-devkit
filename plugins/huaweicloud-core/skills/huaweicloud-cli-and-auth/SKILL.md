@@ -57,12 +57,14 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 
 ## Configure Credentials Outside Chat
 
+**NEVER let AK/SK enter shell history. This is the #1 credential leak vector.**
+
 - Create AK/SK in the Huawei Cloud console under `My Credentials -> Access Keys`.
-- **Interactive** (preferred): `hcloud configure init` — prompts safely for AK/SK/region.
-- **Non-interactive** (Agent/CI environments): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` — user must execute outside agent chat.
-- Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID.
+- **Interactive** (preferred, SAFE): `hcloud configure init` — prompts for AK/SK via terminal input. Values do NOT enter shell history.
+- **Non-interactive** (DANGEROUS — AK/SK in shell history): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>`. Only use in ephemeral CI/CD shells. User must execute outside agent chat.
+- If MCP is available, use `huaweicloud_show_profile_redacted` to check status without ever seeing credentials.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
-- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x. Always use `hcloud configure set`.
+- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x.
 
 ## Safe Flow
 

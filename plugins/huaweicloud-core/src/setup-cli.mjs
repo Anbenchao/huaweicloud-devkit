@@ -592,7 +592,10 @@ async function cmdInstallHcloud() {
   }
 
   console.log('\nAfter install, set HCLOUD_BIN if hcloud is not on PATH.');
-  console.log('Then run: npx huaweicloud-devkit doctor');
+  console.log('\n\x1b[1m\x1b[33m=== Configure credentials SAFELY ===\x1b[0m');
+  console.log('  Interactive (safe): hcloud configure init');
+  console.log('  NEVER: hcloud configure set --cli-access-key=xxx  (AK/SK in shell history!)');
+  console.log('\nThen run: npx huaweicloud-devkit doctor');
 }
 
 async function main() {
