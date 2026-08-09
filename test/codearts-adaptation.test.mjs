@@ -155,18 +155,20 @@ test('codearts install respects existing unrelated MCP servers on uninstall', ()
   }
 });
 
-test('codearts install injects HCLOUD_BIN into MCP env when hcloud.exe exists', () => {
+test('codearts install injects HCLOUD_BIN into MCP env when hcloud exists', () => {
   const home = mkdtempSync(join(tmpdir(), 'codearts-home-'));
   const cwd = mkdtempSync(join(tmpdir(), 'codearts-proj-'));
   try {
-    mkdirSync(join(home, 'hcloud'), { recursive: true });
-    writeFileSync(join(home, 'hcloud', 'hcloud.exe'), '');
+    const binName = process.platform === 'win32' ? 'hcloud.exe' : 'hcloud';
+    const binDir = process.platform === 'win32' ? join(home, 'hcloud') : join(home, '.local', 'bin');
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(join(binDir, binName), '');
 
     const res = runCli(home, cwd, ['install', '--target', 'codearts']);
     assert.equal(res.status, 0, res.stderr);
 
     const config = mcpConfig(join(home, '.codeartsdoer', 'mcp', 'mcp_settings.json'));
-    const expected = join(home, 'hcloud', 'hcloud.exe').replace(/\\/g, '/');
+    const expected = join(binDir, binName).replace(/\\/g, '/');
     assert.equal(config.mcpServers.huaweicloud.env.HCLOUD_BIN, expected);
   } finally {
     rmSync(home, { recursive: true, force: true });
