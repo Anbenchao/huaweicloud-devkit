@@ -323,9 +323,13 @@ async function cmdInstall() {
   if (target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
     if (!hasCodexCLI()) {
-      console.log(`  \x1b[33mCodex CLI not found. Skipping Codex install.\x1b[0m`);
-      console.log('  To install for Codex, first install Codex CLI, then run:');
-      console.log('    npx huaweicloud-devkit install --target codex');
+      if (target === 'codex') {
+        console.log(`  \x1b[31mCodex CLI not found. Install Codex first: https://github.com/openai/codex-cli\x1b[0m`);
+        console.log(`  Then re-run: npx huaweicloud-devkit install --target codex`);
+        process.exit(1);
+      }
+      console.log(`  \x1b[33mCodex CLI not found. Skipping Codex.\x1b[0m`);
+      console.log('  Install Codex CLI to enable: npx huaweicloud-devkit install --target codex');
     } else {
       installCodex();
     }
