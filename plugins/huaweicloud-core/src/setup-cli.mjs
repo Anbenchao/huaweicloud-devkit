@@ -133,7 +133,7 @@ function updateOpenCodeConfig(pluginDir) {
   }
   const mcpPath = join(pluginDir, 'src', 'mcp-server.mjs').replace(/\\/g, '/');
   config.mcp = config.mcp || {};
-  config.mcp.huaweicloud = {
+  config.mcp['huaweicloud-devkit'] = {
     type: 'local',
     command: ['node', mcpPath],
     enabled: true,
@@ -147,8 +147,8 @@ function removeOpenCodeConfig() {
   if (!existsSync(configPath)) return;
   let config = {};
   try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch { return; }
-  if (!config.mcp?.huaweicloud) return;
-  delete config.mcp.huaweicloud;
+  if (!config.mcp?.['huaweicloud-devkit']) return;
+  delete config.mcp['huaweicloud-devkit'];
   if (Object.keys(config.mcp).length === 0) delete config.mcp;
   writeFileSync(configPath, JSON.stringify(config, null, 2));
   console.log(`  OpenCode MCP config cleaned: ${configPath}`);
@@ -283,7 +283,7 @@ async function installCodexDesktop() {
     try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
   }
   config.mcp = config.mcp || {};
-  config.mcp.huaweicloud = {
+  config.mcp['huaweicloud-devkit'] = {
     type: 'local',
     command: ['node', mcpPath],
     enabled: true,
@@ -324,8 +324,8 @@ function uninstallCodexDesktop() {
   if (existsSync(configPath)) {
     let config = {};
     try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
-    if (config.mcp?.huaweicloud) {
-      delete config.mcp.huaweicloud;
+    if (config.mcp?.['huaweicloud-devkit']) {
+      delete config.mcp['huaweicloud-devkit'];
       if (Object.keys(config.mcp).length === 0) delete config.mcp;
       writeFileSync(configPath, JSON.stringify(config, null, 2));
       console.log('  Config cleaned');
@@ -343,7 +343,7 @@ function registerCodeartsMcp(configPath) {
   const env = { HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local' };
   const hcloudBin = findHcloudBin();
   if (hcloudBin) env.HCLOUD_BIN = hcloudBin.replace(/\\/g, '/');
-  config.mcpServers.huaweicloud = {
+  config.mcpServers['huaweicloud-devkit'] = {
     command: 'node',
     args: [mcpPath],
     env,
@@ -394,8 +394,8 @@ function uninstallCodeArts() {
     if (!existsSync(configPath)) continue;
     let config = {};
     try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
-    if (config.mcpServers?.huaweicloud) {
-      delete config.mcpServers.huaweicloud;
+    if (config.mcpServers?.['huaweicloud-devkit']) {
+      delete config.mcpServers['huaweicloud-devkit'];
       if (Object.keys(config.mcpServers).length === 0) delete config.mcpServers;
       writeFileSync(configPath, JSON.stringify(config, null, 2));
       console.log(`  Config cleaned: ${configPath}`);
@@ -416,7 +416,7 @@ function codeartsStatus() {
   if (existsSync(codeartsMcpSettingsFile())) {
     try {
       const config = JSON.parse(readFileSync(codeartsMcpSettingsFile(), 'utf8'));
-      console.log(`  MCP config: ${config.mcpServers?.huaweicloud ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
+      console.log(`  MCP config: ${config.mcpServers?.['huaweicloud-devkit'] ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
     } catch {
       console.log(`  MCP config: \x1b[31mInvalid\x1b[0m`);
     }
@@ -438,7 +438,7 @@ function opencodeStatus() {
   if (existsSync(configPath)) {
     try {
       const config = JSON.parse(readFileSync(configPath, 'utf8'));
-      console.log(`  MCP config: ${config.mcp?.huaweicloud ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
+      console.log(`  MCP config: ${config.mcp?.['huaweicloud-devkit'] ? '\x1b[32mConfigured\x1b[0m' : '\x1b[31mNot configured\x1b[0m'}`);
     } catch {
       console.log(`  MCP config: \x1b[31mInvalid\x1b[0m`);
     }
@@ -613,7 +613,7 @@ async function cmdDoctor() {
   if (existsSync(opencodeCfg)) {
     try {
       const cfg = JSON.parse(readFileSync(opencodeCfg, 'utf8'));
-      mcpConfigured = !!(cfg.mcp && cfg.mcp.huaweicloud);
+      mcpConfigured = !!(cfg.mcp && cfg.mcp['huaweicloud-devkit']);
     } catch {}
   }
   check('OpenCode MCP configured', mcpConfigured, `Add MCP to ${opencodeCfg} — run: npx huaweicloud-devkit-test install`);

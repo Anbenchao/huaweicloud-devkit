@@ -76,7 +76,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 ```json
 {
   "mcp": {
-    "huaweicloud": {
+    "huaweicloud-devkit": {
       "type": "local",
       "command": ["node", "<路径>/plugins/huaweicloud-core/src/mcp-server.mjs"],
       "enabled": true

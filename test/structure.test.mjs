@@ -177,7 +177,7 @@ test('setup-cli.mjs supports the codearts target end to end', () => {
   assert.match(setup, /registerCodeartsMcp\(codeartsMcpSettingsFile\(\)\)/);
   assert.match(setup, /registerCodeartsMcp\(codeartsProjectMcpSettingsFile\(\)\)/);
   // MCP registration writes an enabled server with local mode env
-  assert.match(setup, /config\.mcpServers\.huaweicloud = \{/);
+  assert.match(setup, /config\.mcpServers\['huaweicloud-devkit'\] = \{/);
   assert.match(setup, /HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local'/);
   assert.match(setup, /enabled: true,/);
   // command dispatch covers codearts for install / uninstall / status
