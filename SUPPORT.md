@@ -4,7 +4,7 @@ Welcome to Huawei Cloud DevKit! If you need help, here are the available channel
 
 ## Issues and Bug Reports
 
-- **GitHub Issues:** Report bugs and request features at <https://github.com/huaweicloud-mate/huaweicloud-devkit/issues>
+- **GitHub Issues:** Report bugs and request features at <https://github.com/huaweicloud/HuaweiCloud-Devkit/issues>
 - Before opening an issue, please search existing issues and read the [README](README.md).
 
 ## Email

@@ -161,3 +161,33 @@ test('classifyTextCommand blocks secret value patterns in shell commands', () =>
   assert.equal(classifyTextCommand('GetSecretValue xxx').decision, 'deny');
   assert.equal(classifyTextCommand('secret_string xxx').decision, 'deny');
 });
+
+test('classifyTextCommand blocks approved public admin port exposure', () => {
+  const result = classifyTextCommand(
+    'hcloud VPC CreateSecurityGroupRule --security_group_rule.protocol=tcp --security_group_rule.port_range_min=22 --security_group_rule.port_range_max=22 --security_group_rule.remote_ip_prefix=0.0.0.0/0',
+    { allowWrites: true },
+  );
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.blockedByRiskRule, true);
+  assert.equal(result.findings[0].ruleId, 'hwc-network-public-admin-port');
+});
+
+test('classifyTextCommand carries warnings for high-cost shapes', () => {
+  const result = classifyTextCommand(
+    'hcloud CCE CreateCluster --node_pool.max_node_count=80 --node_pool.name=preview',
+    { allowWrites: true },
+  );
+  assert.equal(result.decision, 'allow');
+  assert.ok(result.warnings.some((finding) => finding.ruleId === 'hwc-cost-unbounded-scale'));
+});
+
+test('existing credential and secret blocks still win before risk-rule warnings', () => {
+  const credentialResult = classifyTextCommand('Get-Content ~/.hcloud/config.json');
+  assert.equal(credentialResult.decision, 'deny');
+  assert.equal(credentialResult.risk, 'credential');
+  assert.equal(Object.hasOwn(credentialResult, 'findings'), false);
+
+  const secretResult = classifyTextCommand('hcloud CSMS ShowSecretVersion --secret_name prod/db');
+  assert.equal(secretResult.decision, 'deny');
+  assert.equal(secretResult.risk, 'secret');
+});

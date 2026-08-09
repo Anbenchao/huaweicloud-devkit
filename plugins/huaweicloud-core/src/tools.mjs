@@ -1,6 +1,7 @@
 import { planHcloudCommand, runHcloud } from './hcloud-cli.mjs';
 import { classifyTextCommand, redactSecrets } from './safety-policy.mjs';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { evaluateArtifacts, evaluateCommandRisk, evaluateDeployPlan } from './risk-rule-engine.mjs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -145,6 +146,51 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'huaweicloud_hook_check_command',
+    description: 'Check a planned shell or hcloud command against Huawei Cloud hook risk rules without executing it.',
+    inputSchema: {
+      type: 'object',
+      required: ['command'],
+      properties: {
+        command: { type: 'string', description: 'The exact command text to inspect.' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_hook_check_artifacts',
+    description: 'Check generated code, IaC, policy, or config artifacts against Huawei Cloud hook risk rules.',
+    inputSchema: {
+      type: 'object',
+      required: ['artifacts'],
+      properties: {
+        artifacts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['path', 'content'],
+            properties: {
+              path: { type: 'string' },
+              content: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_hook_check_deploy_plan',
+    description: 'Check a structured or textual deployment plan for Huawei Cloud sandbox, exposure, IAM, and cost risks.',
+    inputSchema: {
+      type: 'object',
+      required: ['plan'],
+      properties: {
+        plan: {
+          description: 'Deployment plan as an object, array, or string.',
+        },
+      },
+    },
+  },
+  {
     name: 'huaweicloud_service_catalog',
     description: 'Return the recommended capability sources for Huawei Cloud agent tasks.',
     inputSchema: {
@@ -224,6 +270,16 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_setup_obs_config',
+    description: 'Synchronize KooCLI credentials to OBS config (~/.obsutilconfig). KooCLI and OBS use separate credential stores — hcloud commands work fine but OBS commands fail with "Please set ak, sk" unless this sync is done. Run this once to enable OBS operations; re-run after changing hcloud credentials.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        profile: { type: 'string', description: 'Optional KooCLI profile name. Uses the active profile by default.' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -245,6 +301,12 @@ export async function callTool(name, args = {}) {
       return runApprovedCommand(args);
     case 'huaweicloud_show_profile_redacted':
       return showProfileRedacted(args.profile);
+    case 'huaweicloud_hook_check_command':
+      return hookResult(evaluateCommandRisk(args.command || ''));
+    case 'huaweicloud_hook_check_artifacts':
+      return hookResult(evaluateArtifacts(args.artifacts || []));
+    case 'huaweicloud_hook_check_deploy_plan':
+      return hookResult(evaluateDeployPlan(args.plan || {}));
     case 'huaweicloud_service_catalog':
       return serviceCatalog(args.intent);
     case 'huaweicloud_search_docs':
@@ -259,9 +321,24 @@ export async function callTool(name, args = {}) {
       return explainError(args);
     case 'huaweicloud_search_marketplace':
       return searchMarketplace(args.query || '', args.category || '');
+    case 'huaweicloud_setup_obs_config':
+      return setupObsConfig(args.profile);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+}
+
+function hookResult(result) {
+  return {
+    ok: result.decision !== 'deny',
+    decision: result.decision,
+    findings: result.findings,
+    nextStep: result.decision === 'deny'
+      ? 'Revise the command, artifact, or deployment plan before execution.'
+      : result.decision === 'warn'
+        ? 'Review the warnings with the user before proceeding.'
+        : 'No Huawei Cloud hook risk rule matched.',
+  };
 }
 
 export async function runVersionCheck(options = {}) {
@@ -309,6 +386,84 @@ async function showProfileRedacted(profile) {
       ? 'Profile information was returned through the toolkit redaction pipeline.'
       : 'Failed to retrieve profile — hcloud may not be installed or configured.',
     result: redactSecrets(result),
+  };
+}
+
+async function setupObsConfig(profile) {
+  const obsConfigPath = join(homedir(), '.obsutilconfig');
+  if (existsSync(obsConfigPath)) {
+    return { ok: true, existed: true, path: obsConfigPath, note: 'OBS config already exists. Delete ~/.obsutilconfig first if you need to re-sync.' };
+  }
+
+  const args = ['configure', 'show'];
+  if (profile) args.push('--cli-profile', String(profile));
+  const result = await runHcloud(args, { allowWrites: false, allowCredentialRead: true });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: 'Failed to read hcloud profile.',
+      detail: result.error || result.stderr || 'hcloud not installed or not configured',
+      nextStep: 'Run "hcloud configure init" outside agent chat, then retry.',
+    };
+  }
+
+  let accessKeyId = '';
+  let secretAccessKey = '';
+  let region = '';
+
+  try {
+    const parsed = typeof result.stdout === 'string' ? JSON.parse(result.stdout) : result.stdout;
+    const cred = parsed.currentCredential || {};
+    accessKeyId = cred.accessKeyId || cred.ak || cred.access_key || '';
+    secretAccessKey = cred.secretAccessKey || cred.sk || cred.secret_key || '';
+    region = parsed.currentRegion || parsed.region || '';
+  } catch {
+    return {
+      ok: false,
+      error: 'Failed to parse hcloud profile output.',
+      detail: 'hcloud configure show returned unexpected format',
+    };
+  }
+
+  if (!accessKeyId || !secretAccessKey) {
+    return {
+      ok: false,
+      error: 'No credentials found in hcloud profile.',
+      nextStep: 'Run "hcloud configure init" outside agent chat to set up credentials first.',
+    };
+  }
+
+  if (!region) {
+    return {
+      ok: false,
+      error: 'No region found in hcloud profile.',
+      nextStep: 'Run "hcloud configure set --cli-region=<region>" outside agent chat to set a default region.',
+    };
+  }
+
+  const endpoint = `https://obs.${region}.myhuaweicloud.com`;
+  const configContent = `[default]\r\nendpoint=${endpoint}\r\nak=${accessKeyId}\r\nsk=${secretAccessKey}\r\n`;
+
+  try {
+    writeFileSync(obsConfigPath, configContent, { encoding: 'utf8', mode: 0o600 });
+  } catch (e) {
+    return {
+      ok: false,
+      error: 'Failed to write OBS config file.',
+      detail: e.message,
+      path: obsConfigPath,
+    };
+  }
+
+  return {
+    ok: true,
+    existed: false,
+    created: true,
+    path: obsConfigPath,
+    region,
+    endpoint,
+    note: 'OBS credentials synced from hcloud profile. OBS commands (hcloud OBS ls, mb, cp, etc.) should now work.',
   };
 }
 

@@ -10,6 +10,8 @@ version: 1
 
 Always run `hcloud <Service> <Operation> --help` before constructing commands to discover exact parameter names and requirements.
 
+> **Multi-version APIs**: KooCLI may print a warning like "ListVpcs有多个版本,默认使用该API版本v3" before the actual response. The text BEFORE the first `{` is the version selection notice — parse JSON starting from `{` only. This is normal behavior, not an error.
+
 ## Overview
 
 Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet lifecycle, security groups, EIP management, NAT gateways, VPN, and network ACLs.
@@ -27,6 +29,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | **VPC params need nested prefix** | KooCLI 7.x VPC API uses `--vpc.<param>`, `--subnet.<param>`, `--security_group.<param>`. Example: `--vpc.name=xxx` NOT `--name=xxx` |
 | **Security group needs no vpc_id** | VPC v3 API `CreateSecurityGroup` does NOT accept `vpc_id`. Security groups are region-level, not VPC-bound |
 | Subnet DNS empty → ECS no DNS | DNS params (`--subnet.primary_dns`, `--subnet.secondary_dns`) marked optional but empty default breaks cloud-init domain resolution — `yum`/`apt` installs fail silently. Always set both. See `--help` for region-specific DNS IPs |
+| SCP blocks 0.0.0.0/0 SG rules | If `CreateSecurityGroupRule` with `--remote_ip_prefix=0.0.0.0/0` fails with `SYS.0403`, an org-level SCP policy is denying wide-open rules. Narrow to a specific CIDR range (e.g., your office IP) instead |
 
 ## Common Workflows
 
@@ -55,7 +58,7 @@ Domain expertise for Huawei Cloud Virtual Private Cloud (VPC). Covers VPC/subnet
 | VPC.0301: Bandwidth name invalid | PER type requires `--bandwidth.name`, even though `--help` marks it optional |
 | EIP has no public IP after binding | May need AddIngressEipV2 for ELB-type resources (see huawei-apig) |
 | ECS cloud-init fails silently (port 80/443 closed) | Subnet likely has no DNS. Check `hcloud VPC ShowSubnet --subnet_id=<id>` → `dnsList` empty? Rebuild subnet with `--subnet.primary_dns=<dns1> --subnet.secondary_dns=<dns2>`. DNS addresses per region: `hcloud VPC CreateSubnet --help` |
-| SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction |
+| SYS.0403 / SCP deny | Service Control Policy explicitly denies this operation — contact org admin to adjust SCP, or use an account/region without the restriction. If SSH is blocked, bootstrap via cloud-init user_data instead: see `huawei-ecs` — no SSH needed |
 
 ## Security Considerations
 

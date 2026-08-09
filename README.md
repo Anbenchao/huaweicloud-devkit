@@ -1,7 +1,7 @@
 # HuaweiCloud DevKit
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud-mate/huaweicloud-devkit/actions/workflows/ci.yml)
+[![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
 
 帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
@@ -34,7 +34,7 @@ npx --yes huaweicloud-devkit install --target codex
 
 ### Claude Code
 
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。Claude Code 会自动索引插件。
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。Claude Code 会自动索引插件。
 
 安装插件：
 
@@ -65,7 +65,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 
 ### Cursor
 
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud-mate/huaweicloud-devkit`。
+通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。
 
 然后在**插件**面板中安装 **huaweicloud-core** 插件。
 
@@ -76,7 +76,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 ```json
 {
   "mcp": {
-    "huaweicloud": {
+    "huaweicloud-devkit": {
       "type": "local",
       "command": ["node", "<路径>/plugins/huaweicloud-core/src/mcp-server.mjs"],
       "enabled": true
@@ -123,7 +123,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 
 - **安全优先执行** — 所有 `hcloud` 命令执行前自动分类（读/写/密钥），写操作需用户明确批准。
 - **输出脱敏** — 凭证形态的值（AK/SK、Token、密码）自动替换为 `***REDACTED***`。
-- **12 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释等。
+- **16 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释、Hook 风险检查等。
 - **零运行时依赖** — 纯 Node.js（>= 20），无需 npm install。
 
 详见 [MCP 工具表](#mcp-工具)。
@@ -154,6 +154,9 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 | CLI | `huaweicloud_run_readonly_command` | 执行只读命令并脱敏输出 |
 | CLI | `huaweicloud_run_approved_command` | 经用户明确批准后执行写命令 |
 | 安全 | `huaweicloud_show_profile_redacted` | 安全查看 KooCLI 配置（凭证脱敏） |
+| 安全 | `huaweicloud_hook_check_command` | 执行前检查 Shell/KooCLI 命令风险 |
+| 安全 | `huaweicloud_hook_check_artifacts` | 检查生成的代码、IaC、IAM/OBS 策略和配置文件风险 |
+| 安全 | `huaweicloud_hook_check_deploy_plan` | 检查沙箱、预览环境和云资源部署计划风险 |
 | 路由 | `huaweicloud_service_catalog` | 返回推荐的能力来源排序 |
 | 排错 | `huaweicloud_explain_error` | 解释错误码并建议诊断步骤 |
 
