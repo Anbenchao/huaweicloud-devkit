@@ -58,20 +58,18 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 ```
 
 > **Security**: Never embed secrets (passwords, AK/SK, tokens) in user_data. It is stored unencrypted and readable from within the instance via IMDS. Fetch secrets at boot from DEW/CSMS instead.
->
+
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
 
 ## 7. EIP (optional)
 hcloud EIP CreatePublicip --publicip.type=<type> --bandwidth.size=<size> --bandwidth.share_type=<share-type> --bandwidth.name=<name>
 
-```bash
 # Get the ECS network port ID
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
 # → addresses.<vpc-id>[].OS-EXT-IPS:port_id
 
 # Bind EIP via port
 hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT
-```
 
 ## 8. Verify
 hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>

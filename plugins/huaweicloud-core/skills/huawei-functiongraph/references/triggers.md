@@ -138,5 +138,5 @@ hcloud FunctionGraph DeleteFunctionTrigger --function_urn=<urn> --trigger_type_c
 ```
 
 > Deleting a trigger does NOT cascade-delete the associated APIG API. After `DeleteFunctionTrigger`, also run `hcloud APIG ListApisV2 --instance_id=<id>` and delete orphaned APIs to avoid resource residue.
->
+
 > **APIG event format**: When using DEDICATEDGATEWAY, the event body is Base64 encoded and uses a non-standard structure. See `apig-event-format.md` for handler templates.

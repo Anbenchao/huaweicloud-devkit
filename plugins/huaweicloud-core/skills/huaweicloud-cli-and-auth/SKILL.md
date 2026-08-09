@@ -57,12 +57,14 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 
 ## Configure Credentials Outside Chat
 
+**NEVER let AK/SK enter shell history. This is the #1 credential leak vector.**
+
 - Create AK/SK in the Huawei Cloud console under `My Credentials -> Access Keys`.
-- **Interactive** (preferred): `hcloud configure init` — prompts safely for AK/SK/region.
-- **Non-interactive** (Agent/CI environments): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>` — user must execute outside agent chat.
-- Required concepts: Access Key ID, Secret Access Key, Region such as `ap-southeast-3`, and Project ID.
+- **Interactive** (preferred, SAFE): `hcloud configure init` — prompts for AK/SK via terminal input. Values do NOT enter shell history.
+- **Non-interactive** (DANGEROUS — AK/SK in shell history): `hcloud configure set --cli-access-key=<AK> --cli-secret-key=<SK> --cli-region=<region>`. Only use in ephemeral CI/CD shells. User must execute outside agent chat.
+- If MCP is available, use `huaweicloud_show_profile_redacted` to check status without ever seeing credentials.
 - Never paste AK/SK, passwords, tokens, or profile files into the agent conversation.
-- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x. Always use `hcloud configure set`.
+- KooCLI stores credentials in `~/.hcloud/config.json`, NOT environment variables. `HCLOUD_ACCESS_KEY` / `HCLOUD_SECRET_KEY` / `HCLOUD_REGION` env vars are NOT read by KooCLI 7.x.
 
 ## Safe Flow
 
@@ -70,14 +72,14 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
 2. **KooCLI first-run privacy agreement**: On a fresh KooCLI install, `hcloud` blocks with `同意并继续使用(y)/不同意并退出(N)` and fails with `[USE_ERROR]您输入的是无效字符` in non-interactive mode. Detection: check command output for these strings. Ask the user: "KooCLI needs to accept its privacy agreement. May I accept it on your behalf?" If the user agrees, run `huaweicloud_run_readonly_command` with `args=["version"]` and `stdin="y\n"`. This accepts the agreement once, after which hcloud works normally.
 3. Ask the user to configure credentials outside the agent conversation when setup is needed.
 4. Inspect profile and region only through redacted tooling.
-5. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
-6. Use `--cli-output=json` for machine-readable responses when supported.
-7. For resource operations, include `--cli-region`, `--cli-profile`, and service-specific project information when required.
-8. Classify every command before running it:
+4. Discover exact operation names with `hcloud <Service> --help` before guessing. Example: ECS instance listing is commonly `ECS ListServersDetails`; ECS creation is commonly `ECS CreateServers`; image lookup may be under `IMS GlanceShowImage`.
+5. Use `--cli-output=json` for machine-readable responses when supported.
+6. For resource operations, include `--cli-region`, `--cli-profile`, and service-specific project information when required.
+7. Classify every command before running it:
    - Read-only: `List*`, `Show*`, `Get*`, `Describe*`.
    - Write: `Create*`, `Delete*`, `Update*`, `Resize*`, `Start*`, `Stop*`, `Authorize*`, and similar.
    - Secret: any operation returning secret string, binary secret, token, or password.
-9. For write operations, show the exact command and ask for explicit approval.
+8. For write operations, show the exact command and ask for explicit approval.
 
 ## KooCLI Syntax Notes
 

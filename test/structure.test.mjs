@@ -153,3 +153,73 @@ test('.mcp.json is valid and references existing server script', () => {
   const mcpConfig = readJson(join(pluginRoot, '.mcp.json'));
   assert.ok(mcpConfig.mcpServers || mcpConfig.mcp);
 });
+
+test('setup-cli.mjs supports the codearts target end to end', () => {
+  const setup = readFileSync(join(pluginRoot, 'src', 'setup-cli.mjs'), 'utf8');
+  // parseTarget accepts codearts
+  assert.match(setup, /if \(val === 'codearts'\) return 'codearts';/);
+  // install / uninstall / status functions exist
+  assert.match(setup, /async function installCodeArts\(\)/);
+  assert.match(setup, /function uninstallCodeArts\(\)/);
+  assert.match(setup, /function codeartsStatus\(\)/);
+  // path helpers for user-level and project-level codearts dirs
+  assert.match(setup, /function codeartsSkillsDir\(\)/);
+  assert.match(setup, /function codeartsMcpSettingsFile\(\)/);
+  assert.match(setup, /function codeartsProjectSkillsDir\(\)/);
+  assert.match(setup, /function codeartsProjectMcpSettingsFile\(\)/);
+  assert.match(setup, /function codeartsPluginsDir\(\)/);
+  // install copies to user + project skills and registers both MCP configs
+  assert.match(setup, /copyDir\(skillsSrc, codeartsSkillsDir\(\)\)/);
+  assert.match(setup, /copyDir\(skillsSrc, codeartsProjectSkillsDir\(\)\)/);
+  assert.match(setup, /registerCodeartsMcp\(codeartsMcpSettingsFile\(\)\)/);
+  assert.match(setup, /registerCodeartsMcp\(codeartsProjectMcpSettingsFile\(\)\)/);
+  // MCP registration writes an enabled server with local mode env
+  assert.match(setup, /config\.mcpServers\.huaweicloud = \{/);
+  assert.match(setup, /HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local'/);
+  assert.match(setup, /enabled: true,/);
+  // command dispatch covers codearts for install / uninstall / status
+  const branches = setup.match(/target === 'codearts' \|\| target === 'all'/g);
+  assert.ok(branches && branches.length >= 3, `codearts dispatch branches: ${branches?.length}`);
+  // .installed marker goes to the codearts plugins dir
+  assert.match(setup, /const markerDir = target === 'codearts' \? codeartsPluginsDir\(\) : opencodePluginsDir\(\);/);
+  // doctor checks the codearts skills dir alongside opencode
+  assert.match(setup, /const skillsOptions = \[opencodeSkillsDir\(\), codexDesktopSkillsDir\(\), codeartsSkillsDir\(\)\];/);
+  // help text documents the target
+  assert.match(setup, /--target <opencode\|codex\|codearts\|all>/);
+  assert.match(setup, /install --target codearts/);
+});
+
+test('tools.mjs resolves skills from the codearts directory', () => {
+  const tools = readFileSync(join(pluginRoot, 'src', 'tools.mjs'), 'utf8');
+  assert.match(tools, /function codeartsSkillsDir\(\)/);
+  assert.match(tools, /return join\(home, '\.codeartsdoer', 'skills'\);/);
+  assert.match(tools, /if \(existsSync\(codeartsSkillsDir\(\)\)\) return codeartsSkillsDir\(\);/);
+});
+
+test('setup-cli.mjs handles KooCLI sandbox blockers and privacy agreement', () => {
+  const setup = readFileSync(join(pluginRoot, 'src', 'setup-cli.mjs'), 'utf8');
+  // sandbox detection reads the CodeArts permission config
+  assert.match(setup, /function detectCodeartsSandbox\(\)/);
+  assert.match(setup, /codearts-data', 'storage', 'permission', 'config\.json'/);
+  assert.match(setup, /config\.bash_mode/);
+  // hcloud lookup covers HCLOUD_BIN and ~/hcloud on Windows
+  assert.match(setup, /function findHcloudBin\(\)/);
+  assert.match(setup, /process\.env\.HCLOUD_BIN/);
+  assert.match(setup, /join\('hcloud', 'hcloud\.exe'\)/);
+  // sandbox warning prompts user to install externally or disable sandbox
+  assert.match(setup, /function printSandboxWarning\(/);
+  assert.match(setup, /检测到码道沙箱模式/);
+  assert.match(setup, /在码道外的终端安装并使用 KooCLI/);
+  assert.match(setup, /关闭沙箱模式后重试/);
+  // privacy agreement auto-accept answers y on stdin
+  assert.match(setup, /function acceptKooCliPrivacy\(/);
+  assert.match(setup, /input: 'y\\n'/);
+  assert.match(setup, /同意并继续使用/);
+  // install-hcloud surfaces sandbox guidance on failure and after install
+  assert.match(setup, /沙箱模式拦截了 KooCLI 自动安装/);
+  assert.match(setup, /无法自动接受隐私协议/);
+  // MCP env injects HCLOUD_BIN when an hcloud binary is found
+  assert.match(setup, /if \(hcloudBin\) env\.HCLOUD_BIN = hcloudBin\.replace/);
+  // doctor warns about sandbox mode
+  assert.match(setup, /CodeArts sandbox mode active/);
+});
