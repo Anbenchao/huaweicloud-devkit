@@ -12,7 +12,7 @@ Always run `hcloud DDS <Operation> --help` or `hcloud DCS <Operation> --help` be
 
 ## DDS (Document Database Service — MongoDB Compatible)
 
-## Critical Warnings
+## DDS Critical Warnings
 
 | Trap | Why |
 |------|-----|
@@ -35,7 +35,7 @@ Discover exact parameters with `--help` before executing any command.
 
 ## DCS (Distributed Cache Service — Redis/Memcached)
 
-## Critical Warnings
+## DCS Critical Warnings
 
 | Trap | Why |
 |------|-----|
