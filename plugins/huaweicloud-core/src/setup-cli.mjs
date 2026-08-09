@@ -11,9 +11,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = resolve(__dirname, '..');
 const PACKAGE_ROOT = resolve(PLUGIN_ROOT, '..', '..');
 
+let pkgVersion = '0.0.0';
+try {
+  pkgVersion = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')).version;
+} catch {}
+
 const BANNER = `
 ╔══════════════════════════════════════════════╗
-║     HuaweiCloud DevKit v0.1.0              ║
+║     HuaweiCloud DevKit v${pkgVersion}${' '.repeat(Math.max(0, 22 - String(pkgVersion).length))}║
 ║     https://github.com/huaweicloud-mate   ║
 ╚══════════════════════════════════════════════╝
 `;
