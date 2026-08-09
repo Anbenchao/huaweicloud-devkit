@@ -289,6 +289,27 @@ async function installCodexDesktop() {
   copyDir(safetyDir, join(codexDesktopPluginsDir(), 'safety'));
   console.log(`  Safety Policy -> ${join(codexDesktopPluginsDir(), 'safety')}`);
 
+  // Generate .mcp.json with absolute paths for Codex Desktop MCP server discovery
+  const mcpServerAbsPath = join(codexDesktopPluginsDir(), 'src', 'mcp-server.mjs').replace(/\\/g, '/');
+  const mcpConfig = {
+    mcpServers: {
+      'huaweicloud-devkit': {
+        command: 'node',
+        args: [mcpServerAbsPath],
+        env: { HUAWEICLOUD_AGENT_TOOLKIT_MODE: 'local' },
+      },
+    },
+  };
+  writeFileSync(join(codexDesktopPluginsDir(), '.mcp.json'), JSON.stringify(mcpConfig, null, 2));
+  console.log(`  MCP Config -> ${join(codexDesktopPluginsDir(), '.mcp.json')}`);
+
+  // Copy .codex-plugin manifest for Codex Desktop plugin registration
+  const codexPluginSrc = join(PLUGIN_ROOT, '.codex-plugin');
+  if (existsSync(codexPluginSrc)) {
+    copyDir(codexPluginSrc, join(codexDesktopPluginsDir(), '.codex-plugin'));
+    console.log(`  Plugin Manifest -> ${join(codexDesktopPluginsDir(), '.codex-plugin')}`);
+  }
+
   const mcpPath = join(codexDesktopPluginsDir(), 'src', 'mcp-server.mjs').replace(/\\/g, '/');
   const configPath = codexDesktopConfigFile();
   let config = {};
