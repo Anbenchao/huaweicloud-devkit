@@ -9,20 +9,36 @@ HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工
 
 ## 快速开始
 
+### 1. 安装依赖
+
+- **Node.js >= 20**
+- **KooCLI（hcloud）**：
+
+```bash
+# Windows：自动下载安装
+npx --yes huaweicloud-devkit install-hcloud
+
+# Linux / macOS：打印安装命令，按提示手动执行
+npx --yes huaweicloud-devkit install-hcloud
+```
+
+> 安装过程中会交互确认隐私协议（`y/N`）。Windows 自动安装到 `%USERPROFILE%\hcloud\`，Linux/macOS 需手动执行 curl 命令。
+
+### 2. 配置认证
+
+```bash
+hcloud configure init   # 交互式，安全（推荐）
+```
+
+### 3. 安装插件
+
 ### OpenCode
 
 ```bash
 npx --yes huaweicloud-devkit install
 ```
 
-自动安装 27 个技能、MCP 服务器和安全策略，并更新 OpenCode 配置。安装后**重启会话**使 MCP 工具生效。
-
-```bash
-npx --yes huaweicloud-devkit doctor   # 自检：hcloud、MCP、技能、认证
-npx --yes huaweicloud-devkit status   # 查看安装状态
-npx --yes huaweicloud-devkit update   # 更新到最新版
-npx --yes huaweicloud-devkit uninstall # 卸载
-```
+自动安装 27 个技能、MCP 服务器和安全策略到 `~/.config/opencode/`，注册到 `opencode.jsonc`。安装后**重启会话**使 MCP 工具生效。
 
 ### Codex
 
@@ -30,48 +46,31 @@ npx --yes huaweicloud-devkit uninstall # 卸载
 npx --yes huaweicloud-devkit install --target codex
 ```
 
-> 需要先安装 Codex CLI。`--target all` 会在 Codex CLI 缺失时跳过 Codex。
+> 需要先安装 [Codex CLI](https://github.com/openai/codex-cli)。`--target all` 会在 Codex CLI 缺失时跳过。
 
-### Claude Code
+### Codex Desktop
 
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。Claude Code 会自动索引插件。
-
-安装插件：
-
+```bash
+npx --yes huaweicloud-devkit install --target codex-desktop
 ```
-/plugin install huaweicloud-core@huaweicloud-devkit
-```
+
+安装到 `~/.agents/`：skills、MCP 插件、安全策略，通过 `.mcp.json` 注册。
 
 ### CodeArts Agent（码道）
-
-码道没有插件市场，通过技能 + MCP 机制适配：
 
 ```bash
 npx --yes huaweicloud-devkit install --target codearts
 ```
 
-自动安装 27 个技能到 `~/.codeartsdoer/skills/` 与项目级 `.codeartsdoer/skills/`，MCP 服务器注册到用户级与项目级 `.codeartsdoer/mcp/mcp_settings.json`。若本机已存在 KooCLI（`~/hcloud/hcloud.exe`），会自动将 `HCLOUD_BIN` 注入 MCP 配置。安装后**重启会话**使 MCP 工具生效。
+安装技能到 `~/.codeartsdoer/skills/` 与项目级 `.codeartsdoer/skills/`，MCP 注册到用户级 + 项目级 `mcp_settings.json`。检测到 `~/hcloud/hcloud.exe` 时自动注入 `HCLOUD_BIN`。
 
-```bash
-npx --yes huaweicloud-devkit install-hcloud   # 安装 KooCLI（自动接受隐私协议）
-npx --yes huaweicloud-devkit doctor           # 自检：hcloud、MCP、技能、沙箱模式
-npx --yes huaweicloud-devkit status --target codearts   # 查看码道安装状态
-npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
-```
-
-> **沙箱模式**：码道默认 `bash_mode: sandbox` 会阻止 KooCLI 写入配置目录（如 `~/.hcloud/root`），导致隐私协议无法持久化、KooCLI 无法运行。`install-hcloud` 会自动检测沙箱模式并给出明确指引——请在**码道外终端**安装使用 KooCLI，或在码道设置中关闭沙箱模式（设置 → 权限 → Bash 模式）后重试。
+> **沙箱模式**：码道默认 `bash_mode: sandbox` 阻止 KooCLI 写入配置。请在码道外终端安装 KooCLI，或关闭沙箱（设置 → 权限 → Bash 模式）。
 >
-> **认证**：KooCLI 就绪后，还需在码道外终端执行 `hcloud configure init` 配置 AK/SK 与区域，然后即可在码道中描述你的华为云任务。
-
-### Cursor
-
-通过 **设置 → 插件 → 团队市场 → 添加市场 → 从仓库导入**，指向 `huaweicloud/HuaweiCloud-Devkit`。
-
-然后在**插件**面板中安装 **huaweicloud-core** 插件。
+> **认证**：在码道外终端执行 `hcloud configure init` 配置 AK/SK 与区域。
 
 ### 其他 Agent
 
-对于支持 Model Context Protocol (MCP) 的 Agent，手动配置 MCP 服务器：
+支持 MCP 的 Agent 手动配置：
 
 ```json
 {
@@ -85,13 +84,29 @@ npx --yes huaweicloud-devkit uninstall --target codearts # 卸载
 }
 ```
 
-然后安装技能：
-
 ```bash
-npx --yes huaweicloud-devkit install
+npx --yes huaweicloud-devkit install   # 安装技能
 ```
 
-> **前置条件：** 需要安装 [KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)（`hcloud`）并完成认证。MCP 服务器需要 Node.js >= 20。如果 `hcloud` 不在 `PATH` 中，请设置 `HCLOUD_BIN` 环境变量指向完整路径。
+> **前置条件：** Node.js >= 20，[KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html) 已安装并认证。`hcloud` 不在 PATH 中时设置 `HCLOUD_BIN` 环境变量。
+
+### 4. 验证
+
+```bash
+npx --yes huaweicloud-devkit doctor
+```
+
+预期 8/8 通过（Node.js、MCP server、Safety policy、MCP configured、hcloud CLI、credentials、Skills）。
+
+### 5. 重启会话
+
+**必须关闭并重新打开 Agent 会话**，MCP 工具才会生效。重启后直接描述华为云任务即可。
+
+```bash
+npx --yes huaweicloud-devkit status    # 查看安装状态
+npx --yes huaweicloud-devkit update    # 更新到最新版
+npx --yes huaweicloud-devkit uninstall # 卸载
+```
 
 ## 包含内容
 
@@ -123,7 +138,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 
 - **安全优先执行** — 所有 `hcloud` 命令执行前自动分类（读/写/密钥），写操作需用户明确批准。
 - **输出脱敏** — 凭证形态的值（AK/SK、Token、密码）自动替换为 `***REDACTED***`。
-- **16 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释、Hook 风险检查等。
+- **14 个结构化工具** — 技能搜索、CLI 检查、只读命令、区域发现、错误解释、Hook 风险检查、OBS 凭证同步、技能市场搜索等。
 - **零运行时依赖** — 纯 Node.js（>= 20），无需 npm install。
 
 详见 [MCP 工具表](#mcp-工具)。
@@ -144,6 +159,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 
 | 类别 | 工具 | 说明 |
 |------|------|------|
+| 知识发现 | `huaweicloud_search_marketplace` | 搜索华为云 Agent 技能市场 |
 | 知识发现 | `huaweicloud_search_docs` | 跨技能文件及文档全文搜索 |
 | 知识发现 | `huaweicloud_retrieve_skill` | 按名称加载完整技能内容及参考文件 |
 | 知识发现 | `huaweicloud_list_regions` | 列出可用华为云区域 |
@@ -153,6 +169,7 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 | CLI | `huaweicloud_list_operations` | 列出服务的可用 KooCLI 操作 |
 | CLI | `huaweicloud_run_readonly_command` | 执行只读命令并脱敏输出 |
 | CLI | `huaweicloud_run_approved_command` | 经用户明确批准后执行写命令 |
+| CLI | `huaweicloud_setup_obs_config` | 同步 hcloud 凭证到 OBS 配置文件 |
 | 安全 | `huaweicloud_show_profile_redacted` | 安全查看 KooCLI 配置（凭证脱敏） |
 | 安全 | `huaweicloud_hook_check_command` | 执行前检查 Shell/KooCLI 命令风险 |
 | 安全 | `huaweicloud_hook_check_artifacts` | 检查生成的代码、IaC、IAM/OBS 策略和配置文件风险 |
