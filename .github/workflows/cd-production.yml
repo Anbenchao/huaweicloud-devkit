@@ -53,40 +53,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Sync main and tags to huaweicloud org + GitCode
+      - name: Sync main and tags to huaweicloud org
         env:
           HUAWEICLOUD_ORG_TOKEN: ${{ secrets.HUAWEICLOUD_ORG_TOKEN }}
-          GITCODE_USERNAME: ${{ secrets.GITCODE_USERNAME }}
-          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
           set -e
           git fetch origin main:refs/remotes/origin/main
-          failed=0
-          targets=(
-            "https://x-access-token:${HUAWEICLOUD_ORG_TOKEN}@github.com/huaweicloud/HuaweiCloud-Devkit.git"
-            "https://${GITCODE_USERNAME}:${GITCODE_TOKEN}@gitcode.com/huaweicloud/huaweicloud-devkit.git"
-          )
-          for url in "${targets[@]}"; do
-            name="${url%%@*}"
-            attempt=0
-            synced=0
-            while [ "$attempt" -lt 3 ]; do
-              attempt=$((attempt+1))
-              echo "Sync attempt ${attempt}/3 -> ${name}"
-              if git push "${url}" refs/remotes/origin/main:main && git push "${url}" --tags; then
-                echo "OK: synced to ${name}"
-                synced=1
-                break
-              fi
-              sleep 5
-            done
-            if [ "$synced" -ne 1 ]; then
-              echo "::error::Sync failed to ${name} after 3 attempts"
-              failed=1
+          url="https://x-access-token:${HUAWEICLOUD_ORG_TOKEN}@github.com/huaweicloud/HuaweiCloud-Devkit.git"
+          name="${url%%@*}"
+          attempt=0
+          while [ "$attempt" -lt 3 ]; do
+            attempt=$((attempt+1))
+            echo "Sync attempt ${attempt}/3 -> ${name}"
+            if git push "${url}" refs/remotes/origin/main:main && git push "${url}" --tags; then
+              echo "OK: synced to ${name}"
+              exit 0
             fi
+            sleep 5
           done
-          if [ "$failed" -ne 0 ]; then
-            echo "::error::One or more mirrors failed. Re-run 'Sync to Org Mirrors' workflow."
-            exit 1
-          fi
-          echo "Synced main + tags to huaweicloud/HuaweiCloud-Devkit and GitCode"
+          echo "::error::Sync failed to ${name} after 3 attempts"
+          exit 1
