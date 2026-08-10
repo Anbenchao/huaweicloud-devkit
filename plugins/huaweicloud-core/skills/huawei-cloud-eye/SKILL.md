@@ -60,6 +60,7 @@ hcloud CES CreateAlarmRules --help
 | No metric data | Telescope agent not installed or ECS stopped. Install agent for detailed metrics |
 | Alarm not triggering | Check metric period (minimum 300s), verify condition threshold |
 | CES network timeout in region | Some regions may have CES endpoint issues. Try a different region |
+| ALL_INSTANCE 缺少 resources 参数 | KooCLI marks `--resources` required even for `ALL_INSTANCE` type. Workaround: pass `--resources.1.1.name="instance_id"` as placeholder |
 
 ## Security
 
