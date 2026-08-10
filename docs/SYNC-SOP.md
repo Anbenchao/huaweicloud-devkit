@@ -57,6 +57,7 @@ git push git@github.com:huaweicloud/HuaweiCloud-Devkit.git refs/tags/vX.Y.Z
 | README / CONTRIBUTING / CODE_OF_CONDUCT / SECURITY / .github 共享文件 | 本仓库（插件，完整内容） |
 | 开源仓独有治理 workflow（status-transition/triage-issue） | 保留开源仓版本 |
 | 发布型 workflow（cd-production/release/publish 等） | **不合并**——公开仓只保留校验 CI + 治理 workflow |
+| `docs/hook-rule-model.md`、`docs/opencode-hook-safety-test-guide.md` | **不合并**——内部文档，含内部信息，公开仓已删除 |
 
 ## 验证
 
