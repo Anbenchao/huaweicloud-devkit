@@ -1,0 +1,38 @@
+name: Sync to Org Mirror
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Sync main and tags to huaweicloud org
+        env:
+          HUAWEICLOUD_ORG_TOKEN: ${{ secrets.HUAWEICLOUD_ORG_TOKEN }}
+        run: |
+          set -e
+          git fetch origin main:refs/remotes/origin/main
+          url="https://x-access-token:${HUAWEICLOUD_ORG_TOKEN}@github.com/huaweicloud/HuaweiCloud-Devkit.git"
+          name="${url%%@*}"
+          attempt=0
+          while [ "$attempt" -lt 3 ]; do
+            attempt=$((attempt+1))
+            echo "Sync attempt ${attempt}/3 -> ${name}"
+            if git push "${url}" refs/remotes/origin/main:main && git push "${url}" --tags; then
+              echo "OK: synced to ${name}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Sync failed to ${name} after 3 attempts"
+          exit 1

@@ -1,0 +1,78 @@
+# HuaweiCloud Devkit — Agent Rules
+
+> Agent 加载插件时自动读取，定义全局行为约束。对标 aws-core rules/ 目录。
+
+---
+
+## Core Principles
+
+- **Always use the Huawei MCP server first** (sandboxed, observable, auditable). Fall back to `hcloud` CLI only when MCP is unavailable.
+- **Before any task, check for available skills.** Use `huaweicloud_search_docs` or `huaweicloud_retrieve_skill` via MCP. Follow skill procedures over general knowledge.
+- **When uncertain** about API parameters, quotas, limits, or error codes — search documentation via MCP. Do not guess.
+- **Prefer IaC over direct CLI calls** for infrastructure creation (Terraform for Huawei Cloud, or CloudFormation equivalent).
+- **Never use em dashes in resource names/tags.** Use hyphens only.
+- **Match user language.** Respond in the same language the user writes in.
+
+## Secret Safety
+
+- **MUST load the `huawei-dew` skill** first for any secret, credential, API key, token, or password task.
+- **MUST NOT call** `hcloud csms download-secret` or `hcloud csms show-secret` directly.
+- **MUST NOT call** `hcloud kms decrypt` directly.
+- **MUST use** `{{resolve:csms:secret-id:SecretString:key}}` with the MCP proxy — secrets resolve at runtime, never enter agent context.
+- **NEVER** echo AK/SK values in conversation or logs.
+
+## IAM Security
+
+- **Least privilege by default.** Start with no permissions, add only what is needed.
+- **MUST NOT create IAM users** — use IAM Identity Center (OneAccess) or temporary credentials.
+- **MUST NOT create long-term AK/SK** — use temporary STS tokens.
+- **MUST scope resource ARNs** — no `*` wildcards.
+- **Confused deputy protection:** Add `g:SourceAccount` and `g:SourceUrn` conditions to trust policies.
+
+## Network Security
+
+- **MUST block public access by default** on OBS buckets.
+- **MUST use security groups** (not iptables) for ECS/CCE access control.
+- **SHOULD use VPC endpoints** for internal service access (no public internet).
+- **MUST enable HTTPS-only** on OBS buckets and API endpoints.
+
+## Observability
+
+- **SHOULD enable CTS audit logging** on all accounts.
+- **SHOULD configure Cloud Eye alarms** for production workloads (CPU > 80%, memory > 85%, disk > 90%).
+- **SHOULD enable OBS access logging** for audit compliance.
+
+## Cost Awareness
+
+- **Before creating resources**, inform the user of estimated cost.
+- **SHOULD suggest billing budgets** for production accounts.
+- **SHOULD recommend CBR backup** for stateful resources (RDS, ECS system disks).
+
+## Naming Conventions
+
+- Resource names: lowercase, hyphens, max 64 chars
+- Tags: include Environment (dev/staging/prod), Owner, Project
+- OBS bucket names: globally unique, lowercase, no underscores
+
+## MCP Usage Rules
+
+- **Prefer MCP for ALL Huawei Cloud operations** — sandbox, audit, enterprise controls.
+- **When MCP is unavailable:** Fall back to `hcloud` CLI. State clearly: "MCP unavailable, using local hcloud CLI."
+- **`huaweicloud_run_approved_command`:** Only use when the exact planned command has been shown and the user explicitly approved that exact command.
+- **`huaweicloud_run_script`:** Use for deterministic calculations (cost math, data processing). Never do arithmetic in LLM reasoning.
+
+## Skill Discovery Priority
+
+1. **`huaweicloud-core`** — always check first for routing
+2. **Service-specific skills** — load after routing via `huaweicloud_retrieve_skill`
+3. **Knowledge cards** (`references/`) — quick facts without full skill load
+
+## Red Flags — STOP and Re-evaluate
+
+- Creating resources without user confirmation
+- Using `hcloud csms download-secret` or `hcloud kms decrypt` directly
+- Guessing API parameters without searching docs
+- Creating IAM users or long-term AK/SK
+- Opening OBS buckets to public access
+- Skipping CTS/Cloud Eye on production workloads
+- Echoing AK/SK or secret values in conversation

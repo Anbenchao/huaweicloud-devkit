@@ -1,18 +1,37 @@
 # Security Policy
 
+We take the security of Huawei Cloud DevKit seriously. If you believe you have found a security vulnerability, please report it to us as described below.
 
+## Reporting a Vulnerability
 
-## 报告安全漏洞
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-如发现安全漏洞，请发送邮件至 huaweicloud@huawei.com，**不要在公开 Issue 中披露**。
+Instead, please report them privately to the maintainers by email:
 
+- **Email:** `huaweiclouddev@huawei.com`
 
+Please include the following information in your report:
 
-## 支持版本
+- A description of the vulnerability
+- The affected version(s) and environment
+- Steps to reproduce, or a minimal proof of concept
+- Any other relevant details
 
-| 版本 | 支持状态 |
+## What to Expect
 
-|------|---------|
+- We will acknowledge receipt of your report.
+- We will investigate and, if the report is valid, work on a fix.
+- We will keep you informed of progress where possible.
 
-| 最新 | ✅ 活跃支持 |
+## Scope
 
+This policy applies to the `huaweicloud-devkit` repository and its released npm packages.
+
+## Supported Versions
+
+| Version | Supported |
+| ------- | --------- |
+| latest release | ✅ |
+| older releases | ❌ |
+
+We recommend always using the latest release.

@@ -1,0 +1,19 @@
+# OWNERS
+
+Maintainers of the Huawei Cloud DevKit project.
+
+## Maintainers
+
+| Role | GitHub | Description |
+| ---- | ------ | ----------- |
+| Maintainer | [yuanbeyond](https://github.com/yuanbeyond) | Project maintainer |
+| Triage | [zrr000212-netizen](https://github.com/zrr000212-netizen) | Issue triage and review |
+
+## Reviewers
+
+- [yuanbeyond](https://github.com/yuanbeyond)
+- [zrr000212-netizen](https://github.com/zrr000212-netizen)
+
+## Approvals
+
+Changes require approval from a Maintainer. See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process.

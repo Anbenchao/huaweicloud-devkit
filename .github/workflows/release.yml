@@ -1,0 +1,57 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'patch | minor | major'
+        required: true
+        default: patch
+
+permissions: {}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump version
+        run: npm version ${{ github.event.inputs.release_type }} --no-git-tag-version
+
+      - name: Sync plugin versions
+        run: node ./scripts/sync-version.mjs
+
+      - name: Quality gates
+        run: |
+          npm ci
+          npm test
+          npm run validate
+
+      - name: Create release branch and PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BRANCH="release/v${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): v${VERSION}"
+          git push origin "HEAD:${BRANCH}"
+          gh pr create --base main --head "${BRANCH}" \
+            --title "chore(release): v${VERSION}" \
+            --body "Release v${VERSION}. Auto-merges once checks pass." || echo "PR already exists"
+          gh pr merge --auto --merge --delete-branch \
+            --match-head-commit "$(git rev-parse HEAD)" || true
+          echo "Release PR created. After it merges, run the 'Publish Release' workflow."

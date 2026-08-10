@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""PreToolUse hook for Huawei Cloud agent safety.
+
+Blocks the highest-risk leakage paths before an agent tool runs:
+- reading local Huawei Cloud credential files
+- dumping cloud credential environment variables
+- directly retrieving cloud secret values
+- running unapproved write operations through hcloud
+
+The MCP server carries the same policy in Node for platforms that do not support
+plugin hooks.
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+DENY_PREFIX = "Huawei Cloud safety hook blocked this action: "
+RULES_PATH = Path(__file__).resolve().parents[1] / "safety" / "rules" / "cloud-risk-rules.json"
+
+CONFIG_FILE_RE = re.compile(r"(\.hcloud|\.huaweicloud|hcloud[/\\](config|credentials)|huaweicloud[/\\](config|credentials))", re.I)
+ENV_DUMP_RE = re.compile(r"(env|printenv|Get-ChildItem\s+Env:|gci\s+Env:|dir\s+Env:).*(HUAWEICLOUD|HWC_|HCLOUD|OS_)", re.I)
+SECRET_READ_RE = re.compile(r"(ShowSecretVersion|GetSecretValue|secret_string|secret_binary)", re.I)
+HCLOUD_RE = re.compile(r"(^|\s)hcloud(\.exe)?\s+", re.I)
+WRITE_OPERATION_RE = re.compile(
+    r"\b(BatchCreate|BatchDelete|Create|Delete|Update|Modify|Resize|Reboot|Stop|Start|Restart|Authorize|Revoke|Add|Remove|Associate|Disassociate|Attach|Detach|Enable|Disable)\w*",
+    re.I,
+)
+READ_OPERATION_RE = re.compile(r"\b(List|Show|Get|Describe|NovaList|NovaShow)\w*", re.I)
+
+
+def deny(reason):
+    json.dump(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": DENY_PREFIX + reason,
+            }
+        },
+        sys.stdout,
+    )
+    sys.exit(0)
+
+
+def allow():
+    sys.exit(0)
+
+
+def command_text(tool_input):
+    if isinstance(tool_input, str):
+        return tool_input
+    if isinstance(tool_input, dict):
+        values = []
+        for key in ("command", "cmd", "script", "args", "arguments"):
+            value = tool_input.get(key)
+            if isinstance(value, list):
+                values.append(" ".join(str(item) for item in value))
+            elif value is not None:
+                values.append(str(value))
+        if values:
+            return "\n".join(values)
+        return json.dumps(tool_input)
+    return json.dumps(tool_input)
+
+
+def load_cloud_risk_rules():
+    try:
+        with RULES_PATH.open("r", encoding="utf-8") as file_obj:
+            catalog = json.load(file_obj)
+        return catalog.get("rules", [])
+    except Exception:
+        return []
+
+
+def condition_matches(condition, text):
+    return re.search(condition.get("regex", r"a^"), text, re.I | re.M | re.S) is not None
+
+
+def rule_matches(rule, text):
+    match = rule.get("match") or {}
+    all_conditions = match.get("all")
+    any_conditions = match.get("any")
+    none_conditions = match.get("none")
+
+    if isinstance(all_conditions, list):
+        for condition in all_conditions:
+            if not condition_matches(condition, text):
+                return False
+    if isinstance(any_conditions, list):
+        if not any(condition_matches(condition, text) for condition in any_conditions):
+            return False
+    if isinstance(none_conditions, list):
+        if any(condition_matches(condition, text) for condition in none_conditions):
+            return False
+    return isinstance(all_conditions, list) or isinstance(any_conditions, list)
+
+
+def first_denied_command_rule(text):
+    for rule in load_cloud_risk_rules():
+        if "command" not in rule.get("stages", []):
+            continue
+        if rule.get("severity") != "deny":
+            continue
+        if rule_matches(rule, text):
+            return rule
+    return None
+
+
+def main():
+    try:
+        data = json.load(sys.stdin)
+    except Exception:
+        allow()
+
+    tool_name = data.get("tool_name", "")
+    text = command_text(data.get("tool_input", {}))
+
+    if CONFIG_FILE_RE.search(text):
+        deny("reading Huawei Cloud credential/profile files can expose AK/SK or tokens. Use redacted toolkit tools.")
+    if ENV_DUMP_RE.search(text):
+        deny("dumping cloud credential environment variables is not allowed.")
+    if SECRET_READ_RE.search(text):
+        deny("direct secret value retrieval would put plaintext secrets into the agent context.")
+    denied_rule = first_denied_command_rule(text)
+    if denied_rule:
+        deny(f"{denied_rule.get('message')} Remediation: {denied_rule.get('remediation')}")
+    if tool_name == "Bash" and HCLOUD_RE.search(text) and WRITE_OPERATION_RE.search(text) and not READ_OPERATION_RE.search(text):
+        deny("unapproved Huawei Cloud write operations must be planned first and explicitly approved by the user.")
+
+    allow()
+
+
+if __name__ == "__main__":
+    main()
