@@ -3,6 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
 
+**中文 | [English](README.en.md)**
+
 帮助 AI 编码助手安全、准确地使用华为云——技能引导、KooCLI 工具、安全策略一站式集成。
 
 HuaweiCloud DevKit 为 AI 编码助手提供操作华为云所需的知识、工具和安全护栏，支持 OpenCode、Codex、码道（CodeArts Agent）等主流 Agent。
@@ -146,9 +148,10 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 
 ## 文档
 
-- [系统架构设计](docs/01-系统架构设计.md)
-- [核心技能设计](docs/02-核心技能设计.md)
+- [架构](docs/architecture.md)
 - [安全模型](docs/safety-model.md)
+- [开源定位](docs/open-source-positioning.md)
+- [变更记录](docs/CHANGELOG.md)
 - [KooCLI 官方文档](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)
 
 ## 许可证
