@@ -122,6 +122,35 @@ Fall back to hcloud CLI. State: "MCP unavailable, using local hcloud CLI."
 - **SMN notifications**: See `huawei-smn-dms` for notification topics
 - **VPC configuration**: See `huawei-vpc` for network settings
 
+
+## FunctionGraph 鈫?HTTP Access (End-to-End Chain)
+
+To expose a function via HTTP, you need ALL of these in order:
+
+1. **DEDICATEDGATEWAY trigger** on FunctionGraph (NOT the deprecated APIG type)
+2. **APIG dedicated instance** (see `huawei-apig` skill)
+3. **API group** under the APIG instance
+4. **Environment** (RELEASE / PRE_RELEASE / TEST) - both `env_name` AND `env_id` are required despite `--help` marking them optional
+5. **Domain name** (`sl_domain`) - also required despite `--help` marking it optional
+6. **Publish** the API to the environment
+
+> **Cross-skill workflow**: When a user asks to "expose a function via HTTP" or "create an API for my function", you MUST:
+> 1. Load `huawei-vpc` skill - verify networking prerequisites exist
+> 2. Load `huawei-apig` skill - for APIG instance, group, environment, domain, and publishing
+> 3. Return here for DEDICATEDGATEWAY trigger creation
+>
+> The full chain is: `VPC/Subnet 鈫?APIG instance 鈫?API group 鈫?environment 鈫?FunctionGraph trigger (DEDICATEDGATEWAY) 鈫?publish 鈫?URL`
+
+### Common mistakes
+
+| Trap | Fix |
+|------|-----|
+| Using `APIG` trigger type | Use `DEDICATEDGATEWAY` - APIG type is deprecated |
+| Missing `env_name` / `env_id` | Both are required despite `--help` marking them optional |
+| Missing `sl_domain` | Required for HTTP access; `--help` incorrectly marks it optional |
+| Trigger created but API not published | After creating trigger, publish the API group to the environment |
+
+
 ## References
 
 - FunctionGraph Docs: https://support.huaweicloud.com/functiongraph/

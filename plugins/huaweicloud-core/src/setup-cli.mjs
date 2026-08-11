@@ -260,6 +260,16 @@ async function installOpenCode() {
   copyDir(safetyDir, join(pluginDest, 'safety'));
   console.log(`  Safety Policy -> ${join(pluginDest, 'safety')}`);
   updateOpenCodeConfig(pluginDest);
+  // Also copy and resolve the OpenCode integration file
+  const integrationSrc = join(PACKAGE_ROOT, "integrations", "opencode", "opencode.json");
+  const integrationDest = join(pluginDest, "opencode.json");
+  if (existsSync(integrationSrc)) {
+    let integrationContent = readFileSync(integrationSrc, "utf8");
+    const mcpPath = join(pluginDest, "src", "mcp-server.mjs").replace(/\\\\/g, "/");
+    integrationContent = integrationContent.replace(/\$\\{HUAWEICLOUD_DEVKIT_MCP_SERVER\\}/g, mcpPath);
+    writeFileSync(integrationDest, integrationContent, "utf8");
+    console.log("  OpenCode Integration -> " + integrationDest);
+  }
 }
 
 function uninstallOpenCode() {

@@ -115,15 +115,26 @@ hcloud APIG CreateThrottlingPolicyV2 --name=<n> --api_call_limits=1000
 | Publish | `BatchPublishOrOfflineApiV2` |
 | List APIs | `ListApisV2` |
 
+
 ## FunctionGraph Integration
 
 To expose a FunctionGraph function via HTTP, you need the complete chain:
 
 ```
-APIG Instance → API Group → DEDICATEDGATEWAY Trigger → Publish
+VPC/Subnet -> APIG Instance -> API Group -> Environment -> DEDICATEDGATEWAY Trigger -> Publish -> URL
 ```
 
-After the trigger is created on FunctionGraph side, publish the API in APIG:
+### Step-by-step
+
+1. Ensure VPC and subnet exist (see `huawei-vpc` skill)
+2. Create APIG dedicated instance: `hcloud APIG CreateInstanceV2 --spec_id=<BASIC|PROFESSIONAL>`
+3. Create API group: `hcloud APIG CreateApiGroupV2 --instance_id=<id> --name=<name>`
+4. Create environment: `hcloud APIG CreateEnvironmentV2 --instance_id=<id> --name=RELEASE`
+
+Now switch to `huawei-functiongraph` skill to create the DEDICATEDGATEWAY trigger. The trigger creation requires
+`env_name` AND `env_id` - both are required despite `--help` marking them optional.
+
+5. After trigger is created, publish the API in APIG:
 
 ```bash
 hcloud APIG BatchPublishOrOfflineApiV2 \
@@ -133,7 +144,17 @@ hcloud APIG BatchPublishOrOfflineApiV2 \
   --apis.1=<api-id-from-trigger>
 ```
 
-See `huawei-functiongraph` skill → `references/deploy-workflow.md` for the full end-to-end workflow.
+6. The API URL format: `https://<sl_domain>/<env_name>/<trigger_name>`
+
+### Common traps
+
+| Trap | Fix |
+|------|-----|
+| `env_name` and `env_id` both required | Despite `--help` marking them optional, DEDICATEDGATEWAY trigger needs both |
+| `sl_domain` marked optional in `--help` | Required for actual HTTP access; use the API group's default domain |
+| FunctionGraph `APIG` trigger type deprecated | Always use `DEDICATEDGATEWAY` for new integrations |
+
+See `huawei-functiongraph` skill -> `references/deploy-workflow.md` for the full end-to-end workflow with code examples.
 
 ## Cross-Skill References
 

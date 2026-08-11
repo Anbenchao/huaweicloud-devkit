@@ -19,9 +19,11 @@ function codeartsSkillsDir() {
   return join(home, '.codeartsdoer', 'skills');
 }
 function resolveSkillsRoot() {
-  if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
-  if (existsSync(codeartsSkillsDir())) return codeartsSkillsDir();
+  // Check user-level skill directories first (where install scripts place skills),
+  // then fall back to plugin-relative path for development environments.
   if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
+  if (existsSync(codeartsSkillsDir())) return codeartsSkillsDir();
+  if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
   return SKILLS_ROOT_DEV;
 }
 const SKILLS_ROOT = resolveSkillsRoot();

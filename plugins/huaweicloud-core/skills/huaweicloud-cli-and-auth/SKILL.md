@@ -81,6 +81,51 @@ Agent processes find executables through `PATH`. If OpenCode/Codex cannot find `
    - Secret: any operation returning secret string, binary secret, token, or password.
 8. For write operations, show the exact command and ask for explicit approval.
 
+
+## CI/CD / Non-Interactive Authentication
+
+For automated environments where interactive `hcloud configure init` is not available:
+
+### Environment variable auth (preferred for CI/CD)
+
+KooCLI 7.x reads credentials from `~/.hcloud/config.json`, NOT environment variables directly. However, you can bootstrap the config file non-interactively:
+
+```bash
+# In CI/CD, inject AK/SK from secrets manager (never hardcode)
+hcloud configure set \
+  --cli-access-key="$HUAWEICLOUD_SDK_AK" \
+  --cli-secret-key="$HUAWEICLOUD_SDK_SK" \
+  --cli-region="<region>"
+```
+
+> **Security**: Only run this in ephemeral CI/CD shells where AK/SK are injected via secrets manager. AK/SK will appear in shell history - ensure your CI/CD cleans history or uses ephemeral runners.
+
+### Bypassing the privacy policy prompt
+
+On fresh KooCLI installs, the first `hcloud` invocation prompts for privacy agreement acceptance. In CI/CD, bypass this:
+
+```bash
+echo "y" | hcloud version
+```
+
+> This is safe: the privacy agreement is about data collection, not security. Accepting it is equivalent to clicking "I agree" when running `hcloud configure init` interactively.
+
+### Verify setup
+
+```bash
+hcloud configure list        # shows profiles (SK is masked)
+npx huaweicloud-devkit doctor # full environment check
+```
+
+### Security checklist for CI/CD
+
+- [ ] AK/SK stored in CI/CD secrets manager, never in repository
+- [ ] Use dedicated IAM user with minimum required permissions (not root account AK/SK)
+- [ ] Enable MFA for IAM users that manage credentials
+- [ ] Rotate AK/SK periodically (recommended: 90 days)
+- [ ] Use ephemeral CI/CD runners that clean shell history between jobs
+
+
 ## KooCLI Syntax Notes
 
 - Prefer `--param=value`; KooCLI 7.x may reject some space-separated parameter forms.

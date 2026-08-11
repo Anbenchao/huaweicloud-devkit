@@ -1,4 +1,4 @@
-# 已知问题 / Known Issues
+﻿# 已知问题 / Known Issues
 
 > 来源: 多轮 FunctionGraph 部署测试 (2026-08-06 ~ 08-07)
 
@@ -51,31 +51,18 @@ KooCLI 首次使用时要求交互式确认隐私协议（`同意并继续使用
 
 ---
 
-## 5. MCP Server 层 OBS 相关问题 (OBS 静态网站部署测试)
 
-> 来源: OBS 静态网站部署测试, 2026-08-07
+---
 
-### BUG-5.1 [P0] Skills 安装路径不匹配
-- MCP server 在 `/home/developer/.config/opencode/huaweicloud-plugins/skills/` 查找
-- Skills 实际安装到 `/home/developer/.config/opencode/skills/`
-- 导致 searchDocs、retrieveSkill 完全失效
-- **修复**: `tools.mjs` SKILLS_ROOT 应与安装脚本保持一致
+## Status Update (2026-08-11)
 
-### BUG-5.2 [P0] OBS --help 语法错误
-- `huaweicloud_list_operations` 对 OBS 使用 `hcloud OBS --help`
-- KooCLI OBS 使用 obsutil 风格：正确命令是 `hcloud OBS help`
-- **修复**: listOperations 需对 OBS 服务特殊处理，或先尝 --help 失败后回退到 help
-
-### BUG-5.3 [P1] 安全策略不识别 obsutil 命令
-- `OBS mb` / `OBS cp` / `OBS rm` 被分类为 `unknown_read`
-- 所有 obsutil 风格写操作绕过安全审批
-- **修复**: safety-policy.mjs 增加 obsutil 规则: mb→write, cp→write, rm→write, mv→write, chattri→write
-
-### BUG-5.4 [P1] list_regions 使用错误 API
-- 使用 `hcloud iam list-regions`（不存在）
-- 正确命令: `hcloud IAM KeystoneListRegions`
-- **修复**: tools.mjs listRegions 函数改正操作名
-
-### BUG-5.5 [P1] OBS 静态网站托管 KooCLI 缺失
-- KooCLI OBS 无 `SetBucketWebsite` 对应命令
-- **修复**: SKILL.md 已标注此限制，建议 REST API 或控制台替代
+| Issue | Status |
+|-------|--------|
+| BUG-5.1 Skills path mismatch | ✅ Fixed - `resolveSkillsRoot()` now checks user dirs first |
+| BUG-5.2 OBS --help syntax error | ✅ Fixed - `listOperations` uses `hcloud OBS help` |
+| BUG-5.3 OBS safety policy gap | ✅ Fixed - obsutil write ops classified correctly, case-insensitive |
+| BUG-5.4 list_regions API name | ✅ Fixed - uses `IAM KeystoneListRegions` |
+| BUG-5.5 OBS SetBucketWebsite missing | ⚠️ Known limitation - KooCLI OBS has no website command; use REST API or console |
+| P0-3 OBS case normalization | ✅ Fixed - `obsOp.toLowerCase()` before matching |
+| P0-2 Skills path priority | ✅ Fixed - user dirs checked before plugin-relative path |
+| P0-1 MCP version hardcoded | ✅ Fixed - reads from package.json dynamically |

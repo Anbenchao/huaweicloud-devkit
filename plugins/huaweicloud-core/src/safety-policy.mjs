@@ -182,9 +182,10 @@ export function classifyHcloudArgs(args, options = {}) {
 
   const obsutilWrites = ['mb', 'cp', 'mv', 'rm', 'delete', 'mkdir', 'sync', 'restore', 'chattri', 'bucketpolicy', 'lifecycle', 'cors', 'website', 'sign', 'share-add', 'share-update', 'share-rm'];
   const obsutilReads = ['ls', 'stat', 'cat', 'help', 'version'];
-  const isObs = service.toLowerCase() === 'obs' || service.toLowerCase() === 'hcloud obs';
-  const isObsWrite = isObs && obsutilWrites.includes(operation);
-  const isObsRead = isObs && obsutilReads.includes(operation);
+  const isObs = service.toLowerCase() === 'obs';
+  const obsOp = operation.toLowerCase();
+  const isObsWrite = isObs && obsutilWrites.includes(obsOp);
+  const isObsRead = isObs && obsutilReads.includes(obsOp);
   if (isObsWrite && !options.allowWrites) {
     return {
       decision: 'deny',

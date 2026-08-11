@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import { stdin, stdout } from 'node:process';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { TOOL_DEFINITIONS, callTool } from './tools.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkgVersion = readPackageVersion();
 
 let buffer = Buffer.alloc(0);
 let useContentLengthFraming = true;
@@ -79,7 +85,7 @@ async function dispatch(method, params) {
       },
       serverInfo: {
         name: 'huaweicloud-devkit',
-        version: '0.1.0',
+        version: pkgVersion,
       },
     };
   }
@@ -105,13 +111,29 @@ async function dispatch(method, params) {
     return { resources: [] };
   }
 
-  throw new Error(`Unsupported method: ${method}`);
+  throw new Error('Unsupported method: ' + method);
+}
+
+function readPackageVersion() {
+  const candidates = [
+    join(__dirname, '..', '..', '..', 'package.json'),
+    join(__dirname, '..', 'package.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      const version = JSON.parse(readFileSync(p, 'utf8')).version;
+      if (version && version !== '0.0.0') return version;
+    } catch {
+      // path doesn't exist or isn't valid JSON - try next
+    }
+  }
+  return '0.0.0';
 }
 
 function writeMessage(message) {
   const json = JSON.stringify(message);
   if (useContentLengthFraming) {
-    stdout.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`);
+    stdout.write('Content-Length: ' + Buffer.byteLength(json, 'utf8') + '\r\n\r\n' + json);
   } else {
     stdout.write(json + '\n');
   }
