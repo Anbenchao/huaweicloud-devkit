@@ -10,3 +10,6 @@ __pycache__/
 !.env.example
 .clawhub/
 .arts/
+
+.hcloud/
+test-report/
