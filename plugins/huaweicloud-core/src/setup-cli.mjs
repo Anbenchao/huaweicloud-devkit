@@ -114,8 +114,13 @@ function copyDir(src, dest) {
 
 function removeIfExists(p) {
   if (existsSync(p)) {
-    rmSync(p, { recursive: true, force: true });
-    return true;
+    try {
+      rmSync(p, { recursive: true, force: true });
+      return true;
+    } catch (e) {
+      console.log(`  \x1b[33m[WARN]\x1b[0m Could not remove ${p}: ${e.message}`);
+      return false;
+    }
   }
   return false;
 }
@@ -843,22 +848,29 @@ async function cmdDoctor() {
   console.log(`\nResults: ${pass} pass, ${warn} warn, ${fail} fail`);
 
   if (mcpConfigured && !hcloudOk) {
-    console.log('\n\x1b[33mMCP is configured but hcloud is not installed. Install hcloud then restart OpenCode.\x1b[0m');
+    console.log('\n\x1b[33mMCP is configured but hcloud is not installed. Install hcloud then restart your session.\x1b[0m');
   }
   if (fail > 0) {
-    console.log('\x1b[33mFix failures above, then restart your OpenCode / Codex session.\x1b[0m');
+    console.log('\x1b[33mFix failures above, then restart your session.\x1b[0m');
   }
   if (fail === 0 && mcpConfigured) {
-    console.log('\n\x1b[32mAll checks passed.\x1b[0m Restart OpenCode, then describe your Huawei Cloud task');
+    console.log('\n\x1b[32mAll checks passed.\x1b[0m Restart your session, then describe your Huawei Cloud task');
   }
 
-  // Detect "installed but not restarted" scenario
-  const installedMarker = join(opencodePluginsDir(), '.installed');
-  if (mcpConfigured && existsSync(installedMarker)) {
-    console.log(`\n\x1b[1m\x1b[31m╔══════════════════════════════════════════╗`);
-    console.log(`\x1b[1m\x1b[31m║  请重启 OpenCode！MCP 工具尚未激活       ║`);
-    console.log(`\x1b[1m\x1b[31m║  关闭当前会话 → 重新打开即可             ║`);
-    console.log(`\x1b[1m\x1b[31m╚══════════════════════════════════════════╝\x1b[0m`);
+  // Detect "installed but not restarted" — check all supported agents
+  const installedMarkers = [
+    { path: join(opencodePluginsDir(), '.installed'), name: 'OpenCode' },
+    { path: join(workbuddyPluginsDir(), '.installed'), name: 'WorkBuddy' },
+    { path: join(codeartsPluginsDir(), '.installed'), name: 'CodeArts' },
+  ];
+  for (const marker of installedMarkers) {
+    if (existsSync(marker.path)) {
+      console.log(`\n\x1b[1m\x1b[31m╔══════════════════════════════════════════╗`);
+      console.log(`\x1b[1m\x1b[31m║  请重启 ${marker.name}！MCP 工具尚未激活     ║`);
+      console.log(`\x1b[1m\x1b[31m║  关闭当前会话 → 重新打开即可             ║`);
+      console.log(`\x1b[1m\x1b[31m╚══════════════════════════════════════════╝\x1b[0m`);
+      break;
+    }
   }
 }
 
