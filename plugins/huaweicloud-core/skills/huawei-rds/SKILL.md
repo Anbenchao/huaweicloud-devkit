@@ -29,7 +29,7 @@ hcloud RDS <Operation> --cli-region=<region> [--key=value ...]
 | Operation | PascalCase: `ListInstances`, `CreateManualBackup` |
 | Params | `--key=value` format. JSON params: `--key='{"k":"v"}'` |
 | Array params | 1-based: `--instance_ids.1=xxx` |
-| Password param | Conflicts with KooCLI system param; pipe `echo \|` to bypass |
+| Password param | Conflicts with KooCLI system param; use `--cli-jsonInput` (see Critical Warnings) |
 
 ## Critical Warnings
 
@@ -38,9 +38,12 @@ hcloud RDS <Operation> --cli-region=<region> [--key=value ...]
 | Engine version immutable | Cannot change MySQL to PostgreSQL in-place |
 | Automated backups use OBS | Backup storage incurs separate charges. Set retention period explicitly |
 | Storage auto-scaling off by default | Enable before storage runs out or instance goes read-only |
-| `--password` conflicts with KooCLI | Non-interactive: `printf "b\n" \| hcloud RDS CreateInstance ...` to select API param. Or use `--cli-jsonInput` |
+| `--password` conflicts with KooCLI | Use `--cli-jsonInput=<file>` with JSON file (see `--cli-jsonInput` section below). The `printf "b\n"` workaround is broken in KooCLI 7.2.12+ |
 | Volume type must match flavor | General→CLOUDSSD; Dedicated→CLOUDSSD\|ESSD; ARM→ULTRAHIGH |
 | Flavor not in region | Always `ListFlavors` first. Spec codes vary by region |
+| `database_name` is case-sensitive | Use `MySQL` / `PostgreSQL` / `SQLServer` / `MariaDB` — NOT lower-case `mysql` |
+| Instance creation takes 3–8 min | Status: BUILD→MODIFYING→ACTIVE. Poll every 15s: `hcloud RDS ListInstances --cli-region=<r> --instance_id=<id> \| jq '.instances[0].status'` |
+| Body `--region` is required | CreateInstance body requires `--region=<r>` (same as `--cli-region`) or `DBS.280243` |
 | Restore creates new instance | No in-place restore. Verify target flavor before restoring |
 
 ## Instance Management
@@ -56,6 +59,7 @@ hcloud RDS ListEngineFlavors --instance_id=<id> --cli-region=<r>
 ### Create Instance
 ```bash
 hcloud RDS CreateInstance --cli-region=<r> \
+  --region=<r> \
   --name=<name> \
   --datastore.type=<engine> \
   --datastore.version=<version> \
@@ -66,11 +70,36 @@ hcloud RDS CreateInstance --cli-region=<r> \
   --subnet_id=<subnet-id> \
   --security_group_id=<sg-id> \
   --availability_zone=<az> \
-  --charge_info.charge_mode=<mode> \
-  --password=<pw>
+  --charge_info.charge_mode=<mode>
 ```
 
-> `--password` conflicts with a KooCLI system param. Pipe `echo "b\n" |` before the command or use `--cli-jsonInput` (see Critical Warnings).
+> `--password` conflicts with a KooCLI system param. Use `--cli-jsonInput` (see below). The `printf "b\n"` pipe workaround is broken in KooCLI 7.2.12+.
+
+### `--cli-jsonInput` for CreateInstance
+
+```json
+{
+  "path": {
+    "project_id": "<project-id>"
+  },
+  "body": {
+    "name": "<name>",
+    "region": "<region>",
+    "datastore": { "type": "<engine>", "version": "<version>" },
+    "ha": { "mode": "single", "replication_mode": "semisync" },
+    "flavor_ref": "<flavor-id>",
+    "volume": { "type": "<vol-type>", "size": <gb> },
+    "vpc_id": "<vpc-id>",
+    "subnet_id": "<subnet-id>",
+    "security_group_id": "<sg-id>",
+    "availability_zone": "<az>",
+    "password": "<pw>",
+    "charge_info": { "charge_mode": "postPaid" }
+  }
+}
+```
+
+> Save as `rds-create.json` then: `hcloud RDS CreateInstance --cli-jsonInput=rds-create.json`. For `project_id`, run `hcloud IAM KeystoneListProjects`.
 
 | Param | Required | Note |
 |-------|----------|------|
@@ -138,6 +167,20 @@ psql -h <private_ip> -p 5432 -U root -d postgres
 
 > hcloud does NOT support SQL execution. Use a database client.
 > For public access, bind an EIP (see `huawei-vpc`).
+
+### Database Client Acquisition
+
+If a database client is not installed on the agent's machine, install one:
+
+| Platform | MySQL | PostgreSQL |
+|----------|-------|------------|
+| **Linux** | `apt install mysql-client` / `yum install mysql` | `apt install postgresql-client` |
+| **macOS** | `brew install mysql-client` | `brew install libpq` |
+| **Windows** | Download MySQL Workbench or `winget install Oracle.MySQL` | Download pgAdmin or `winget install PostgreSQL.PostgreSQL` |
+| **Python (any)** | `pip install pymysql` then `python -c "import pymysql; ..."` | `pip install psycopg2` then `python -c "import psycopg2; ..."` |
+| **Docker (any)** | `docker run -it --rm mysql:8 mysql -h <ip> -u root -p` | `docker run -it --rm postgres:16 psql -h <ip> -U root` |
+
+> If no client can be installed, use the Huawei Cloud **Data Studio** console: https://console.huaweicloud.com/dms/
 
 ## Mutating Operations (Require Approval)
 
