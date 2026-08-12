@@ -154,6 +154,12 @@ See [`docs/safety-model.md`](docs/safety-model.md).
 - [Changelog](docs/CHANGELOG.md)
 - [KooCLI official docs](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)
 
+## Contributors
+
+<a href="https://github.com/huaweicloud/huaweicloud-devkit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=huaweicloud/huaweicloud-devkit" />
+</a>
+
 ## License
 
 This project is licensed under the Apache-2.0 License. See [LICENSE](LICENSE).

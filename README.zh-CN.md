@@ -154,6 +154,12 @@ Agent 技能是经过整理的指令和参考材料包，帮助 Agent 完成特�
 - [变更记录](docs/CHANGELOG.md)
 - [KooCLI 官方文档](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)
 
+## 贡献者
+
+<a href="https://github.com/huaweicloud/huaweicloud-devkit/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=huaweicloud/huaweicloud-devkit" />
+</a>
+
 ## 许可证
 
 本项目基于 Apache-2.0 许可证发布。详见 [LICENSE](LICENSE)。
