@@ -224,11 +224,11 @@ test('setup-cli.mjs supports the codearts target end to end', () => {
   const branches = setup.match(/target === 'codearts' \|\| target === 'all'/g);
   assert.ok(branches && branches.length >= 3, `codearts dispatch branches: ${branches?.length}`);
   // .installed marker goes to the codearts plugins dir
-  assert.match(setup, /const markerDir = target === 'codearts' \? codeartsPluginsDir\(\) : opencodePluginsDir\(\);/);
+  assert.match(setup, /const markerDir = target === 'codearts' \? codeartsPluginsDir\(\)\s+: target === 'workbuddy' \? workbuddyPluginsDir\(\)\s+: opencodePluginsDir\(\);/);
   // doctor checks the codearts skills dir alongside opencode
-  assert.match(setup, /const skillsOptions = \[opencodeSkillsDir\(\), codexDesktopSkillsDir\(\), codeartsSkillsDir\(\)\];/);
+  assert.match(setup, /const skillsOptions = \[opencodeSkillsDir\(\), codexDesktopSkillsDir\(\), codeartsSkillsDir\(\), workbuddySkillsDir\(\)\];/);
   // help text documents the target
-  assert.match(setup, /--target <opencode\|codex\|codearts\|all>/);
+  assert.match(setup, /--target <opencode\|codex\|codearts\|workbuddy\|all>/);
   assert.match(setup, /install --target codearts/);
 });
 
