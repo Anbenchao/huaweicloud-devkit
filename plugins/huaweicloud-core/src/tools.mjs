@@ -17,10 +17,15 @@ function codeartsSkillsDir() {
   const home = homedir();
   return join(home, '.codeartsdoer', 'skills');
 }
+function workbuddySkillsDir() {
+  const home = homedir();
+  return join(home, '.workbuddy', 'skills');
+}
 function resolveSkillsRoot() {
   if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
   if (existsSync(codeartsSkillsDir())) return codeartsSkillsDir();
   if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
+  if (existsSync(workbuddySkillsDir())) return workbuddySkillsDir();
   return SKILLS_ROOT_DEV;
 }
 const SKILLS_ROOT = resolveSkillsRoot();

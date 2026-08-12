@@ -223,12 +223,12 @@ test('setup-cli.mjs supports the codearts target end to end', () => {
   // command dispatch covers codearts for install / uninstall / status
   const branches = setup.match(/target === 'codearts' \|\| target === 'all'/g);
   assert.ok(branches && branches.length >= 3, `codearts dispatch branches: ${branches?.length}`);
-  // .installed marker goes to the codearts plugins dir
-  assert.match(setup, /const markerDir = target === 'codearts' \? codeartsPluginsDir\(\) : opencodePluginsDir\(\);/);
+  // .installed marker goes to the correct plugins dir
+  assert.match(setup, /const markerDir = target === 'codearts' \? codeartsPluginsDir\(\)/);
   // doctor checks the codearts skills dir alongside opencode
-  assert.match(setup, /const skillsOptions = \[opencodeSkillsDir\(\), codexDesktopSkillsDir\(\), codeartsSkillsDir\(\)\];/);
-  // help text documents the target
-  assert.match(setup, /--target <opencode\|codex\|codearts\|all>/);
+  assert.match(setup, /const skillsOptions = \[opencodeSkillsDir\(\), codexDesktopSkillsDir\(\), codeartsSkillsDir\(\), workbuddySkillsDir\(\)\];/);
+  // help text documents all targets
+  assert.match(setup, /--target <opencode\|codex\|codearts\|workbuddy\|all>/);
   assert.match(setup, /install --target codearts/);
 });
 
@@ -260,4 +260,26 @@ test('setup-cli.mjs handles KooCLI sandbox blockers and privacy agreement', () =
   assert.match(setup, /if \(hcloudBin\) env\.HCLOUD_BIN = hcloudBin\.replace/);
   // doctor warns about sandbox mode
   assert.match(setup, /CodeArts sandbox mode active/);
+});
+
+test('setup-cli.mjs supports the workbuddy target end to end', () => {
+  const setup = readFileSync(join(pluginRoot, 'src', 'setup-cli.mjs'), 'utf8');
+  // parseTarget accepts workbuddy
+  assert.match(setup, /if \(val === 'workbuddy'\) return 'workbuddy';/);
+  // install / uninstall / status functions exist
+  assert.match(setup, /async function installWorkBuddy\(\)/);
+  assert.match(setup, /function uninstallWorkBuddy\(\)/);
+  assert.match(setup, /function workbuddyStatus\(\)/);
+  // path helpers for workbuddy dirs
+  assert.match(setup, /function workbuddySkillsDir\(\)/);
+  assert.match(setup, /function workbuddyMcpConfigFile\(\)/);
+  assert.match(setup, /function workbuddyPluginsDir\(\)/);
+  // MCP config writes to ~/.workbuddy/mcp.json with mcpServers (not mcp)
+  assert.match(setup, /config\.mcpServers\['huaweicloud-devkit'\] = \{/);
+  assert.match(setup, /workbuddyMcpConfigFile\(\)/);
+  // command dispatch covers workbuddy for install / uninstall / status
+  const branches = setup.match(/target === 'workbuddy' \|\| target === 'all'/g);
+  assert.ok(branches && branches.length >= 3, `workbuddy dispatch branches: ${branches?.length}`);
+  // help text documents the target
+  assert.match(setup, /install --target workbuddy/);
 });

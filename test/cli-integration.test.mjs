@@ -182,8 +182,131 @@ test('cli help documents the codearts target', () => {
   try {
     const res = runCli(home, cwd, ['help']);
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /--target <opencode\|codex\|codearts\|all>/);
+    assert.match(res.stdout, /--target <opencode\|codex\|codearts\|workbuddy\|all>/);
     assert.match(res.stdout, /install --target codearts/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+// ── WorkBuddy integration tests ──
+
+test('workbuddy install copies skills, MCP server, and safety policy', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const res = runCli(home, cwd, ['install', '--target', 'workbuddy']);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /\[WorkBuddy\]/);
+    assert.match(res.stdout, /Installation complete!/);
+
+    const userSkills = countSkills(join(home, '.workbuddy', 'skills'));
+    assert.ok(userSkills >= 6, `expected >= 6 user skills, got ${userSkills}`);
+
+    const pluginDir = join(home, '.workbuddy', 'huaweicloud-plugins');
+    assert.ok(existsSync(join(pluginDir, 'src', 'mcp-server.mjs')));
+    assert.ok(existsSync(join(pluginDir, 'src', 'tools.mjs')));
+    assert.ok(existsSync(join(pluginDir, 'safety', 'policy.json')));
+    assert.ok(existsSync(join(pluginDir, '.installed')), '.installed marker in workbuddy plugins dir');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workbuddy install writes correct mcp.json', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const res = runCli(home, cwd, ['install', '--target', 'workbuddy']);
+    assert.equal(res.status, 0, res.stderr);
+
+    const configPath = join(home, '.workbuddy', 'mcp.json');
+    const config = mcpConfig(configPath);
+    assert.ok(config, `mcp config exists: ${configPath}`);
+    const server = config.mcpServers?.['huaweicloud-devkit'];
+    assert.ok(server, 'huaweicloud-devkit server registered');
+    assert.equal(server.command, 'node');
+    assert.ok(
+      server.args[0].endsWith('huaweicloud-plugins/src/mcp-server.mjs'),
+      `args[0] points to mcp-server.mjs: ${server.args[0]}`,
+    );
+    assert.equal(server.env?.HUAWEICLOUD_AGENT_TOOLKIT_MODE, 'local');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workbuddy status reports installed skills and configured MCP', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const install = runCli(home, cwd, ['install', '--target', 'workbuddy']);
+    assert.equal(install.status, 0, install.stderr);
+
+    const res = runCli(home, cwd, ['status', '--target', 'workbuddy']);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /\[WorkBuddy\]/);
+    assert.match(res.stdout, /MCP Server: .*Installed/);
+    assert.match(res.stdout, /Safety Policy: .*Installed/);
+    assert.match(res.stdout, /Skills: .*\d+ installed/);
+    assert.match(res.stdout, /MCP config: .*Configured/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workbuddy uninstall removes skills, plugins, and MCP config', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const install = runCli(home, cwd, ['install', '--target', 'workbuddy']);
+    assert.equal(install.status, 0, install.stderr);
+
+    const res = runCli(home, cwd, ['uninstall', '--target', 'workbuddy']);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /Uninstall complete\./);
+
+    assert.equal(countSkills(join(home, '.workbuddy', 'skills')), 0, 'skills removed');
+    assert.ok(!existsSync(join(home, '.workbuddy', 'huaweicloud-plugins')), 'plugins dir removed');
+    const configPath = join(home, '.workbuddy', 'mcp.json');
+    assert.ok(!mcpConfig(configPath)?.mcpServers?.['huaweicloud-devkit'], 'MCP config cleaned');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workbuddy uninstall preserves unrelated MCP servers', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const configPath = join(home, '.workbuddy', 'mcp.json');
+    mkdirSync(join(home, '.workbuddy'), { recursive: true });
+    writeFileSync(configPath, JSON.stringify({ mcpServers: { other: { command: 'echo' } } }));
+
+    const res = runCli(home, cwd, ['uninstall', '--target', 'workbuddy']);
+    assert.equal(res.status, 0, res.stderr);
+    const config = mcpConfig(configPath);
+    assert.ok(!config.mcpServers?.['huaweicloud-devkit'], 'huaweicloud-devkit removed');
+    assert.ok(config.mcpServers?.other, 'unrelated server preserved');
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('cli help documents the workbuddy target', () => {
+  const home = mkdtempSync(join(tmpdir(), 'workbuddy-home-'));
+  const cwd = mkdtempSync(join(tmpdir(), 'workbuddy-proj-'));
+  try {
+    const res = runCli(home, cwd, ['help']);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /--target <opencode\|codex\|codearts\|workbuddy\|all>/);
+    assert.match(res.stdout, /install --target workbuddy/);
   } finally {
     rmSync(home, { recursive: true, force: true });
     rmSync(cwd, { recursive: true, force: true });
