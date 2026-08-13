@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { homedir, platform } from 'node:os';
 import { createInterface } from 'node:readline';
 import { spawnSync } from 'node:child_process';
+import { getAuthStatus, syncAuth } from './auth/service.mjs';
+import { globalCredentialsPath, readGlobalCredentials, writeGlobalCredentials, writeObsConfig } from './auth/credentials.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = resolve(__dirname, '..');
@@ -1042,6 +1044,175 @@ async function cmdInstallHcloud() {
   console.log('\nThen run: npx huaweicloud-devkit doctor');
 }
 
+function readLineQuestion(prompt) {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function readSecret(prompt) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return readLineQuestion(prompt);
+  }
+
+  process.stdout.write(prompt);
+  const wasRaw = process.stdin.isRaw;
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+
+  return new Promise((resolve) => {
+    let value = '';
+    const onData = (chunk) => {
+      for (const ch of chunk.toString('utf8')) {
+        if (ch === '\r' || ch === '\n') {
+          cleanup();
+          resolve(value.trim());
+          return;
+        }
+        if (ch === '\u0003') {
+          cleanup();
+          process.exit(130);
+        }
+        if (ch === '\b' || ch === '\u007f') {
+          value = value.slice(0, -1);
+          continue;
+        }
+        value += ch;
+      }
+    };
+    const cleanup = () => {
+      process.stdin.setRawMode(wasRaw);
+      process.stdin.pause();
+      process.stdin.off('data', onData);
+      process.stdout.write('\n');
+    };
+    process.stdin.on('data', onData);
+  });
+}
+
+function configureHcloud(credentials) {
+  const hcloudBin = findHcloudBin() || (process.env.HCLOUD_BIN || 'hcloud');
+  const args = [
+    'configure',
+    'set',
+    `--cli-access-key=${credentials.ak}`,
+    `--cli-secret-key=${credentials.sk}`,
+    `--cli-region=${credentials.region || ''}`,
+  ];
+  const r = spawnSync(hcloudBin, args, {
+    shell: false,
+    windowsHide: true,
+    stdio: 'pipe',
+    timeout: 30000,
+  });
+  return {
+    ok: r.status === 0,
+    code: r.status,
+    error: String(r.stderr || '').trim().slice(0, 240),
+  };
+}
+
+function printAuthAgents(agents = {}) {
+  for (const [agent, info] of Object.entries(agents)) {
+    console.log(`  ${agent}: ${info.configured ? '[OK]' : '[MISSING]'}`);
+  }
+}
+
+function printAuthStatus(status) {
+  console.log(`Credentials vault: ${status.credentialsConfigured ? 'configured' : 'missing'} (${status.credentialsPath})`);
+  console.log(`OBS config: ${status.obsConfigured ? 'configured' : 'missing'} (${status.obsConfigPath})`);
+  console.log(`KooCLI: ${status.kooCliInstalled ? 'installed' : 'missing'}`);
+  console.log('Agent MCP registration:');
+  printAuthAgents(status.agents);
+}
+
+async function cmdAuthInit() {
+  console.log(BANNER);
+  console.log('HuaweiCloud DevKit Unified Authentication Setup\n');
+
+  let ak = process.env.HW_ACCESS_KEY || '';
+  let sk = process.env.HW_SECRET_KEY || '';
+  let securityToken = process.env.HW_SECURITY_TOKEN || '';
+  let region = process.env.HW_REGION || process.env.HUAWEICLOUD_REGION || '';
+
+  if (!ak) ak = await readSecret('Access Key ID (AK): ');
+  if (!sk) sk = await readSecret('Secret Access Key (SK): ');
+  if (!securityToken) securityToken = await readLineQuestion('Security Token (optional, press Enter to skip): ');
+  if (!region) region = await readLineQuestion('Region (e.g. cn-north-4): ');
+
+  if (!ak || !sk) {
+    console.error('\nAK and SK are required.');
+    process.exitCode = 1;
+    return;
+  }
+  if (!region) {
+    console.error('\nRegion is required to generate the OBS endpoint.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const vaultPath = writeGlobalCredentials({ ak, sk, securityToken, region });
+  console.log(`\nCredentials stored: ${vaultPath}`);
+
+  try {
+    const obs = writeObsConfig({ ak, sk, securityToken, region });
+    console.log(`OBS config synced: ${obs.path} (${obs.endpoint})`);
+  } catch (error) {
+    console.log(`OBS config sync failed: ${error.message}`);
+  }
+
+  if (findHcloudBin()) {
+    const result = configureHcloud({ ak, sk, region });
+    console.log(result.ok ? 'KooCLI profile updated.' : `KooCLI update failed: ${result.error || result.code}`);
+  } else {
+    console.log('KooCLI not found. Run "npx huaweicloud-devkit install-hcloud" and then "auth sync".');
+  }
+
+  console.log('\nNext steps:');
+  console.log('  npx huaweicloud-devkit install --target all');
+  console.log('  Restart your agent sessions.');
+}
+
+async function cmdAuthSync() {
+  const target = parseTarget();
+  console.log(BANNER);
+  console.log('Synchronizing Huawei Cloud authentication...\n');
+
+  const credentials = readGlobalCredentials();
+  if (!credentials?.ak || !credentials?.sk) {
+    console.error('No global credentials found. Run "npx huaweicloud-devkit auth init" first.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = syncAuth(target);
+  if (result.ok) {
+    console.log(`OBS config synced: ${result.obs.path} (${result.obs.endpoint})`);
+  } else {
+    console.error(result.error);
+  }
+  console.log('Agent MCP registration:');
+  printAuthAgents(result.agents);
+}
+
+async function cmdAuthStatus() {
+  const target = parseTarget();
+  console.log(BANNER);
+  console.log('HuaweiCloud DevKit Authentication Status\n');
+  printAuthStatus(getAuthStatus(target));
+}
+
+async function cmdAuth() {
+  const sub = (process.argv[3] || 'status').toLowerCase();
+  if (sub === 'init' || sub === 'setup') return cmdAuthInit();
+  if (sub === 'sync' || sub === 'refresh') return cmdAuthSync();
+  return cmdAuthStatus();
+}
+
 async function main() {
   const cmd = process.argv[2] || 'help';
 
@@ -1072,6 +1243,9 @@ async function main() {
     case 'install-hcloud':
       await cmdInstallHcloud();
       break;
+    case 'auth':
+      await cmdAuth();
+      break;
     case 'help':
     case '--help':
     case '-h':
@@ -1086,6 +1260,7 @@ async function main() {
       console.log('  status       Show installation status');
       console.log('  doctor       Self-check: hcloud, MCP, skills, auth');
       console.log('  install-hcloud  Show KooCLI install commands for your OS');
+      console.log('  auth         Manage unified auth: init | sync | status');
       console.log('  help         Show this help');
       console.log('\nOptions:');
       console.log('  --target     Target agent: opencode (default), codex, codearts, workbuddy, all');
@@ -1095,6 +1270,9 @@ async function main() {
       console.log('  npx huaweicloud-devkit install --target codearts');
       console.log('  npx huaweicloud-devkit install --target workbuddy');
       console.log('  npx huaweicloud-devkit install --target all');
+      console.log('  npx huaweicloud-devkit auth init');
+      console.log('  npx huaweicloud-devkit auth sync --target all');
+      console.log('  npx huaweicloud-devkit auth status --target all');
       break;
   }
 }

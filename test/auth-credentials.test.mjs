@@ -1,0 +1,126 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import {
+  globalCredentialsPath,
+  obsConfigPath,
+  readGlobalCredentials,
+  resolveCredentials,
+  writeGlobalCredentials,
+  writeObsConfig,
+} from '../plugins/huaweicloud-core/src/auth/credentials.mjs';
+import { getAgentRegistrationStatuses } from '../plugins/huaweicloud-core/src/auth/agent-registration.mjs';
+import { getAuthStatus, syncAuth } from '../plugins/huaweicloud-core/src/auth/service.mjs';
+
+function withTempHome(fn) {
+  const dir = mkdtempSync(join(tmpdir(), 'huaweicloud-auth-'));
+  const previous = {
+    HUAWEICLOUD_HOME: process.env.HUAWEICLOUD_HOME,
+    HW_ACCESS_KEY: process.env.HW_ACCESS_KEY,
+    HW_SECRET_KEY: process.env.HW_SECRET_KEY,
+    HW_SECURITY_TOKEN: process.env.HW_SECURITY_TOKEN,
+    HW_REGION: process.env.HW_REGION,
+    HUAWEICLOUD_REGION: process.env.HUAWEICLOUD_REGION,
+  };
+  process.env.HUAWEICLOUD_HOME = dir;
+  delete process.env.HW_ACCESS_KEY;
+  delete process.env.HW_SECRET_KEY;
+  delete process.env.HW_SECURITY_TOKEN;
+  delete process.env.HW_REGION;
+  delete process.env.HUAWEICLOUD_REGION;
+  try {
+    return fn(dir);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('global credentials round-trip with secure file path', () => {
+  withTempHome((home) => {
+    const path = writeGlobalCredentials({ ak: 'AK123', sk: 'SK456', region: 'cn-north-4' });
+    assert.equal(path, globalCredentialsPath());
+    assert.equal(readGlobalCredentials().ak, 'AK123');
+    assert.equal(readGlobalCredentials().sk, 'SK456');
+    assert.equal(readGlobalCredentials().region, 'cn-north-4');
+    assert.ok(globalCredentialsPath().startsWith(home));
+  });
+});
+
+test('resolveCredentials prefers environment and falls back to vault', () => {
+  withTempHome((home) => {
+    writeGlobalCredentials({ ak: 'VAULT_AK', sk: 'VAULT_SK', region: 'cn-north-4' });
+    const fromVault = resolveCredentials();
+    assert.equal(fromVault.ak, 'VAULT_AK');
+    assert.equal(fromVault.sk, 'VAULT_SK');
+    assert.equal(fromVault.region, 'cn-north-4');
+
+    process.env.HW_ACCESS_KEY = 'ENV_AK';
+    process.env.HW_SECRET_KEY = 'ENV_SK';
+    const fromEnv = resolveCredentials();
+    assert.equal(fromEnv.ak, 'ENV_AK');
+    assert.equal(fromEnv.sk, 'ENV_SK');
+    delete process.env.HW_ACCESS_KEY;
+    delete process.env.HW_SECRET_KEY;
+
+    rmSync(globalCredentialsPath(), { force: true });
+    assert.throws(() => resolveCredentials({}), /auth init/);
+    assert.ok(!home.includes('\0'));
+  });
+});
+
+test('writeObsConfig creates obsutilconfig content from vault', () => {
+  withTempHome(() => {
+    const result = writeObsConfig({ ak: 'OBS_AK', sk: 'OBS_SK', region: 'cn-north-4' });
+    assert.equal(result.endpoint, 'https://obs.cn-north-4.myhuaweicloud.com');
+    const content = readFileSync(obsConfigPath(), 'utf8');
+    assert.match(content, /ak=OBS_AK/);
+    assert.match(content, /sk=OBS_SK/);
+    assert.match(content, /endpoint=https:\/\/obs\.cn-north-4\.myhuaweicloud\.com/);
+  });
+});
+
+test('auth sync writes OBS and reports all agent registration targets', () => {
+  withTempHome(() => {
+    writeGlobalCredentials({ ak: 'SYNC_AK', sk: 'SYNC_SK', region: 'cn-north-4' });
+    const sync = syncAuth('all');
+    assert.equal(sync.ok, true);
+    assert.equal(sync.obs.configured, true);
+    assert.ok(sync.agents.opencode !== undefined);
+    assert.ok(sync.agents.codex !== undefined);
+    assert.ok(sync.agents['codex-desktop'] !== undefined);
+    assert.ok(sync.agents.codearts !== undefined);
+    assert.ok(sync.agents.workbuddy !== undefined);
+  });
+});
+
+test('agent registration detects OpenCode MCP config', () => {
+  withTempHome((home) => {
+    const cfgDir = join(home, '.config', 'opencode');
+    mkdirSync(cfgDir, { recursive: true });
+    writeFileSync(
+      join(cfgDir, 'opencode.jsonc'),
+      JSON.stringify({ mcp: { 'huaweicloud-devkit': { enabled: true } } }),
+      'utf8',
+    );
+    const status = getAgentRegistrationStatuses('opencode');
+    assert.equal(status.agents.opencode.configured, true);
+  });
+});
+
+test('auth status is redacted and reflects vault/OBS state', () => {
+  withTempHome(() => {
+    writeGlobalCredentials({ ak: 'STATUS_AK', sk: 'STATUS_SK', region: 'cn-north-4' });
+    writeObsConfig({ ak: 'STATUS_AK', sk: 'STATUS_SK', region: 'cn-north-4' });
+    const status = getAuthStatus('all');
+    assert.equal(status.credentialsConfigured, true);
+    assert.equal(status.obsConfigured, true);
+    assert.ok(status.agents.opencode !== undefined);
+    assert.doesNotMatch(JSON.stringify(status), /STATUS_AK|STATUS_SK/);
+  });
+});

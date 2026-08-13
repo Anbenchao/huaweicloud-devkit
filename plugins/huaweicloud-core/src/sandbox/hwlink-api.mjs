@@ -1,7 +1,5 @@
 import crypto from 'node:crypto';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { resolveCredentials } from '../auth/credentials.mjs';
 
 const BASE_URL = process.env.HWLINK_ENDPOINT || 'https://devstation.myhuaweicloud.com';
 
@@ -89,27 +87,8 @@ function signRequest(method, path, query, body, ak, sk, securitytoken) {
 }
 
 export function getCredentials() {
-  let ak = process.env.HW_ACCESS_KEY;
-  let sk = process.env.HW_SECRET_KEY;
-  let securitytoken = process.env.HW_SECURITY_TOKEN;
-
-  if (!ak || !sk) {
-    try {
-      const cfgPath = join(homedir(), '.config', 'opencode', 'opencode.json');
-      if (existsSync(cfgPath)) {
-        const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
-        const mcpEnv = cfg?.mcp?.['huaweicloud-devkit']?.env || {};
-        if (!ak && mcpEnv.HW_ACCESS_KEY) ak = mcpEnv.HW_ACCESS_KEY;
-        if (!sk && mcpEnv.HW_SECRET_KEY) sk = mcpEnv.HW_SECRET_KEY;
-        if (!securitytoken && mcpEnv.HW_SECURITY_TOKEN) securitytoken = mcpEnv.HW_SECURITY_TOKEN;
-      }
-    } catch {}
-  }
-
-  if (!ak || !sk) {
-    throw new Error('HW_ACCESS_KEY and HW_SECRET_KEY environment variables are required');
-  }
-  return { ak, sk, securitytoken };
+  const credentials = resolveCredentials();
+  return { ak: credentials.ak, sk: credentials.sk, securitytoken: credentials.securityToken };
 }
 
 async function apiGet(path, query, ak, sk, securitytoken) {
