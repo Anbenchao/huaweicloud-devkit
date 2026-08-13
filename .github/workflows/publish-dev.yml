@@ -36,6 +36,9 @@ jobs:
           npm version prerelease --preid=dev --no-git-tag-version
           echo "dev version: $(node -p "require('./package.json').version")"
 
+      - name: Sync plugin manifest versions
+        run: node ./scripts/sync-version.mjs
+
       - name: Publish to npm (dist-tag next)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -48,6 +51,7 @@ jobs:
             fi
             echo "${VERSION} exists or publish failed, bumping prerelease..."
             npm version prerelease --preid=dev --no-git-tag-version
+            node ./scripts/sync-version.mjs
           done
           echo "Failed to publish after 20 attempts"
           cat /tmp/puberr
