@@ -79,6 +79,13 @@ Build → Create bucket → Upload → Set bucket ACL → Set object ACL → Con
 
 > KooCLI OBS does NOT support `SetBucketWebsite`. Configure static website hosting via REST API (`PUT /?website`) or the Huawei Cloud console.
 
+## Single-File Quick Share
+
+See `references/single-file-share.md` for the full workflow to host one file and get a shareable link in seconds:
+
+- **Private, time-limited**: `hcloud OBS sign obs://<bucket>/<key> -e=<seconds>` (max 7 days)
+- **Public, permanent**: `hcloud OBS cp <file> obs://<bucket>/<key> -f` + `hcloud OBS chattri obs://<bucket>/<key> -acl=public-read`, then share `https://<bucket>.obs.<region>.myhuaweicloud.com/<key>`
+
 ## Storage Classes
 
 | Class | Use Case | Min Storage | Retrieval Fee |
@@ -115,5 +122,6 @@ Build → Create bucket → Upload → Set bucket ACL → Set object ACL → Con
 
 - OBS Docs: https://support.huaweicloud.com/obs/
 - Static website: references/static-website.md
+- Single-file share: references/single-file-share.md
 - Lifecycle: references/bucket-lifecycle.md
 - Replication: references/replication.md
