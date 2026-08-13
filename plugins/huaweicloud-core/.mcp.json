@@ -7,7 +7,8 @@
       ],
       "cwd": ".",
       "env": {
-        "HUAWEICLOUD_AGENT_TOOLKIT_MODE": "local"
+        "HUAWEICLOUD_AGENT_TOOLKIT_MODE": "local",
+        "HDKITSERVICE_ENDPOINT": ""
       }
     }
   }

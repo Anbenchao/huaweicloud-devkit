@@ -150,7 +150,7 @@ test('cloud risk rules are present and public-safe', () => {
   const catalog = readJson(rulesPath);
   assert.equal(catalog.version, '0.1.0');
   assert.ok(Array.isArray(catalog.rules), 'rules must be an array');
-  assert.ok(catalog.rules.length >= 8, 'Expected baseline cloud risk rules');
+  assert.ok(catalog.rules.length >= 9, 'Expected baseline cloud risk rules');
 
   const ids = new Set();
   const allowedSeverities = new Set(['deny', 'warn', 'info']);
