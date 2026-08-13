@@ -38,6 +38,15 @@ npx --yes huaweicloud-devkit install --target codex
 
 > 需要先安装 Codex CLI。
 
+```bash
+npx --yes huaweicloud-devkit doctor                        # 自检
+npx --yes huaweicloud-devkit status --target codex
+npx --yes huaweicloud-devkit update --target codex         # 更新
+npx --yes huaweicloud-devkit uninstall --target codex
+```
+
+> **Codex Desktop**（Windows）：将 `--target codex` 换成 `--target codex-desktop`，命令相同。
+
 ### CodeArts Agent（码道）
 
 ```bash
@@ -50,6 +59,7 @@ npx --yes huaweicloud-devkit install --target codearts
 npx --yes huaweicloud-devkit install-hcloud   # 安装 KooCLI
 npx --yes huaweicloud-devkit doctor           # 自检
 npx --yes huaweicloud-devkit status --target codearts
+npx --yes huaweicloud-devkit update --target codearts
 npx --yes huaweicloud-devkit uninstall --target codearts
 ```
 
@@ -64,6 +74,15 @@ npx --yes huaweicloud-devkit install --target workbuddy
 ```
 
 安装后**重启会话**。
+
+```bash
+npx --yes huaweicloud-devkit doctor
+npx --yes huaweicloud-devkit status --target workbuddy
+npx --yes huaweicloud-devkit update --target workbuddy   # 更新
+npx --yes huaweicloud-devkit uninstall --target workbuddy
+```
+
+> **更新机制**：`update` 按 agent 增量更新，只刷新必要文件、不动你的配置文件。`update --target all` 可一次更新所有已安装的 agent。
 
 ### 其他 Agent
 

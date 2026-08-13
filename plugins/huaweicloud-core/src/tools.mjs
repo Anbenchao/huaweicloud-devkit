@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
-import { execOneShot, execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
+import { execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
 import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials, hdkitRelease } from './sandbox/hdkitservice-api.mjs';
 import { getAuthStatus, syncAuth } from './auth/service.mjs';
 import { readGlobalCredentials, writeObsConfig as writeObsConfigFile } from './auth/credentials.mjs';
@@ -310,20 +310,6 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
-    name: 'huaweicloud_sandbox_exec',
-    description: 'Execute a command on a Huawei Cloud workspace terminal via hwlink (one-shot, no session reuse). Each call creates a new connection. Shell state does NOT persist across calls.',
-    inputSchema: {
-      type: 'object',
-      required: ['command'],
-      properties: {
-        command: { type: 'string', description: 'The shell command to execute on the remote workspace' },
-        workspace_id: { type: 'string', description: 'The workspace ID' },
-        username: { type: 'string', description: 'Login username for the remote terminal (default: root)' },
-        timeout_ms: { type: 'number', description: 'Execution timeout in milliseconds (default: 30000)' },
-      },
-    },
-  },
-  {
     name: 'huaweicloud_sandbox_exec_with_session',
     description: 'Execute a command on a workspace terminal with session reuse (state persists across calls). Shell state (cd, env vars, aliases) carries over between calls.',
     inputSchema: {
@@ -458,13 +444,6 @@ export async function callTool(name, args = {}) {
       return getAuthStatus(args.target || 'all');
     case 'huaweicloud_auth_sync':
       return syncAuth(args.target || 'all');
-    case 'huaweicloud_sandbox_exec': {
-      const sandboxWsId1 = args.workspace_id || DEFAULT_WORKSPACE_ID;
-      const sandboxUser1 = args.username || 'root';
-      const sandboxTimeout1 = args.timeout_ms || 30000;
-      const sandboxResult1 = await execOneShot(sandboxWsId1, args.command, sandboxUser1, sandboxTimeout1);
-      return { stdout: sandboxResult1.stdout, exitCode: sandboxResult1.exitCode };
-    }
     case 'huaweicloud_sandbox_exec_with_session': {
       const sandboxWsId2 = args.workspace_id || DEFAULT_WORKSPACE_ID;
       const sandboxUser2 = args.username || 'root';

@@ -93,7 +93,6 @@ test('MCP server initializes, lists tools, and plans CLI commands', async () => 
     assert.ok(toolNames.includes('huaweicloud_show_profile_redacted'));
     assert.ok(toolNames.includes('huaweicloud_auth_status'));
     assert.ok(toolNames.includes('huaweicloud_auth_sync'));
-    assert.ok(toolNames.includes('huaweicloud_sandbox_exec'));
     assert.ok(toolNames.includes('huaweicloud_sandbox_check_user'));
     assert.ok(toolNames.includes('huaweicloud_sandbox_connect'));
     assert.ok(toolNames.includes('huaweicloud_sandbox_release'));
