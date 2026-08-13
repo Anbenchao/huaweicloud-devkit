@@ -6,6 +6,10 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
+import { execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
+import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials, hdkitRelease } from './sandbox/hdkitservice-api.mjs';
+import { getAuthStatus, syncAuth } from './auth/service.mjs';
+import { readGlobalCredentials, writeObsConfig as writeObsConfigFile } from './auth/credentials.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
@@ -17,10 +21,15 @@ function codeartsSkillsDir() {
   const home = homedir();
   return join(home, '.codeartsdoer', 'skills');
 }
+function workbuddySkillsDir() {
+  const home = homedir();
+  return join(home, '.workbuddy', 'skills');
+}
 function resolveSkillsRoot() {
   if (existsSync(SKILLS_ROOT_DEV)) return SKILLS_ROOT_DEV;
   if (existsSync(codeartsSkillsDir())) return codeartsSkillsDir();
   if (existsSync(opencodeSkillsDir())) return opencodeSkillsDir();
+  if (existsSync(workbuddySkillsDir())) return workbuddySkillsDir();
   return SKILLS_ROOT_DEV;
 }
 const SKILLS_ROOT = resolveSkillsRoot();
@@ -280,6 +289,114 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_auth_status',
+    description: 'Check unified Huawei Cloud authentication status across the global credential vault, OBS, KooCLI, and all supported agent MCP registrations. Returns only redacted/status information, never credentials.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Agent target to check: opencode, codex, codex-desktop, codearts, workbuddy, or all (default).' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_auth_sync',
+    description: 'Synchronize credentials from the global Huawei Cloud credential vault to OBS and report agent registration status. Does not write secrets into any agent config.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Agent target to report after sync: opencode, codex, codex-desktop, codearts, workbuddy, or all (default).' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_exec_with_session',
+    description: 'Execute a command on a workspace terminal with session reuse (state persists across calls). Shell state (cd, env vars, aliases) carries over between calls.',
+    inputSchema: {
+      type: 'object',
+      required: ['command'],
+      properties: {
+        command: { type: 'string', description: 'The shell command to execute on the remote workspace' },
+        workspace_id: { type: 'string', description: 'The workspace ID' },
+        username: { type: 'string', description: 'Login username for the remote terminal (default: root)' },
+        timeout_ms: { type: 'number', description: 'Execution timeout in milliseconds (default: 30000)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_close_session',
+    description: 'Close the persistent terminal session for a workspace.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        workspace_id: { type: 'string', description: 'The workspace ID' },
+        username: { type: 'string', description: 'Login username (default: root)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_check_user',
+    description: 'Check if the current user has completed real-name verification and signed the required agreements. Returns realname_verified and agreement_signed status.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_sign_agreement',
+    description: 'Sign all unsigned or outdated agreements for the current user. Required before huaweicloud_sandbox_connect if check-user returns agreement_signed=false.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_connect',
+    description: 'Connect to a sandbox via hdkitservice. One user one instance - reuses existing sandbox if available, otherwise creates a new one. Returns session_id, dev_stage_id, connection_id, and connection_address.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'Source identifier (default: WEB). Options: VSCODE, CLI, WEB, WEBVNC, WEBPTY, WEBIDE, CURSOR, etc.' },
+        template_id: { type: 'string', description: 'Template ID; overrides server default (only for new sandbox)' },
+        flavor_id: { type: 'string', description: 'Flavor ID; overrides server default (only for new sandbox)' },
+        env: { type: 'object', description: 'Environment variables to set in the sandbox (only for new sandbox)' },
+        git: {
+          type: 'object',
+          description: 'Git repo config (only for new sandbox)',
+          properties: {
+            repo_url: { type: 'string', description: 'Git repository URL' },
+            repo_branch: { type: 'string', description: 'Git branch' },
+            repo_name: { type: 'string', description: 'Repository name' },
+            target_path: { type: 'string', description: 'Clone target path in sandbox' },
+            open_type: { type: 'string', description: 'Open type' },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_credentials',
+    description: 'Configure temporary AK/SK for a sandbox via hdkitservice. Injects temporary credentials into the sandbox. The sandbox must be in RUNNING state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        session_id: { type: 'string', description: 'Session ID from huaweicloud_sandbox_connect' },
+        dev_stage_id: { type: 'string', description: 'DevStation environment ID (alternative to session_id)' },
+        enable_sts: { type: 'boolean', description: 'Whether to enable STS temporary AK/SK (default: true)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_release',
+    description: 'Release a sandbox via hdkitservice. Shuts down and deletes the sandbox, and cleans up the session. Idempotent - releasing a non-existent sandbox returns success.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        session_id: { type: 'string', description: 'Session ID from huaweicloud_sandbox_connect' },
+        dev_stage_id: { type: 'string', description: 'DevStation environment ID (alternative to session_id)' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -323,6 +440,33 @@ export async function callTool(name, args = {}) {
       return searchMarketplace(args.query || '', args.category || '');
     case 'huaweicloud_setup_obs_config':
       return setupObsConfig(args.profile);
+    case 'huaweicloud_auth_status':
+      return getAuthStatus(args.target || 'all');
+    case 'huaweicloud_auth_sync':
+      return syncAuth(args.target || 'all');
+    case 'huaweicloud_sandbox_exec_with_session': {
+      const sandboxWsId2 = args.workspace_id || DEFAULT_WORKSPACE_ID;
+      const sandboxUser2 = args.username || 'root';
+      const sandboxTimeout2 = args.timeout_ms || 30000;
+      const sandboxResult2 = await execWithSession(sandboxWsId2, args.command, sandboxUser2, sandboxTimeout2);
+      return { stdout: sandboxResult2.stdout, exitCode: sandboxResult2.exitCode };
+    }
+    case 'huaweicloud_sandbox_close_session': {
+      const sandboxWsId3 = args.workspace_id || DEFAULT_WORKSPACE_ID;
+      const sandboxUser3 = args.username || 'root';
+      const closed = await closeSession(sandboxWsId3, sandboxUser3);
+      return closed ? 'ok' : 'not_connected';
+    }
+    case 'huaweicloud_sandbox_check_user':
+      return await hdkitCheckUser();
+    case 'huaweicloud_sandbox_sign_agreement':
+      return await hdkitSignAgreement();
+    case 'huaweicloud_sandbox_connect':
+      return await hdkitConnect(args);
+    case 'huaweicloud_sandbox_credentials':
+      return await hdkitCredentials(args.session_id, args.dev_stage_id, args.enable_sts !== false);
+    case 'huaweicloud_sandbox_release':
+      return await hdkitRelease(args.session_id, args.dev_stage_id);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -390,6 +534,33 @@ async function showProfileRedacted(profile) {
 }
 
 async function setupObsConfig(profile) {
+  const stored = readGlobalCredentials();
+  if (stored?.ak && stored?.sk) {
+    try {
+      const obs = writeObsConfigFile(stored);
+      return {
+        ok: true,
+        existed: false,
+        created: true,
+        path: obs.path,
+        region: stored.region,
+        endpoint: obs.endpoint,
+        source: 'global-credentials',
+        note: 'OBS credentials synced from the global credential vault. OBS commands (hcloud OBS ls, mb, cp, etc.) should now work.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+        nextStep: 'Run "npx huaweicloud-devkit auth init" to refresh credentials and region.',
+      };
+    }
+  }
+
+  return setupObsConfigFromHcloud(profile);
+}
+
+async function setupObsConfigFromHcloud(profile) {
   const obsConfigPath = join(homedir(), '.obsutilconfig');
   if (existsSync(obsConfigPath)) {
     return { ok: true, existed: true, path: obsConfigPath, note: 'OBS config already exists. Delete ~/.obsutilconfig first if you need to re-sync.' };

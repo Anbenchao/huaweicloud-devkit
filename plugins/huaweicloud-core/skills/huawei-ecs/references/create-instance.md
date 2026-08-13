@@ -61,6 +61,11 @@ hcloud ECS CreateServers ... --server.user_data=$user_data
 > **Security**: Never embed secrets (passwords, AK/SK, tokens) in user_data. It is stored unencrypted and readable from within the instance via IMDS. Fetch secrets at boot from DEW/CSMS instead.
 >
 > **Debugging**: If the script didn't run, check `/var/log/cloud-init-output.log` on the instance.
+>
+> **Recovery after failure**: user_data only executes on **first boot**. Restarting the instance will NOT re-run user_data scripts. If cloud-init fails (e.g., DNS missing → `yum`/`apt` cannot resolve repos):
+> 1. Fix the root cause (e.g., update subnet DNS via `VPC UpdateSubnet`)
+> 2. Either: SSH into the instance and run the setup commands manually (see `huawei-ecs` → SSH Connection Verification → Running Commands Inside the Instance)
+> 3. Or: Delete the instance and recreate with corrected user_data (fresh boot)
 
 ## 7. EIP (two methods)
 
@@ -91,8 +96,21 @@ hcloud EIP AssociatePublicips --publicip_id=<eip-id> --publicip.associate_instan
 ```
 
 ## 8. Verify
-hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>
-Expected: status=ACTIVE
+
+ECS creation is asynchronous. Wait times vary widely (20s to 3min). Status transitions: `BUILD` → `ACTIVE` (or `ERROR`). Never use fixed sleep — poll actively:
+
+```bash
+for i in $(seq 1 30); do
+  status=$(hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id> --cli-output=json | jq -r '.servers[0].status')
+  if [ "$status" = "ACTIVE" ]; then break; fi
+  if [ "$status" = "ERROR" ]; then echo "Creation failed"; exit 1; fi
+  sleep 10
+done
+```
+
+- Poll interval: 10 seconds
+- Maximum wait: 5 minutes (30 iterations)
+- After ACTIVE, confirm once more: `hcloud ECS ListServersDetails --cli-region=<region> --server_id=<instance-id>`
 
 ### Verify HTTP accessibility (if EIP bound)
 

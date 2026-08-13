@@ -34,7 +34,7 @@ Remove-Item -Force $env:USERPROFILE\.config\opencode\commands\huaweicloud* -Erro
 
 ## Step 4: Remove MCP Config
 
-Remove `mcp.huaweicloud` entry from both:
+Remove `mcp.huaweicloud-devkit` entry from both:
 - `~\.config\opencode\opencode.json`
 - `~\.config\opencode\opencode.jsonc` (if exists)
 
@@ -43,8 +43,8 @@ $files = @("$env:USERPROFILE\.config\opencode\opencode.json", "$env:USERPROFILE\
 foreach ($f in $files) {
   if (Test-Path $f) {
     $c = Get-Content $f -Raw | ConvertFrom-Json
-    if ($c.mcp.PSObject.Properties.Name -contains 'huaweicloud') {
-      $c.mcp.PSObject.Properties.Remove('huaweicloud')
+    if ($c.mcp.PSObject.Properties.Name -contains 'huaweicloud-devkit') {
+      $c.mcp.PSObject.Properties.Remove('huaweicloud-devkit')
       if ($c.mcp.PSObject.Properties.Count -eq 0) { $c.PSObject.Properties.Remove('mcp') }
       $c | ConvertTo-Json -Depth 5 | Set-Content $f -Encoding UTF8
     }

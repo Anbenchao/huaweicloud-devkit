@@ -57,6 +57,7 @@ Flavor families are **region-dependent**. Always run `hcloud ECS ListFlavors --c
 | Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=<direction> --protocol=<protocol> | references/sg.md |
 | Attach disk | hcloud EVS AttachVolume --volume_id=<id> --server_id=<id> | references/evs.md |
 | Delete instance | hcloud ECS DeleteServers --servers.1.id=<id> --delete_publicip=true --delete_volume=true | references/create-instance.md |
+| Reboot instance | hcloud ECS BatchRebootServers --reboot.servers.1.id=<id> --reboot.type=SOFT | NOT `RebootServer` — that operation does not exist |
 
 ## How to Search for Instances
 
@@ -66,7 +67,56 @@ Flavor families are **region-dependent**. Always run `hcloud ECS ListFlavors --c
 2. Filter client-side by name substring, tag, or status
 3. Use `--server_tags` filter if instances are tagged: `hcloud ECS ListServersDetails --server_tags.1.key=Project`
 
+> **Return structure**: `ListServersDetails` returns `{"servers": [...]}` (array), NOT `{"server": ...}`. Parse as `.servers[0].status`, NOT `.server.status`.
+
 Abort if the result set is larger than `--limit` and ask the user to narrow the search.
+
+## Instance Status Polling
+
+ECS creation is asynchronous. Status transitions: `BUILD` → `ACTIVE` (or `ERROR`). Wait times vary widely (20s–3min), never use fixed sleep.
+
+Poll strategy:
+
+```bash
+for i in $(seq 1 30); do
+  status=$(hcloud ECS ListServersDetails --cli-region=<region> --server_id=<id> --cli-output=json | jq -r '.servers[0].status')
+  if [ "$status" = "ACTIVE" ]; then break; fi
+  if [ "$status" = "ERROR" ]; then echo "Creation failed"; exit 1; fi
+  sleep 10
+done
+```
+
+- Poll interval: 10 seconds
+- Maximum wait: 5 minutes (30 iterations)
+- Check for `ERROR` status to detect creation failures early
+
+## SSH Connection Verification
+
+After ECS is ACTIVE and EIP is bound, verify SSH connectivity:
+
+```bash
+hcloud ECS ListServersDetails --cli-region=<region> --server_id=<id>
+# → addresses.<vpc-id>[].OS-EXT-IPS:addr
+
+ssh -o StrictHostKeyChecking=accept-new -i <path-to-private-key> root@<eip-address>
+```
+
+> **SSH verification checklist**: EIP bound → security group has port 22 ingress → keypair private key saved locally → known_hosts handled with `StrictHostKeyChecking=accept-new` (or delete stale entries with `ssh-keygen -R <ip>`).
+
+### Running Commands Inside the Instance
+
+Use SSH for any in-instance operations (install software, check logs, start services):
+
+```bash
+ssh -o StrictHostKeyChecking=accept-new -i <key> root@<eip> 'command'
+```
+
+Example — re-run failed cloud-init setup manually:
+```bash
+ssh -o StrictHostKeyChecking=accept-new -i <key> root@<eip> 'dnf install -y nginx && systemctl enable --now nginx'
+```
+
+> If SCP blocks SSH, use cloud-init `--server.user_data` for full deployment instead. See `references/create-instance.md` §Bootstrap.
 
 ## Deleting Instances
 
