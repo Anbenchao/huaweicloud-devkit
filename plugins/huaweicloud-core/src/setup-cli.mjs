@@ -908,6 +908,19 @@ async function cmdUninstall() {
       }
     }
   }
+  if (target === 'all') {
+    const vaultPath = globalCredentialsPath();
+    if (removeIfExists(vaultPath)) {
+      console.log('  Removed credential vault');
+    }
+    const vaultDir = dirname(vaultPath);
+    try {
+      if (existsSync(vaultDir) && readdirSync(vaultDir).length === 0) {
+        rmSync(vaultDir, { recursive: true, force: true });
+        console.log(`  Removed empty directory: ${vaultDir}`);
+      }
+    } catch {}
+  }
   console.log(`\n\x1b[32mUninstall complete.\x1b[0m`);
 }
 
@@ -1325,7 +1338,9 @@ function readLineQuestion(prompt) {
 
 async function readSecret(prompt) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return readLineQuestion(prompt);
+    throw new Error(
+      `Cannot read "${prompt.trim()}" securely in a non-interactive session. Set HW_ACCESS_KEY/HW_SECRET_KEY environment variables instead, or run "npx huaweicloud-devkit auth init" in a real terminal.`
+    );
   }
 
   process.stdout.write(prompt);
@@ -1408,21 +1423,26 @@ async function cmdAuthInit() {
   let securityToken = process.env.HW_SECURITY_TOKEN || '';
   let region = process.env.HW_REGION || process.env.HUAWEICLOUD_REGION || '';
 
-  if (!ak) ak = await readSecret('Access Key ID (AK): ');
+  const interactive = process.stdin.isTTY && process.stdout.isTTY;
+  if (!interactive && (!ak || !sk)) {
+    console.error('\x1b[31mNon-interactive session detected. Provide credentials via environment variables instead:\x1b[0m');
+    console.error('  HW_ACCESS_KEY, HW_SECRET_KEY');
+    console.error('  (Or run "npx huaweicloud-devkit auth init" in a real terminal.)');
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!ak) ak = await readLineQuestion('Access Key ID (AK): ');
   if (!sk) sk = await readSecret('Secret Access Key (SK): ');
-  if (!securityToken) securityToken = await readLineQuestion('Security Token (optional, press Enter to skip): ');
-  if (!region) region = await readLineQuestion('Region (e.g. cn-north-4): ');
+  if (interactive && !securityToken) securityToken = await readLineQuestion('Security Token (optional, press Enter to skip): ');
+  if (!region) region = 'cn-north-4';
 
   if (!ak || !sk) {
     console.error('\nAK and SK are required.');
     process.exitCode = 1;
     return;
   }
-  if (!region) {
-    console.error('\nRegion is required to generate the OBS endpoint.');
-    process.exitCode = 1;
-    return;
-  }
+
 
   const vaultPath = writeGlobalCredentials({ ak, sk, securityToken, region });
   console.log(`\nCredentials stored: ${vaultPath}`);
