@@ -9,6 +9,10 @@ Help AI coding agents use Huawei Cloud safely and accurately — a single integr
 
 Supports OpenCode, Codex, CodeArts Agent, and WorkBuddy.
 
+## Prerequisites
+
+- Node.js >= 22
+
 ## Quick Start
 
 ### OpenCode
@@ -51,7 +55,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts
 
 > **Sandbox mode**: CodeArts defaults to sandbox mode which blocks KooCLI. `install-hcloud` detects this and shows how to resolve it — install KooCLI outside the sandbox terminal, or disable sandbox mode in CodeArts settings (Settings → Permissions → Bash mode).
 >
-> **Authentication**: Run `hcloud configure init` to configure AK/SK and region.
+> **Authentication**: Run `npx huaweicloud-devkit auth init` to configure unified AK/SK credentials for KooCLI, OBS, and sandbox APIs.
 
 ### WorkBuddy
 
@@ -83,7 +87,7 @@ Then install:
 npx --yes huaweicloud-devkit install
 ```
 
-> **Prerequisites:** [KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html) (`hcloud`) installed and authenticated. Node.js >= 20 required.
+> **Prerequisite:** Node.js >= 22. Run `npx huaweicloud-devkit auth init` for unified credentials.
 
 ## What It Does
 

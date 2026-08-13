@@ -9,6 +9,10 @@
 
 支持 OpenCode、Codex、码道（CodeArts Agent）、WorkBuddy。
 
+## 前置条件
+
+- Node.js >= 22
+
 ## 快速开始
 
 ### OpenCode
@@ -51,7 +55,7 @@ npx --yes huaweicloud-devkit uninstall --target codearts
 
 > **沙箱模式**：码道默认沙箱模式会阻止 KooCLI 运行。`install-hcloud` 自动检测并给出指引——请在码道外终端安装使用 KooCLI，或在码道设置中关闭沙箱模式（设置 → 权限 → Bash 模式）。
 >
-> **认证**：执行 `hcloud configure init` 配置 AK/SK 与区域。
+> **认证**：执行 `npx huaweicloud-devkit auth init`，统一配置 KooCLI、OBS 和沙箱接口所需的 AK/SK。
 
 ### WorkBuddy
 
@@ -83,7 +87,7 @@ npx --yes huaweicloud-devkit install --target workbuddy
 npx --yes huaweicloud-devkit install
 ```
 
-> **前置条件：** 需要安装 [KooCLI](https://support.huaweicloud.com/qs-hcli/hcli_02_003.html)（`hcloud`）并完成认证。Node.js >= 20。
+> **前置条件：** Node.js >= 22。执行 `npx huaweicloud-devkit auth init` 完成统一认证。
 
 ## 功能特性
 
