@@ -1,6 +1,6 @@
 ---
 name: huawei-sandbox
-description: "Use when creating, connecting, or managing Huawei Cloud Sandbox instances and workspace terminals. Covers sandbox lifecycle (connect, release), terminal execution (one-shot and session-based), and credential injection. Triggers on: sandbox, workspace, terminal, hwlink, devstation, hdkitservice, remote exec. NOT for: ECS instances (use huawei-ecs), CCE clusters (use huawei-cce)."
+description: "Use when creating, connecting, or managing Huawei Cloud Sandbox instances and workspace terminals. Covers sandbox lifecycle (check-user, sign-agreement, connect, release), terminal execution (one-shot and session-based), and credential injection. Triggers on: sandbox, workspace, terminal, hwlink, devstation, hdkitservice, remote exec. NOT for: ECS instances (use huawei-ecs), CCE clusters (use huawei-cce)."
 version: 1
 ---
 
@@ -14,13 +14,20 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 
 ## MCP Tools
 
+### User Verification (Prerequisites)
+
+| Tool | Purpose |
+|------|---------|
+| `huaweicloud_sandbox_check_user` | Check real-name verification and agreement signing status |
+| `huaweicloud_sandbox_sign_agreement` | Sign unsigned/outdated agreements (required before connect) |
+
 ### Sandbox Lifecycle
 
 | Tool | Purpose |
 |------|---------|
-| `huaweicloud_sandbox_connect` | Create, boot, and connect to a sandbox in one call |
+| `huaweicloud_sandbox_connect` | Connect to sandbox (one user one instance, reuses existing if available) |
 | `huaweicloud_sandbox_credentials` | Inject temporary AK/SK into a running sandbox |
-| `huaweicloud_sandbox_release` | Shut down and delete a sandbox |
+| `huaweicloud_sandbox_release` | Shut down and delete a sandbox (idempotent) |
 
 ### Terminal Execution
 
@@ -32,19 +39,22 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 
 ## Workflow
 
-1. **Connect**: `huaweicloud_sandbox_connect` — returns `session_id`, `dev_stage_id`, `connection_id`, `connection_address`
-2. **Inject credentials** (optional): `huaweicloud_sandbox_credentials` — enables cloud API access from sandbox
-3. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work, `huaweicloud_sandbox_exec` for one-shot
-4. **Release**: `huaweicloud_sandbox_release` — cleans up sandbox and session
+1. **Check user**: `huaweicloud_sandbox_check_user` — verify `realname_verified` and `agreement_signed`
+2. **Sign agreement** (if needed): `huaweicloud_sandbox_sign_agreement` — when `agreement_signed=false`
+3. **Connect**: `huaweicloud_sandbox_connect` — returns `session_id`, `dev_stage_id`, `connection_id`, `connection_address`
+4. **Inject credentials** (optional): `huaweicloud_sandbox_credentials` — enables cloud API access from sandbox
+5. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work, `huaweicloud_sandbox_exec` for one-shot
+6. **Release**: `huaweicloud_sandbox_release` — cleans up sandbox and session
 
 ## Critical Warnings
 
 | Trap | Why |
 |------|-----|
+| Agreement required first | `sandbox_connect` fails if user hasn't signed agreements; run `sandbox_check_user` first |
 | Session state persists | `exec_with_session` preserves `cd`, env vars, aliases between calls |
 | No session reuse in `exec` | Each `exec` call creates a new connection; previous state is lost |
 | Destructive commands blocked | `rm -rf /`, `mkfs`, `dd if=`, fork bombs are denied by safety policy |
-| Workspace ID required | Set `HW_WORKSPACE_ID` env var or pass `workspace_id` parameter |
+| Workspace ID = dev_stage_id | Use `dev_stage_id` from `sandbox_connect` as `workspace_id` for terminal exec |
 | Node.js >= 22 required | Sandbox terminal uses built-in WebSocket (globalThis.WebSocket) |
 
 ## Environment Variables
