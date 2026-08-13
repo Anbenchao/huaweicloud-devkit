@@ -38,7 +38,7 @@ test('runVersionCheck returns installed:false and errorCode on ENOENT', async ()
   assert.match(result.nextStep, /HCLOUD_BIN/);
 });
 
-test('TOOL_DEFINITIONS includes all 13 required tools', () => {
+test('TOOL_DEFINITIONS includes all required tools including sandbox', () => {
   const names = TOOL_DEFINITIONS.map((t) => t.name);
   const required = [
     'huaweicloud_check_cli',
@@ -55,11 +55,19 @@ test('TOOL_DEFINITIONS includes all 13 required tools', () => {
     'huaweicloud_get_regional_availability',
     'huaweicloud_search_marketplace',
     'huaweicloud_setup_obs_config',
+    'huaweicloud_sandbox_exec',
+    'huaweicloud_sandbox_exec_with_session',
+    'huaweicloud_sandbox_close_session',
+    'huaweicloud_sandbox_check_user',
+    'huaweicloud_sandbox_sign_agreement',
+    'huaweicloud_sandbox_connect',
+    'huaweicloud_sandbox_credentials',
+    'huaweicloud_sandbox_release',
   ];
   for (const name of required) {
     assert.ok(names.includes(name), `Missing tool: ${name}`);
   }
-  assert.ok(names.length >= 12);
+  assert.ok(names.length >= 22);
   assert.ok(names.includes('huaweicloud_search_marketplace'), 'Should have marketplace search tool');
 });
 

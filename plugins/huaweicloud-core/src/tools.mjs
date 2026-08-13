@@ -6,6 +6,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
+import { execOneShot, execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
+import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials, hdkitRelease } from './sandbox/hdkitservice-api.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
@@ -285,6 +287,108 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
+  {
+    name: 'huaweicloud_sandbox_exec',
+    description: 'Execute a command on a Huawei Cloud workspace terminal via hwlink (one-shot, no session reuse). Each call creates a new connection. Shell state does NOT persist across calls.',
+    inputSchema: {
+      type: 'object',
+      required: ['command'],
+      properties: {
+        command: { type: 'string', description: 'The shell command to execute on the remote workspace' },
+        workspace_id: { type: 'string', description: 'The workspace ID' },
+        username: { type: 'string', description: 'Login username for the remote terminal (default: root)' },
+        timeout_ms: { type: 'number', description: 'Execution timeout in milliseconds (default: 30000)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_exec_with_session',
+    description: 'Execute a command on a workspace terminal with session reuse (state persists across calls). Shell state (cd, env vars, aliases) carries over between calls.',
+    inputSchema: {
+      type: 'object',
+      required: ['command'],
+      properties: {
+        command: { type: 'string', description: 'The shell command to execute on the remote workspace' },
+        workspace_id: { type: 'string', description: 'The workspace ID' },
+        username: { type: 'string', description: 'Login username for the remote terminal (default: root)' },
+        timeout_ms: { type: 'number', description: 'Execution timeout in milliseconds (default: 30000)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_close_session',
+    description: 'Close the persistent terminal session for a workspace.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        workspace_id: { type: 'string', description: 'The workspace ID' },
+        username: { type: 'string', description: 'Login username (default: root)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_check_user',
+    description: 'Check if the current user has completed real-name verification and signed the required agreements. Returns realname_verified and agreement_signed status.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_sign_agreement',
+    description: 'Sign all unsigned or outdated agreements for the current user. Required before huaweicloud_sandbox_connect if check-user returns agreement_signed=false.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_connect',
+    description: 'Connect to a sandbox via hdkitservice. One user one instance - reuses existing sandbox if available, otherwise creates a new one. Returns session_id, dev_stage_id, connection_id, and connection_address.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'Source identifier (default: WEB). Options: VSCODE, CLI, WEB, WEBVNC, WEBPTY, WEBIDE, CURSOR, etc.' },
+        template_id: { type: 'string', description: 'Template ID; overrides server default (only for new sandbox)' },
+        flavor_id: { type: 'string', description: 'Flavor ID; overrides server default (only for new sandbox)' },
+        env: { type: 'object', description: 'Environment variables to set in the sandbox (only for new sandbox)' },
+        git: {
+          type: 'object',
+          description: 'Git repo config (only for new sandbox)',
+          properties: {
+            repo_url: { type: 'string', description: 'Git repository URL' },
+            repo_branch: { type: 'string', description: 'Git branch' },
+            repo_name: { type: 'string', description: 'Repository name' },
+            target_path: { type: 'string', description: 'Clone target path in sandbox' },
+            open_type: { type: 'string', description: 'Open type' },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_credentials',
+    description: 'Configure temporary AK/SK for a sandbox via hdkitservice. Injects temporary credentials into the sandbox. The sandbox must be in RUNNING state.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        session_id: { type: 'string', description: 'Session ID from huaweicloud_sandbox_connect' },
+        dev_stage_id: { type: 'string', description: 'DevStation environment ID (alternative to session_id)' },
+        enable_sts: { type: 'boolean', description: 'Whether to enable STS temporary AK/SK (default: true)' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_sandbox_release',
+    description: 'Release a sandbox via hdkitservice. Shuts down and deletes the sandbox, and cleans up the session. Idempotent - releasing a non-existent sandbox returns success.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        session_id: { type: 'string', description: 'Session ID from huaweicloud_sandbox_connect' },
+        dev_stage_id: { type: 'string', description: 'DevStation environment ID (alternative to session_id)' },
+      },
+    },
+  },
 ];
 
 export async function callTool(name, args = {}) {
@@ -328,6 +432,36 @@ export async function callTool(name, args = {}) {
       return searchMarketplace(args.query || '', args.category || '');
     case 'huaweicloud_setup_obs_config':
       return setupObsConfig(args.profile);
+    case 'huaweicloud_sandbox_exec': {
+      const sandboxWsId1 = args.workspace_id || DEFAULT_WORKSPACE_ID;
+      const sandboxUser1 = args.username || 'root';
+      const sandboxTimeout1 = args.timeout_ms || 30000;
+      const sandboxResult1 = await execOneShot(sandboxWsId1, args.command, sandboxUser1, sandboxTimeout1);
+      return { stdout: sandboxResult1.stdout, exitCode: sandboxResult1.exitCode };
+    }
+    case 'huaweicloud_sandbox_exec_with_session': {
+      const sandboxWsId2 = args.workspace_id || DEFAULT_WORKSPACE_ID;
+      const sandboxUser2 = args.username || 'root';
+      const sandboxTimeout2 = args.timeout_ms || 30000;
+      const sandboxResult2 = await execWithSession(sandboxWsId2, args.command, sandboxUser2, sandboxTimeout2);
+      return { stdout: sandboxResult2.stdout, exitCode: sandboxResult2.exitCode };
+    }
+    case 'huaweicloud_sandbox_close_session': {
+      const sandboxWsId3 = args.workspace_id || DEFAULT_WORKSPACE_ID;
+      const sandboxUser3 = args.username || 'root';
+      const closed = await closeSession(sandboxWsId3, sandboxUser3);
+      return closed ? 'ok' : 'not_connected';
+    }
+    case 'huaweicloud_sandbox_check_user':
+      return await hdkitCheckUser();
+    case 'huaweicloud_sandbox_sign_agreement':
+      return await hdkitSignAgreement();
+    case 'huaweicloud_sandbox_connect':
+      return await hdkitConnect(args);
+    case 'huaweicloud_sandbox_credentials':
+      return await hdkitCredentials(args.session_id, args.dev_stage_id, args.enable_sts !== false);
+    case 'huaweicloud_sandbox_release':
+      return await hdkitRelease(args.session_id, args.dev_stage_id);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }

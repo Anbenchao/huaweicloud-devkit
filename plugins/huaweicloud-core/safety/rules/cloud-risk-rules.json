@@ -173,6 +173,27 @@
       },
       "message": "The generated plan may create high-cost or unbounded capacity.",
       "remediation": "Use small preview defaults, explicit quotas, budget labels, and user approval before creating high-cost resources."
+    },
+    {
+      "id": "hwc-sandbox-destructive-command",
+      "title": "Destructive command in sandbox terminal",
+      "category": "destructive",
+      "severity": "deny",
+      "stages": ["command"],
+      "match": {
+        "any": [
+          { "field": "text", "regex": "rm\\s+-rf\\s+/" },
+          { "field": "text", "regex": "mkfs" },
+          { "field": "text", "regex": "dd\\s+if=" },
+          { "field": "text", "regex": ":\\\\(\\\\)\\\\{[^}]*\\\\|[^}]*&[^}]*\\\\}[^;]*;:" },
+          { "field": "text", "regex": "\\bshutdown\\b" },
+          { "field": "text", "regex": "\\breboot\\b" },
+          { "field": "text", "regex": "\\binit\\s+[06]\\b" },
+          { "field": "text", "regex": "\\bfdisk\\b" }
+        ]
+      },
+      "message": "The sandbox terminal command is destructively dangerous and could destroy the workspace.",
+      "remediation": "Use targeted deletions instead of recursive root removal. Avoid disk format, fork bombs, and system shutdown commands in sandbox terminals."
     }
   ]
 }
