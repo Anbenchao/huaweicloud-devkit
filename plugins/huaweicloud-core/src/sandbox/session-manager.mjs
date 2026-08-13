@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createConnection, getCredentials } from './hwlink-api.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const WS_EXEC_SRC = join(__dirname, '..', 'ws-exec');
+export const WS_EXEC_INDEX_URL = pathToFileURL(join(__dirname, '..', 'ws-exec', 'index.js')).href;
 
 const DEFAULT_WORKSPACE_ID = process.env.HW_WORKSPACE_ID || '0107bd9997aa4287bd2b4890b49af07d';
 
@@ -55,7 +55,7 @@ async function getSession(workspaceId, username, timeoutMs) {
   const { ak, sk, securitytoken } = getCredentials();
   const { wsUrl, source } = await createConnection(workspaceId, ak, sk, securitytoken);
 
-  const { connectHwlinkTerminalSession } = await import(join(WS_EXEC_SRC, 'index.js'));
+  const { connectHwlinkTerminalSession } = await import(WS_EXEC_INDEX_URL);
   const session = await connectHwlinkTerminalSession({
     url: wsUrl,
     source,
@@ -71,7 +71,7 @@ export async function execOneShot(workspaceId, command, username, timeoutMs) {
   const { ak, sk, securitytoken } = getCredentials();
   const { wsUrl, source } = await createConnection(workspaceId, ak, sk, securitytoken);
 
-  const { executeHwlinkCommand } = await import(join(WS_EXEC_SRC, 'index.js'));
+  const { executeHwlinkCommand } = await import(WS_EXEC_INDEX_URL);
   return await executeHwlinkCommand({
     url: wsUrl,
     source,
