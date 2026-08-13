@@ -38,6 +38,15 @@ npx --yes huaweicloud-devkit install --target codex
 
 > The Codex CLI must be installed first.
 
+```bash
+npx --yes huaweicloud-devkit doctor                        # self-check
+npx --yes huaweicloud-devkit status --target codex
+npx --yes huaweicloud-devkit update --target codex         # update
+npx --yes huaweicloud-devkit uninstall --target codex
+```
+
+> **Codex Desktop** (Windows): use `--target codex-desktop` with the same commands.
+
 ### CodeArts Agent
 
 ```bash
@@ -50,6 +59,7 @@ npx --yes huaweicloud-devkit install --target codearts
 npx --yes huaweicloud-devkit install-hcloud   # install KooCLI
 npx --yes huaweicloud-devkit doctor           # self-check
 npx --yes huaweicloud-devkit status --target codearts
+npx --yes huaweicloud-devkit update --target codearts
 npx --yes huaweicloud-devkit uninstall --target codearts
 ```
 
@@ -64,6 +74,15 @@ npx --yes huaweicloud-devkit install --target workbuddy
 ```
 
 **Restart the session** after installation.
+
+```bash
+npx --yes huaweicloud-devkit doctor
+npx --yes huaweicloud-devkit status --target workbuddy
+npx --yes huaweicloud-devkit update --target workbuddy   # update
+npx --yes huaweicloud-devkit uninstall --target workbuddy
+```
+
+> **Updating**: `update` is incremental per agent — it refreshes only the installed files and leaves your config untouched. Use `update --target all` to update every installed agent at once.
 
 ### Other Agents
 

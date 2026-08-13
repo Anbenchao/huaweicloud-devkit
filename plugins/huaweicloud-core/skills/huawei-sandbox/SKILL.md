@@ -33,7 +33,6 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 
 | Tool | Purpose |
 |------|---------|
-| `huaweicloud_sandbox_exec` | One-shot command execution (no session reuse) |
 | `huaweicloud_sandbox_exec_with_session` | Session-based execution (state persists) |
 | `huaweicloud_sandbox_close_session` | Close a persistent terminal session |
 
@@ -43,7 +42,7 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 2. **Sign agreement** (if needed): `huaweicloud_sandbox_sign_agreement` — when `agreement_signed=false`
 3. **Connect**: `huaweicloud_sandbox_connect` — returns `session_id`, `dev_stage_id`, `connection_id`, `connection_address`
 4. **Inject credentials** (optional): `huaweicloud_sandbox_credentials` — enables cloud API access from sandbox
-5. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work, `huaweicloud_sandbox_exec` for one-shot
+5. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work
 6. **Release**: `huaweicloud_sandbox_release` — cleans up sandbox and session
 
 ## Critical Warnings
@@ -52,7 +51,6 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 |------|-----|
 | Agreement required first | `sandbox_connect` fails if user hasn't signed agreements; run `sandbox_check_user` first |
 | Session state persists | `exec_with_session` preserves `cd`, env vars, aliases between calls |
-| No session reuse in `exec` | Each `exec` call creates a new connection; previous state is lost |
 | Destructive commands blocked | `rm -rf /`, `mkfs`, `dd if=`, fork bombs are denied by safety policy |
 | Workspace ID = dev_stage_id | Use `dev_stage_id` from `sandbox_connect` as `workspace_id` for terminal exec |
 | Node.js >= 22 required | Sandbox terminal uses built-in WebSocket (globalThis.WebSocket) |

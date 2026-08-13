@@ -2,7 +2,7 @@ import { getCredentials } from './hwlink-api.mjs';
 
 const HDKIT_BASE_URL =
   process.env.HDKITSERVICE_ENDPOINT ||
-  'http://113.44.143.91:3002/rest/developer/server/hdkitservice/';
+  'https://devkit.huaweicloud.com/rest/developer/server/hdkitservice/';
 
 async function hdkitRequest(method, path, body, timeoutMs = 300000) {
   const { ak, sk, securitytoken } = getCredentials();
