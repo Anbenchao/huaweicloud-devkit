@@ -40,7 +40,7 @@ function opencodeConfigFile() {
 function codexDesktopSkillsDir() { return join(homedir(), '.agents', 'skills'); }
 function codexDesktopCommandsDir() { return join(homedir(), '.agents', 'commands'); }
 function codexDesktopPluginsDir() { return join(homedir(), '.agents', 'huaweicloud-plugins'); }
-function codexDesktopConfigFile() { return join(homedir(), '.agents', 'opencode.json'); }
+function codexConfigToml() { return join(homedir(), '.codex', 'config.toml'); }
 
 function codeartsSkillsDir() { return join(homedir(), '.codeartsdoer', 'skills'); }
 function codeartsMcpSettingsDir() { return join(homedir(), '.codeartsdoer', 'mcp'); }
@@ -230,6 +230,14 @@ function uninstallCodex() {
     shell: true, windowsHide: true, stdio: 'pipe',
   });
   console.log(`  ${r.stdout ? r.stdout.toString().trim() : r.stderr.toString().trim()}`);
+
+  for (const name of new Set([marketplaceName, 'HuaweiCloud-Devkit'])) {
+    console.log(`  Removing Codex marketplace: ${name}`);
+    const r2 = spawnSync(`codex plugin marketplace remove "${name}"`, [], {
+      shell: true, windowsHide: true, stdio: 'pipe',
+    });
+    console.log(`  ${r2.stdout ? r2.stdout.toString().trim() : r2.stderr.toString().trim()}`);
+  }
 }
 
 function codexStatus() {
@@ -326,18 +334,27 @@ async function installCodexDesktop() {
   }
 
   const mcpPath = join(codexDesktopPluginsDir(), 'src', 'mcp-server.mjs').replace(/\\/g, '/');
-  const configPath = codexDesktopConfigFile();
-  let config = {};
+  const configPath = codexConfigToml();
+  const section = [
+    '[mcp_servers.huaweicloud-devkit]',
+    'command = "node"',
+    `args = ["${mcpPath}"]`,
+    '',
+    '[mcp_servers.huaweicloud-devkit.env]',
+    'HUAWEICLOUD_AGENT_TOOLKIT_MODE = "local"',
+    '',
+  ].join('\n');
+  let existing = '';
   if (existsSync(configPath)) {
-    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
+    try { existing = readFileSync(configPath, 'utf8'); } catch {}
+    if (existing.includes('[mcp_servers.huaweicloud-devkit]')) {
+      console.log(`  Config already configured: ${configPath}`);
+      return;
+    }
   }
-  config.mcp = config.mcp || {};
-  config.mcp['huaweicloud-devkit'] = {
-    type: 'local',
-    command: ['node', mcpPath],
-    enabled: true,
-  };
-  writeFileSync(configPath, JSON.stringify(config, null, 2));
+  mkdirSync(dirname(configPath), { recursive: true });
+  if (existing && !existing.endsWith('\n')) existing += '\n';
+  writeFileSync(configPath, existing + section);
   console.log(`  Config updated: ${configPath}`);
 }
 
@@ -369,16 +386,19 @@ function uninstallCodexDesktop() {
   if (removeIfExists(codexDesktopPluginsDir())) {
     console.log('  Removed MCP server and safety policy');
   }
-  const configPath = codexDesktopConfigFile();
+  const configPath = codexConfigToml();
   if (existsSync(configPath)) {
-    let config = {};
-    try { config = JSON.parse(readFileSync(configPath, 'utf8')); } catch {}
-    if (config.mcp?.['huaweicloud-devkit']) {
-      delete config.mcp['huaweicloud-devkit'];
-      if (Object.keys(config.mcp).length === 0) delete config.mcp;
-      writeFileSync(configPath, JSON.stringify(config, null, 2));
-      console.log('  Config cleaned');
+    const lines = readFileSync(configPath, 'utf8').split(/\r?\n/);
+    const out = [];
+    let skip = false;
+    for (const line of lines) {
+      if (/^\[mcp_servers\.huaweicloud-devkit(\]|\.)/.test(line)) { skip = true; continue; }
+      if (skip && line.startsWith('[')) skip = false;
+      if (!skip) out.push(line);
     }
+    while (out.length > 0 && out[out.length - 1].trim() === '') out.pop();
+    writeFileSync(configPath, out.join('\n') + (out.length > 0 ? '\n' : ''));
+    console.log('  Config cleaned');
   }
 }
 
@@ -663,7 +683,9 @@ async function cmdInstall() {
   // Write install marker for doctor to detect
   const markerDir = target === 'codearts' ? codeartsPluginsDir()
     : target === 'workbuddy' ? workbuddyPluginsDir()
+    : target === 'codex-desktop' ? codexDesktopPluginsDir()
     : opencodePluginsDir();
+  mkdirSync(markerDir, { recursive: true });
   writeFileSync(join(markerDir, '.installed'), new Date().toISOString());
   if (target === 'opencode' || target === 'all') {
     console.log('Or describe your Huawei Cloud task in OpenCode');
@@ -696,13 +718,15 @@ async function cmdUninstall() {
     console.log('\n[WorkBuddy]');
     uninstallWorkBuddy();
   }
-  if (target === 'codex' || target === 'all') {
+  if (target === 'codex-desktop' || target === 'codex' || target === 'all') {
     console.log('\n[Codex]');
     uninstallCodexDesktop();
-    if (!hasCodexCLI()) {
-      console.log('  \x1b[33mCodex CLI not found. Run "npm uninstall -g codex" to fully remove.\x1b[0m');
-    } else {
-      uninstallCodex();
+    if (target === 'codex' || target === 'all') {
+      if (!hasCodexCLI()) {
+        console.log('  \x1b[33mCodex CLI not found. Run "npm uninstall -g codex" to fully remove.\x1b[0m');
+      } else {
+        uninstallCodex();
+      }
     }
   }
   console.log(`\n\x1b[32mUninstall complete.\x1b[0m`);
@@ -783,11 +807,11 @@ async function cmdDoctor() {
       if (cfg.mcp && cfg.mcp['huaweicloud-devkit']) { mcpConfigured = true; mcpCfgTarget = 'OpenCode'; }
     } catch {}
   }
-  const codexCfg = codexDesktopConfigFile();
+  const codexCfg = codexConfigToml();
   if (!mcpConfigured && existsSync(codexCfg)) {
     try {
-      const cfg = JSON.parse(readFileSync(codexCfg, 'utf8'));
-      if (cfg.mcp && cfg.mcp['huaweicloud-devkit']) { mcpConfigured = true; mcpCfgTarget = 'Codex Desktop'; }
+      const cfg = readFileSync(codexCfg, 'utf8');
+      if (cfg.includes('[mcp_servers.huaweicloud-devkit]')) { mcpConfigured = true; mcpCfgTarget = 'Codex Desktop'; }
     } catch {}
   }
   const workbuddyCfg = workbuddyMcpConfigFile();
@@ -860,6 +884,7 @@ async function cmdDoctor() {
   // Detect "installed but not restarted" — check all supported agents
   const installedMarkers = [
     { path: join(opencodePluginsDir(), '.installed'), name: 'OpenCode' },
+    { path: join(codexDesktopPluginsDir(), '.installed'), name: 'Codex Desktop' },
     { path: join(workbuddyPluginsDir(), '.installed'), name: 'WorkBuddy' },
     { path: join(codeartsPluginsDir(), '.installed'), name: 'CodeArts' },
   ];
