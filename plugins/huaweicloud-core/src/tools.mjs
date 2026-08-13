@@ -8,6 +8,8 @@ import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
 import { execOneShot, execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
 import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials, hdkitRelease } from './sandbox/hdkitservice-api.mjs';
+import { getAuthStatus, syncAuth } from './auth/service.mjs';
+import { readGlobalCredentials, writeObsConfig as writeObsConfigFile } from './auth/credentials.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT_DEV = join(__dirname, '..', 'skills');
@@ -288,6 +290,26 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'huaweicloud_auth_status',
+    description: 'Check unified Huawei Cloud authentication status across the global credential vault, OBS, KooCLI, and all supported agent MCP registrations. Returns only redacted/status information, never credentials.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Agent target to check: opencode, codex, codex-desktop, codearts, workbuddy, or all (default).' },
+      },
+    },
+  },
+  {
+    name: 'huaweicloud_auth_sync',
+    description: 'Synchronize credentials from the global Huawei Cloud credential vault to OBS and report agent registration status. Does not write secrets into any agent config.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Agent target to report after sync: opencode, codex, codex-desktop, codearts, workbuddy, or all (default).' },
+      },
+    },
+  },
+  {
     name: 'huaweicloud_sandbox_exec',
     description: 'Execute a command on a Huawei Cloud workspace terminal via hwlink (one-shot, no session reuse). Each call creates a new connection. Shell state does NOT persist across calls.',
     inputSchema: {
@@ -432,6 +454,10 @@ export async function callTool(name, args = {}) {
       return searchMarketplace(args.query || '', args.category || '');
     case 'huaweicloud_setup_obs_config':
       return setupObsConfig(args.profile);
+    case 'huaweicloud_auth_status':
+      return getAuthStatus(args.target || 'all');
+    case 'huaweicloud_auth_sync':
+      return syncAuth(args.target || 'all');
     case 'huaweicloud_sandbox_exec': {
       const sandboxWsId1 = args.workspace_id || DEFAULT_WORKSPACE_ID;
       const sandboxUser1 = args.username || 'root';
@@ -529,6 +555,33 @@ async function showProfileRedacted(profile) {
 }
 
 async function setupObsConfig(profile) {
+  const stored = readGlobalCredentials();
+  if (stored?.ak && stored?.sk) {
+    try {
+      const obs = writeObsConfigFile(stored);
+      return {
+        ok: true,
+        existed: false,
+        created: true,
+        path: obs.path,
+        region: stored.region,
+        endpoint: obs.endpoint,
+        source: 'global-credentials',
+        note: 'OBS credentials synced from the global credential vault. OBS commands (hcloud OBS ls, mb, cp, etc.) should now work.',
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+        nextStep: 'Run "npx huaweicloud-devkit auth init" to refresh credentials and region.',
+      };
+    }
+  }
+
+  return setupObsConfigFromHcloud(profile);
+}
+
+async function setupObsConfigFromHcloud(profile) {
   const obsConfigPath = join(homedir(), '.obsutilconfig');
   if (existsSync(obsConfigPath)) {
     return { ok: true, existed: true, path: obsConfigPath, note: 'OBS config already exists. Delete ~/.obsutilconfig first if you need to re-sync.' };
