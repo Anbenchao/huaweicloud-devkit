@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { searchMarketplace } from './search-market.mjs';
 import { execWithSession, closeSession, DEFAULT_WORKSPACE_ID } from './sandbox/session-manager.mjs';
-import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials, hdkitRelease } from './sandbox/hdkitservice-api.mjs';
+import { hdkitCheckUser, hdkitSignAgreement, hdkitConnect, hdkitCredentials } from './sandbox/hdkitservice-api.mjs';
 import { getAuthStatus, syncAuth } from './auth/service.mjs';
 import { readGlobalCredentials, writeObsConfig as writeObsConfigFile } from './auth/credentials.mjs';
 
@@ -386,17 +386,7 @@ export const TOOL_DEFINITIONS = [
       },
     },
   },
-  {
-    name: 'huaweicloud_sandbox_release',
-    description: 'Release a sandbox via hdkitservice. Shuts down and deletes the sandbox, and cleans up the session. Idempotent - releasing a non-existent sandbox returns success.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        session_id: { type: 'string', description: 'Session ID from huaweicloud_sandbox_connect' },
-        dev_stage_id: { type: 'string', description: 'DevStation environment ID (alternative to session_id)' },
-      },
-    },
-  },
+
 ];
 
 export async function callTool(name, args = {}) {
@@ -465,8 +455,6 @@ export async function callTool(name, args = {}) {
       return await hdkitConnect(args);
     case 'huaweicloud_sandbox_credentials':
       return await hdkitCredentials(args.session_id, args.dev_stage_id, args.enable_sts !== false);
-    case 'huaweicloud_sandbox_release':
-      return await hdkitRelease(args.session_id, args.dev_stage_id);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -575,7 +563,7 @@ async function setupObsConfigFromHcloud(profile) {
       ok: false,
       error: 'Failed to read hcloud profile.',
       detail: result.error || result.stderr || 'hcloud not installed or not configured',
-      nextStep: 'Run "hcloud configure init" outside agent chat, then retry.',
+      nextStep: 'Run "npx huaweicloud-devkit auth init" outside agent chat, then retry.',
     };
   }
 
@@ -601,7 +589,7 @@ async function setupObsConfigFromHcloud(profile) {
     return {
       ok: false,
       error: 'No credentials found in hcloud profile.',
-      nextStep: 'Run "hcloud configure init" outside agent chat to set up credentials first.',
+      nextStep: 'Run "npx huaweicloud-devkit auth init" outside agent chat to set up credentials first.',
     };
   }
 
@@ -614,7 +602,8 @@ async function setupObsConfigFromHcloud(profile) {
   }
 
   const endpoint = `https://obs.${region}.myhuaweicloud.com`;
-  const configContent = `[default]\r\nendpoint=${endpoint}\r\nak=${accessKeyId}\r\nsk=${secretAccessKey}\r\n`;
+  // Flat key=value format (no [default] section) as written by KooCLI 7.x `hcloud OBS config`.
+  const configContent = `endpoint=${endpoint}\nak=${accessKeyId}\nsk=${secretAccessKey}\n`;
 
   try {
     writeFileSync(obsConfigPath, configContent, { encoding: 'utf8', mode: 0o600 });
@@ -720,6 +709,7 @@ function serviceCatalog(intent = '') {
     { keywords: ['cts', 'audit', 'trace', 'tracker'], skills: ['huawei-cts'], services: ['CTS'] },
     { keywords: ['cbr', 'backup', 'restore', 'vault', 'snapshot'], skills: ['huawei-cbr'], services: ['CBR'] },
     { keywords: ['deployment', 'deploy', 'ci/cd', 'pipeline', 'release'], skills: ['huawei-deployment'], services: ['CloudDeploy'] },
+    { keywords: ['sandbox', 'devstation', 'workspace', 'terminal', 'preview', 'hwlink'], skills: ['huawei-sandbox'], services: ['Sandbox', 'DevStation'] },
     { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
 ];
   const matched = [];
