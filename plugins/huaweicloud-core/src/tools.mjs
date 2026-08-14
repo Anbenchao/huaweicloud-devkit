@@ -721,6 +721,7 @@ function serviceCatalog(intent = '') {
     { keywords: ['cts', 'audit', 'trace', 'tracker'], skills: ['huawei-cts'], services: ['CTS'] },
     { keywords: ['cbr', 'backup', 'restore', 'vault', 'snapshot'], skills: ['huawei-cbr'], services: ['CBR'] },
     { keywords: ['deployment', 'deploy', 'ci/cd', 'pipeline', 'release'], skills: ['huawei-deployment'], services: ['CloudDeploy'] },
+    { keywords: ['sandbox', 'devstation', 'workspace', 'terminal', 'preview', 'hwlink'], skills: ['huawei-sandbox'], services: ['Sandbox', 'DevStation'] },
     { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
 ];
   const matched = [];
