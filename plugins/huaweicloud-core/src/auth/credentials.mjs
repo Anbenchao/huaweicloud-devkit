@@ -4,7 +4,9 @@ import { homedir } from 'node:os';
 
 // Verify a credential file ended up with 0600. On Windows-mounted drives inside WSL
 // (drvfs/9p) chmod is silently ignored, so the file can be world-readable (0777).
+// Native Windows has no POSIX modes (statSync always reports 0666), so skip the check there.
 function ensurePrivateMode(path) {
+  if (process.platform === 'win32') return;
   try { chmodSync(path, 0o600); } catch {}
   try {
     const mode = statSync(path).mode & 0o777;
