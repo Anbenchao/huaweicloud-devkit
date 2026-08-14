@@ -94,8 +94,7 @@
                                   "fdisk"
                               ],
     "sandboxWriteTools":  [
-                              "huaweicloud_sandbox_connect",
-                              "huaweicloud_sandbox_credentials",
-                              "huaweicloud_sandbox_release"
-                          ]
+                               "huaweicloud_sandbox_connect",
+                               "huaweicloud_sandbox_credentials"
+                           ]
 }
