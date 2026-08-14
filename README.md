@@ -1,5 +1,5 @@
 # HuaweiCloud DevKit
-
+[![Discussions](https://img.shields.io/badge/Discussions-	Join the discussion-blue)]
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
 
