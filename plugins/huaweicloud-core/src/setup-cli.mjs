@@ -857,10 +857,10 @@ async function cmdInstall() {
     console.log(`\nKooCLI (hcloud) detected.`);
   }
 
-  console.log(`\n\x1b[1mNext steps:\x1b[0m`);
-  console.log(`  1. Configure unified credentials: npx huaweicloud-devkit auth init`);
-  console.log(`  2. Restart the ${appName} session (MCP tools activate after restart)`);
-  console.log(`  3. Run: npx huaweicloud-devkit doctor`);
+  console.log(`\n\x1b[1m下一步：\x1b[0m`);
+  console.log(`  1. 配置统一凭据：npx huaweicloud-devkit auth init`);
+  console.log(`  2. 重启 ${appName} 会话（MCP 工具重启后生效）`);
+  console.log(`  3. 运行自检：npx huaweicloud-devkit doctor`);
 
   // Write install marker for doctor to detect
   const markerDir = target === 'codearts' ? codeartsPluginsDir()
