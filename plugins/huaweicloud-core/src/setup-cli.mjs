@@ -1437,11 +1437,10 @@ async function cmdAuthInit() {
   console.log(BANNER);
   console.log('HuaweiCloud DevKit Unified Authentication Setup\n');
   console.log('\x1b[1m获取 AK/SK（如果还没有）：\x1b[0m');
-  console.log('  1. 打开华为云控制台：');
-  console.log('     https://console.huaweicloud.com/console/?region=cn-north-4#/home');
-  console.log('  2. 点击右上角账号名 -> 我的凭证');
-  console.log('  3. 进入"访问密钥"页签 -> 点击"新增访问密钥"，完成身份验证');
-  console.log('  4. 下载凭证文件（内含 AK 和 SK）。');
+  console.log('  1. 打开华为云"访问密钥"页签：');
+  console.log('     https://console.huaweicloud.com/iam/?region=cn-north-4#/mine/accessKey');
+  console.log('  2. 点击"新增访问密钥"，完成身份验证');
+  console.log('  3. 下载凭证文件（内含 AK 和 SK）。');
   console.log('     注意：SK 只在创建密钥时显示一次，请妥善保存该文件。\n');
 
   let ak = process.env.HW_ACCESS_KEY || '';
