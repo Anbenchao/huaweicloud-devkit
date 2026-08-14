@@ -1,6 +1,6 @@
 ---
 name: huawei-sandbox
-description: "Use when creating, connecting, or managing Huawei Cloud Sandbox instances and workspace terminals, or when a task needs a temporary runtime to deploy, run, or preview a web application. Covers sandbox lifecycle (check-user, sign-agreement, connect, release), session-based terminal execution, and credential injection. Triggers on: sandbox, workspace, terminal, web app deployment, deploy web app, preview app, hwlink, devstation, hdkitservice, remote exec. NOT for: ECS instances (use huawei-ecs), CCE clusters (use huawei-cce)."
+description: "Use when creating, connecting, or managing Huawei Cloud Sandbox instances and workspace terminals, or when a task needs a temporary runtime to deploy, run, or preview a web application. Covers sandbox lifecycle (check-user, sign-agreement, connect, release), session-based terminal execution, and credential injection. Triggers on: sandbox, workspace, terminal, web app deployment, deploy web app, preview app, deploy github, github repo, deploy repo, website, static site, web application, hwlink, devstation, hdkitservice, remote exec. NOT for: ECS instances (use huawei-ecs), CCE clusters (use huawei-cce)."
 version: 1
 ---
 
@@ -15,6 +15,8 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 ## Activation
 
 - **Proactive offering**: when the developer's task needs a temporary runtime (e.g. "deploy this web app", "run this app and preview it"), offer the sandbox proactively — the developer never has to say "use sandbox". Prompt: "This task can be satisfied by a sandbox — use it?"
+- **Detect web apps in deploy-a-repo prompts**: prompts like "部署 GitHub - <owner>/<repo>" or "deploy <github repo>" do not say "web app". Clone or inspect the repository first (package.json with dev/serve/build scripts, index.html, frontend framework dependencies such as vue/react/angular/vite, static sites, Dockerfile running a web server). If it is a web application, offer the sandbox first: "检测到该项目是 Web 应用，建议优先使用沙箱部署（临时运行环境，可预览访问），是否使用？"
+- **Deployment must end with a public URL**: after deploying and exposing the app with DevBridge, always return the tunnel URL to the developer as the final result — a deployment without an accessible link is incomplete.
 - **Do not intercept a specified target**: if the task already names a deployment target (ECS, CCE, an existing server), follow that target instead of offering the sandbox. Offer the sandbox only when the task needs a temporary runtime or no target is specified.
 - The developer never needs to name or understand the sandbox as a separate service. Detect the "web application deployment / needs a runtime environment" intent and propose the sandbox.
 
@@ -52,7 +54,42 @@ Setup is a **plugin-side preflight** — the developer should be asked a questio
 4. **Connect**: `huaweicloud_sandbox_connect` — returns `session_id`, `dev_stage_id`, `connection_id`, `connection_address`
 5. **Inject credentials** (optional): `huaweicloud_sandbox_credentials` — enables cloud API access from sandbox
 6. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work
-7. **Release**: `huaweicloud_sandbox_release` — cleans up sandbox and session
+7. **Expose the deployed app with DevBridge**: install DevBridge in the sandbox, log in with the developer's AK/SK, create a tunnel for the app port, and return the public URL to the developer (see "DevBridge reverse proxy")
+8. **Release**: `huaweicloud_sandbox_release` — cleans up sandbox and session
+
+## DevBridge reverse proxy
+
+Expose a deployed web app to a public URL and return that URL to the developer.
+
+**Install** (skip if `devbridge version` already works):
+
+```bash
+curl -fsSL https://res-hd.hc-cdn.cn/sharedata/hdspace/devbridge/install.sh | bash
+export PATH=$PATH:$HOME/.huawei/bin   # installer only writes ~/.bashrc; session shells do not re-source it
+```
+
+**Login** (non-interactive, credentials come from the developer's local agent — the vault or HW_ACCESS_KEY/HW_SECRET_KEY; never echo them):
+
+```bash
+devbridge auth login --huaweicloud --access-key "$AK" --secret-key "$SK"
+```
+
+- The `--huaweicloud` flag is required for AK/SK login; without it the CLI tries an interactive browser login, which fails in the sandbox.
+- Write the AK/SK to temp files with `umask 077` (or shell vars) and delete them right after login. Verify with `devbridge auth status`.
+
+**Expose** (run the web server and the tunnel in the background, then read the URL from the log):
+
+```bash
+cd <app-dir> && nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &
+nohup devbridge host -p 8080 -e 8 > /tmp/host.log 2>&1 &
+sleep 10 && cat /tmp/host.log
+```
+
+- The tunnel URL has the form `https://<tunnelId>-<port>.cn-north-4-bridge.myhuaweicloud.com` (from the `Tunnel URL:` line).
+- **Return this URL to the developer as the deployment result link.** Keep the host process running (do not close the session before handing over the URL).
+- Docs: https://huaweicloud.github.io/devspace-devbridge/
+
+**No local downgrade**: if DevBridge cannot be installed in the sandbox, STOP and report the error. Never install DevBridge on the developer's local machine — a local install would defeat the purpose of sandbox deployment.
 
 ## Critical Warnings
 
@@ -60,6 +97,10 @@ Setup is a **plugin-side preflight** — the developer should be asked a questio
 |------|-----|
 | Agreement required first | `sandbox_connect` fails if the agreement isn't signed; the `sandbox_check_user` preflight detects this, so surface it to the developer only when signing is needed |
 | Real-name required | `sandbox_connect` fails if `realname_verified=false`; tell the developer once and stop, don't loop on connect |
+| DevBridge login needs `--huaweicloud` | `devbridge auth login --access-key/--secret-key` without `--huaweicloud` falls back to interactive browser login, which fails in the sandbox |
+| DevBridge PATH | The installer only writes `~/.bashrc`; run `export PATH=$PATH:$HOME/.huawei/bin` in the session before using `devbridge` |
+| Never install DevBridge locally | If the sandbox cannot install DevBridge, report the error and stop — installing on the developer's machine defeats sandbox deployment |
+| Return the deployment URL | Always hand the `Tunnel URL` from `devbridge host` to the developer as the final result |
 | Session state persists | `exec_with_session` preserves `cd`, env vars, aliases between calls |
 | Destructive commands blocked | `rm -rf /`, `mkfs`, `dd if=`, fork bombs are denied by safety policy |
 | Workspace ID = dev_stage_id | Use `dev_stage_id` from `sandbox_connect` as `workspace_id` for terminal exec |
