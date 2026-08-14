@@ -1038,7 +1038,7 @@ async function cmdDoctor() {
     // Check auth
     const authCheck = spawnSync(`"${hcloudBin}" configure list`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
     const hasAuth = authCheck.status === 0 && /access.?key/i.test(authCheck.stdout.toString());
-    check('hcloud credentials configured', hasAuth, 'Run: hcloud configure init');
+    check('hcloud credentials configured', hasAuth, 'Run: npx huaweicloud-devkit auth init');
   }
 
   // Skills
@@ -1260,9 +1260,24 @@ async function cmdInstallHcloud() {
       // Clean up zip
       rmSync(zipPath, { force: true });
 
-      // Add to PATH
+      // Add to user PATH (append + dedupe within the User scope only; never copy
+      // session/system entries into the user PATH, and never use setx PATH which
+      // overwrites the whole variable and truncates at 1024 chars).
       console.log('  Adding to user PATH...');
-      spawnSync('setx', ['PATH', `${process.env.PATH};${installDir}`], { stdio: 'inherit', windowsHide: true });
+      const pathPs = [
+        '$ErrorActionPreference = "Stop"',
+        `$target = '${installDir.replace(/'/g, "''")}'`,
+        '$cur = [Environment]::GetEnvironmentVariable("Path", "User")',
+        'if (-not $cur) { $cur = "" }',
+        '$parts = @($cur -split ";" | Where-Object { $_ -ne "" })',
+        'if ($parts -notcontains $target) {',
+        '  [Environment]::SetEnvironmentVariable("Path", (@($parts) + $target) -join ";", "User")',
+        '  Write-Output "  Added to user PATH (deduped): $target"',
+        '} else {',
+        '  Write-Output "  Already in user PATH: $target"',
+        '}',
+      ].join('; ');
+      spawnSync('powershell', ['-NoProfile', '-Command', pathPs], { stdio: 'inherit', windowsHide: true, timeout: 30000 });
 
       console.log(`\n\x1b[32mInstall complete.\x1b[0m`);
       console.log(`  Verify: ${join(installDir, 'hcloud.exe')} version`);
@@ -1321,7 +1336,8 @@ async function cmdInstallHcloud() {
 
   console.log('\nAfter install, set HCLOUD_BIN if hcloud is not on PATH.');
   console.log('\n\x1b[1m\x1b[33m=== Configure credentials SAFELY ===\x1b[0m');
-  console.log('  Interactive (safe): hcloud configure init');
+  console.log('  Unified credentials (recommended): npx huaweicloud-devkit auth init');
+  console.log('  KooCLI only (alternative): hcloud configure init');
   console.log('  NEVER: hcloud configure set --cli-access-key=xxx  (AK/SK in shell history!)');
   console.log('\nThen run: npx huaweicloud-devkit doctor');
 }
