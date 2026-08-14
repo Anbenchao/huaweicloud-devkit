@@ -1038,7 +1038,7 @@ async function cmdDoctor() {
     // Check auth
     const authCheck = spawnSync(`"${hcloudBin}" configure list`, [], { shell: true, windowsHide: true, stdio: 'pipe', timeout: 5000 });
     const hasAuth = authCheck.status === 0 && /access.?key/i.test(authCheck.stdout.toString());
-    check('hcloud credentials configured', hasAuth, 'Run: npx huaweicloud-devkit auth init (unified credentials for KooCLI, OBS, and sandbox)');
+    check('hcloud credentials configured', hasAuth, 'Run: npx huaweicloud-devkit auth init');
   }
 
   // Skills
@@ -1321,7 +1321,7 @@ async function cmdInstallHcloud() {
 
   console.log('\nAfter install, set HCLOUD_BIN if hcloud is not on PATH.');
   console.log('\n\x1b[1m\x1b[33m=== Configure credentials SAFELY ===\x1b[0m');
-  console.log('  Unified credentials (KooCLI + OBS + sandbox, recommended): npx huaweicloud-devkit auth init');
+  console.log('  Unified credentials (recommended): npx huaweicloud-devkit auth init');
   console.log('  KooCLI only (alternative): hcloud configure init');
   console.log('  NEVER: hcloud configure set --cli-access-key=xxx  (AK/SK in shell history!)');
   console.log('\nThen run: npx huaweicloud-devkit doctor');

@@ -575,7 +575,7 @@ async function setupObsConfigFromHcloud(profile) {
       ok: false,
       error: 'Failed to read hcloud profile.',
       detail: result.error || result.stderr || 'hcloud not installed or not configured',
-      nextStep: 'Run "npx huaweicloud-devkit auth init" (unified credentials) outside agent chat, then retry.',
+      nextStep: 'Run "npx huaweicloud-devkit auth init" outside agent chat, then retry.',
     };
   }
 
@@ -601,7 +601,7 @@ async function setupObsConfigFromHcloud(profile) {
     return {
       ok: false,
       error: 'No credentials found in hcloud profile.',
-      nextStep: 'Run "npx huaweicloud-devkit auth init" (unified credentials) outside agent chat to set up credentials first.',
+      nextStep: 'Run "npx huaweicloud-devkit auth init" outside agent chat to set up credentials first.',
     };
   }
 
