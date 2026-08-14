@@ -63,7 +63,20 @@ Setup is a **plugin-side preflight** — the developer should be asked a questio
 | Session state persists | `exec_with_session` preserves `cd`, env vars, aliases between calls |
 | Destructive commands blocked | `rm -rf /`, `mkfs`, `dd if=`, fork bombs are denied by safety policy |
 | Workspace ID = dev_stage_id | Use `dev_stage_id` from `sandbox_connect` as `workspace_id` for terminal exec |
-| Node.js >= 22 required | Sandbox terminal uses built-in WebSocket (globalThis.WebSocket) |
+| Node.js >= 22 required | Sandbox terminal uses built-in WebSocket (globalThis.WebSocket); if Node.js is missing, install it from the Huawei Cloud mirror (see "Node.js in the sandbox") |
+
+## Node.js in the sandbox
+
+If the sandbox has no Node.js, download it from the Huawei Cloud mirror. Pick the tarball matching the sandbox arch (`uname -m`: `aarch64` -> arm64, `x86_64` -> x64):
+
+```bash
+# aarch64 sandbox:
+curl -fsSL https://mirrors.huaweicloud.com/nodejs/v24.19.0/node-v24.19.0-linux-arm64.tar.gz -o node.tar.gz
+# x86_64 sandbox:
+curl -fsSL https://mirrors.huaweicloud.com/nodejs/v24.19.0/node-v24.19.0-linux-x64.tar.gz -o node.tar.gz
+sudo tar -xzf node.tar.gz -C /usr/local --strip-components=1
+node --version
+```
 
 ## Environment Variables
 
