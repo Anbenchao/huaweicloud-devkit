@@ -16,7 +16,7 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 
 - **Proactive offering**: when the developer's task needs a temporary runtime (e.g. "deploy this web app", "run this app and preview it"), offer the sandbox proactively — the developer never has to say "use sandbox". Prompt: "This task can be satisfied by a sandbox — use it?"
 - **Detect web apps in deploy-a-repo prompts**: prompts like "部署 GitHub - <owner>/<repo>" or "deploy <github repo>" do not say "web app". Clone or inspect the repository first (package.json with dev/serve/build scripts, index.html, frontend framework dependencies such as vue/react/angular/vite, static sites, Dockerfile running a web server). If it is a web application, offer the sandbox first: "检测到该项目是 Web 应用，建议优先使用沙箱部署（临时运行环境，可预览访问），是否使用？"
-- **Clone into the sandbox workspace directory**: always put project code under `$HOME/workspace/<repo-name>` (create the directory if missing) — never under `/tmp` or other ephemeral locations. This keeps the project with the sandbox session, is easy to reference for serving/exposing, and survives session-level restarts of the shell.
+- **Clone into the sandbox workspace directory**: always put project code under `/workspace/<repo-name>` (create the directory if missing) — `/workspace` is the sandbox's dedicated workspace mount at the filesystem root, not `$HOME/workspace`. Never use `/tmp` or other ephemeral locations. This keeps the project with the sandbox session, is easy to reference for serving/exposing, and survives session-level restarts of the shell.
 - **Deployment must end with a public URL**: after deploying and exposing the app with DevBridge, always return the tunnel URL to the developer as the final result — a deployment without an accessible link is incomplete.
 - **Do not intercept a specified target**: if the task already names a deployment target (ECS, CCE, an existing server), follow that target instead of offering the sandbox. Offer the sandbox only when the task needs a temporary runtime or no target is specified.
 - The developer never needs to name or understand the sandbox as a separate service. Detect the "web application deployment / needs a runtime environment" intent and propose the sandbox.
@@ -80,10 +80,10 @@ devbridge auth login --huaweicloud --access-key "$AK" --secret-key "$SK"
 - The `--huaweicloud` flag is required for AK/SK login; without it the CLI tries an interactive browser login, which fails in the sandbox.
 - Write the AK/SK to temp files with `umask 077` (or shell vars) and delete them right after login. Verify with `devbridge auth status`.
 
-**Expose** (run the web server and the tunnel in the background, then read the URL from the log; the app lives in the workspace directory, e.g. `$HOME/workspace/<repo-name>`):
+**Expose** (run the web server and the tunnel in the background, then read the URL from the log; the app lives in the workspace mount, e.g. `/workspace/<repo-name>`):
 
 ```bash
-cd $HOME/workspace/<repo-name> && nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &
+cd /workspace/<repo-name> && nohup python3 -m http.server 8080 > /tmp/http.log 2>&1 &
 nohup devbridge host -p 8080 -e 8 > /tmp/host.log 2>&1 &
 sleep 10 && cat /tmp/host.log
 ```
@@ -108,7 +108,7 @@ sleep 10 && cat /tmp/host.log
 | Session state persists | `exec_with_session` preserves `cd`, env vars, aliases between calls |
 | Destructive commands blocked | `rm -rf /`, `mkfs`, `dd if=`, fork bombs are denied by safety policy |
 | Workspace ID = dev_stage_id | Use `dev_stage_id` from `sandbox_connect` as `workspace_id` for terminal exec |
-| Projects live in `$HOME/workspace` | Clone/install project code under `$HOME/workspace/<repo-name>`, never in `/tmp` — ephemeral locations lose the project when the sandbox session restarts |
+| Projects live in `/workspace` | Clone/install project code under `/workspace/<repo-name>` (filesystem-root workspace mount, not `$HOME/workspace`), never in `/tmp` — ephemeral locations lose the project when the sandbox session restarts |
 | Node.js >= 22 required | Sandbox terminal uses built-in WebSocket (globalThis.WebSocket); if Node.js is missing, install it from the Huawei Cloud mirror (see "Node.js in the sandbox") |
 
 ## Node.js in the sandbox
