@@ -1260,9 +1260,24 @@ async function cmdInstallHcloud() {
       // Clean up zip
       rmSync(zipPath, { force: true });
 
-      // Add to PATH
+      // Add to user PATH (append + dedupe within the User scope only; never copy
+      // session/system entries into the user PATH, and never use setx PATH which
+      // overwrites the whole variable and truncates at 1024 chars).
       console.log('  Adding to user PATH...');
-      spawnSync('setx', ['PATH', `${process.env.PATH};${installDir}`], { stdio: 'inherit', windowsHide: true });
+      const pathPs = [
+        '$ErrorActionPreference = "Stop"',
+        `$target = '${installDir.replace(/'/g, "''")}'`,
+        '$cur = [Environment]::GetEnvironmentVariable("Path", "User")',
+        'if (-not $cur) { $cur = "" }',
+        '$parts = @($cur -split ";" | Where-Object { $_ -ne "" })',
+        'if ($parts -notcontains $target) {',
+        '  [Environment]::SetEnvironmentVariable("Path", (@($parts) + $target) -join ";", "User")',
+        '  Write-Output "  Added to user PATH (deduped): $target"',
+        '} else {',
+        '  Write-Output "  Already in user PATH: $target"',
+        '}',
+      ].join('; ');
+      spawnSync('powershell', ['-NoProfile', '-Command', pathPs], { stdio: 'inherit', windowsHide: true, timeout: 30000 });
 
       console.log(`\n\x1b[32mInstall complete.\x1b[0m`);
       console.log(`  Verify: ${join(installDir, 'hcloud.exe')} version`);
