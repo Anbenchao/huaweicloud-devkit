@@ -41,12 +41,14 @@ export function writeObsConfig(credentials = {}) {
   const region = String(credentials.region || '');
   const ak = String(credentials.ak || '');
   const sk = String(credentials.sk || '');
+  const securityToken = String(credentials.securityToken || '');
   if (!region || !ak || !sk) {
     throw new Error('region, ak, and sk are required to write OBS config');
   }
   const path = obsConfigPath();
   const endpoint = credentials.endpoint || `https://obs.${region}.myhuaweicloud.com`;
-  const content = `[default]\r\nendpoint=${endpoint}\r\nak=${ak}\r\nsk=${sk}\r\n`;
+  // Flat key=value format (no [default] section) as written by KooCLI 7.x `hcloud OBS config`.
+  const content = `endpoint=${endpoint}\nak=${ak}\nsk=${sk}${securityToken ? `\ntoken=${securityToken}` : ''}\n`;
   writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
   return { path, endpoint };
 }
