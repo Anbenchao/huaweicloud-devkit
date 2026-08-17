@@ -1,4 +1,5 @@
 import { getCredentials } from './hwlink-api.mjs';
+import { getProxyDispatcher } from '../proxy/proxy-agent.mjs';
 
 const HDKIT_BASE_URL =
   process.env.HDKITSERVICE_ENDPOINT ||
@@ -22,12 +23,15 @@ async function hdkitRequest(method, path, body, timeoutMs = 300000) {
 
   let resp;
   try {
-    resp = await fetch(url, {
+    const dispatcher = await getProxyDispatcher(url);
+    const fetchOpts = {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
-    });
+    };
+    if (dispatcher) fetchOpts.dispatcher = dispatcher;
+    resp = await fetch(url, fetchOpts);
   } finally {
     clearTimeout(timer);
   }
@@ -46,7 +50,7 @@ async function hdkitRequest(method, path, body, timeoutMs = 300000) {
     );
     err.code = data.code;
     err.status = resp.status;
-    err.traceId = data.trace_id;
+    err.traceId = data.traceId; // 后端实际返回驼峰 traceId
     throw err;
   }
 
