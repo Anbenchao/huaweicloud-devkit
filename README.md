@@ -1,7 +1,8 @@
 # HuaweiCloud DevKit
-[![Discussions](https://img.shields.io/badge/Discussions-Join the discussion-blue)]
+
+[![Discussions](https://img.shields.io/badge/Discussions-Join%20the%20discussion-blue)](https://github.com/huaweicloud/huaweicloud-devkit/discussions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
+[![CI](https://github.com/huaweicloud/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/huaweicloud-devkit/actions/workflows/ci.yml)
 
 **[中文](README.zh-CN.md) | English**
 
@@ -11,7 +12,7 @@ Supports OpenCode, Codex, CodeArts Agent, and WorkBuddy.
 
 ## Prerequisites
 
-- Node.js >= 22
+- Node.js >= 20
 
 ## Quick Start
 
@@ -106,7 +107,7 @@ Then install:
 npx --yes huaweicloud-devkit install
 ```
 
-> **Prerequisite:** Node.js >= 22. Run `npx huaweicloud-devkit auth init` for unified credentials.
+> **Prerequisite:** Node.js >= 20. Run `npx huaweicloud-devkit auth init` for unified credentials.
 
 ## What It Does
 
