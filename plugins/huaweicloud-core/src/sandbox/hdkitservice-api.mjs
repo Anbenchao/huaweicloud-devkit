@@ -46,7 +46,7 @@ async function hdkitRequest(method, path, body, timeoutMs = 300000) {
     );
     err.code = data.code;
     err.status = resp.status;
-    err.traceId = data.trace_id;
+    err.traceId = data.traceId; // 后端实际返回驼峰 traceId
     throw err;
   }
 

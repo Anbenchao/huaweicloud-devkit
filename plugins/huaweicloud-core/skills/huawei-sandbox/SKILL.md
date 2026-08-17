@@ -48,9 +48,9 @@ Domain expertise for Huawei Cloud Sandbox (DevStation) instances and workspace t
 
 Setup is a **plugin-side preflight** — the developer should be asked a question only once, when the agreement actually needs signing:
 
-1. **Check user** (transparent): `huaweicloud_sandbox_check_user` — verify `realname_verified` and `agreement_signed`
-2. **Real-name verification** (only if `realname_verified=false`): tell the developer once, "Huawei Cloud requires real-name verification before using the sandbox." and stop — do not retry `connect` in a loop
-3. **Sign agreement** (only if `agreement_signed=false`): ask the developer once as the plugin — "Huawei Cloud sandbox requires signing its service agreement. May I sign it on your behalf?" — then call `huaweicloud_sandbox_sign_agreement`. Do not expose the underlying sandbox/DevBridge service as a separate entity the developer must understand or sign up for
+1. **Check user** (transparent): `huaweicloud_sandbox_check_user` — verify `realnameVerified` and `agreementSigned`
+2. **Real-name verification** (only if `realnameVerified=false`): tell the developer once, "Huawei Cloud requires real-name verification before using the sandbox." and stop — do not retry `connect` in a loop
+3. **Sign agreement** (only if `agreementSigned=false`): ask the developer once as the plugin — "Huawei Cloud sandbox requires signing its service agreement. May I sign it on your behalf?" — then call `huaweicloud_sandbox_sign_agreement`. Do not expose the underlying sandbox/DevBridge service as a separate entity the developer must understand or sign up for
 4. **Connect**: `huaweicloud_sandbox_connect` — returns `session_id`, `dev_stage_id`, `connection_id`, `connection_address`
 5. **Inject credentials** (optional): `huaweicloud_sandbox_credentials` — enables cloud API access from sandbox
 6. **Execute commands**: `huaweicloud_sandbox_exec_with_session` for interactive work
@@ -97,7 +97,7 @@ sleep 10 && cat /tmp/host.log
 | Trap | Why |
 |------|-----|
 | Agreement required first | `sandbox_connect` fails if the agreement isn't signed; the `sandbox_check_user` preflight detects this, so surface it to the developer only when signing is needed |
-| Real-name required | `sandbox_connect` fails if `realname_verified=false`; tell the developer once and stop, don't loop on connect |
+| Real-name required | `sandbox_connect` fails if `realnameVerified=false`; tell the developer once and stop, don't loop on connect |
 | Never expose tunnel details | Do not mention "DevBridge"/"tunnel"/"devbridge" to the developer — say "正在生成访问地址..." and hand over only the URL |
 | Login needs `--huaweicloud` | `devbridge auth login --access-key/--secret-key` without `--huaweicloud` falls back to interactive browser login, which fails in the sandbox |
 | CLI PATH | The installer only writes `~/.bashrc`; run `export PATH=$PATH:$HOME/.huawei/bin` in the session before using `devbridge` |

@@ -336,7 +336,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'huaweicloud_sandbox_check_user',
-    description: 'Check if the current user has completed real-name verification and signed the required agreements. Returns realname_verified and agreement_signed status.',
+    description: 'Check if the current user has completed real-name verification and signed the required agreements. Returns realnameVerified and agreementSigned status.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -344,7 +344,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'huaweicloud_sandbox_sign_agreement',
-    description: 'Sign all unsigned or outdated agreements for the current user. Required before huaweicloud_sandbox_connect if check-user returns agreement_signed=false.',
+    description: 'Sign all unsigned or outdated agreements for the current user. Required before huaweicloud_sandbox_connect if check-user returns agreementSigned=false.',
     inputSchema: {
       type: 'object',
       properties: {},
