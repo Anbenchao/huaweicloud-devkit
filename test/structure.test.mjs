@@ -120,6 +120,26 @@ test('skills with references have non-empty reference files', () => {
   }
 });
 
+test('web/static-site deployment intent offers target options with sandbox first, not OBS default', () => {
+  const core = readFileSync(join(pluginRoot, 'skills', 'huaweicloud-core', 'SKILL.md'), 'utf8');
+  assert.match(core, /Deployment Target Options/);
+  assert.match(core, /Sandbox \(DevStation\) — recommended/);
+  assert.match(core, /NEVER default to a single service such as OBS/);
+
+  const obs = readFileSync(join(pluginRoot, 'skills', 'huawei-obs', 'SKILL.md'), 'utf8');
+  assert.match(obs, /Routing Guard: Deploy vs Store/);
+  assert.match(obs, /do NOT default to OBS/);
+  assert.match(obs, /① huawei-sandbox \(recommended\)/);
+
+  const sandbox = readFileSync(join(pluginRoot, 'skills', 'huawei-sandbox', 'SKILL.md'), 'utf8');
+  assert.match(sandbox, /present options, sandbox first/i);
+  assert.match(sandbox, /建议优先部署到沙箱/);
+
+  const discovery = readFileSync(join(pluginRoot, 'skills', 'huaweicloud-capability-discovery', 'SKILL.md'), 'utf8');
+  assert.match(discovery, /Deployment Target Options/);
+  assert.match(discovery, /do NOT default to OBS/);
+});
+
 test('all plugin manifests are valid JSON', () => {
   const manifests = [
     join(pluginRoot, '.codex-plugin', 'plugin.json'),

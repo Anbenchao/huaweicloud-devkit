@@ -709,18 +709,28 @@ function serviceCatalog(intent = '') {
     { keywords: ['cts', 'audit', 'trace', 'tracker'], skills: ['huawei-cts'], services: ['CTS'] },
     { keywords: ['cbr', 'backup', 'restore', 'vault', 'snapshot'], skills: ['huawei-cbr'], services: ['CBR'] },
     { keywords: ['deployment', 'deploy', 'ci/cd', 'pipeline', 'release'], skills: ['huawei-deployment'], services: ['CloudDeploy'] },
-    { keywords: ['sandbox', 'devstation', 'workspace', 'terminal', 'preview', 'hwlink'], skills: ['huawei-sandbox'], services: ['Sandbox', 'DevStation'] },
+    { keywords: ['sandbox', 'devstation', 'workspace', 'terminal', 'preview', 'hwlink', 'website', 'web app', 'webapp', 'hosting', '网站', '网页', '静态'], skills: ['huawei-sandbox'], services: ['Sandbox', 'DevStation'] },
     { keywords: ['dds', 'dcs', 'mongodb', 'redis', 'memcached', 'cache', 'document db'], skills: ['huawei-dds-dcs'], services: ['DDS', 'DCS'] },
 ];
   const matched = [];
   const tokens = it.split(/[\s,./-]+/).filter((t) => t.length > 0);
+  const cjk = /[\u4e00-\u9fff]/;
   for (const route of routeMap) {
-    if (route.keywords.some((kw) => tokens.includes(kw))) {
+    if (route.keywords.some((kw) => (kw.includes(' ') || cjk.test(kw)) ? it.includes(kw) : tokens.includes(kw))) {
       matched.push(route);
     }
   }
   const recommendedSkills = [...new Set(matched.flatMap((r) => r.skills))];
   const recommendedServices = [...new Set(matched.flatMap((r) => r.services))].slice(0, 5);
+
+  // Deployment intent (deploy/host/publish a web app or static website) must never
+  // default to a storage/other service — recommend the sandbox first.
+  const deploymentIntent = /deploy|host|hosting|publish|website|web app|preview|部署|托管|发布|网站|网页/.test(it);
+  if (deploymentIntent && recommendedSkills.includes('huawei-sandbox')) {
+    const idx = recommendedSkills.indexOf('huawei-sandbox');
+    recommendedSkills.splice(idx, 1);
+    recommendedSkills.unshift('huawei-sandbox');
+  }
 
   return {
     intent,
