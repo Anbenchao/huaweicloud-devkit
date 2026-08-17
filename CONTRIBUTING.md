@@ -28,7 +28,7 @@ Please take a moment to read the contribution guidelines below before opening is
 ## Setting Up
 
 ```bash
-git clone git@github.com:huaweicloud/HuaweiCloud-Devkit.git
+git clone git@github.com:huaweicloud/huaweicloud-devkit.git
 cd huaweicloud-devkit
 npm install
 
