@@ -1,7 +1,8 @@
 # HuaweiCloud DevKit
 
+[![参与讨论](https://img.shields.io/badge/参与讨论-Join%20the%20discussion-blue)](https://github.com/huaweicloud/huaweicloud-devkit/discussions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/HuaweiCloud-Devkit/actions/workflows/ci.yml)
+[![CI](https://github.com/huaweicloud/huaweicloud-devkit/actions/workflows/ci.yml/badge.svg)](https://github.com/huaweicloud/huaweicloud-devkit/actions/workflows/ci.yml)
 
 **中文 | [English](README.md)**
 
@@ -11,7 +12,7 @@
 
 ## 前置条件
 
-- Node.js >= 22
+- Node.js >= 20
 
 ## 快速开始
 
@@ -106,7 +107,7 @@ npx --yes huaweicloud-devkit uninstall --target workbuddy
 npx --yes huaweicloud-devkit install
 ```
 
-> **前置条件：** Node.js >= 22。执行 `npx huaweicloud-devkit auth init` 完成统一认证。
+> **前置条件：** Node.js >= 20。执行 `npx huaweicloud-devkit auth init` 完成统一认证。
 
 ## 功能特性
 
