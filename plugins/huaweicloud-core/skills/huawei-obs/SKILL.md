@@ -8,6 +8,12 @@ version: 1
 
 **STOP - Do not answer from general knowledge.** Follow the procedure below.
 
+## Routing Guard: Deploy vs Store
+
+- If the developer's goal is to **deploy, host, or preview a web app / static website** (temporary hosting, quick preview), do NOT default to OBS. Present deployment-target options with the sandbox first: ① huawei-sandbox (recommended), ② OBS static hosting, ③ ECS, ④ CCE. Ask: "建议优先部署到沙箱（临时运行环境，可预览访问），也可选 OBS 静态托管/ECS/CCE，你想部署到哪里？"
+- Proceed with OBS only when the developer selects OBS, explicitly asks for OBS, or the intent is long-term static hosting / CDN / file storage.
+- OBS is a storage service; it is not a general web-hosting default.
+
 ## Critical: OBS Command Syntax
 
 KooCLI OBS uses **obsutil-style** commands, NOT API-style operations. Always run `hcloud OBS help` (no `--`) before constructing commands:
