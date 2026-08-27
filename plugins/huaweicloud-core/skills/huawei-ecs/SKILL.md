@@ -2,7 +2,7 @@
 name: huawei-ecs
 description: "Use when creating, configuring, managing, or troubleshooting ECS instances on Huawei Cloud. Covers instance creation (hcloud ECS CreateServers), flavor selection, image management, security groups, EIP binding, disk attachment, auto-scaling (AS), and troubleshooting. Triggers on: ECS, instance, flavor, image, security group, EIP, EVS, auto-scaling. NOT for: CCE container workloads (use huawei-cce), BMS bare metal servers.
 
-HC活动场景（ECS + Nginx 部署后端服务）触发词：HC活动、华为HC、HC大会、活动部署、HC ECS、活动流程、部署后端、Nginx部署、Node.js部署、上线后端服务、部署个人网站、/hc-activity/。"
+HC活动场景(ECS+Nginx部署后端服务)触发词: HC活动, 华为HC, HC大会, 活动部署, HC ECS, 活动流程, 部署后端, Nginx部署, Nodejs部署, 上线后端服务, 部署个人网站, /hc-activity/."
 version: 1
 ---
 
@@ -16,6 +16,15 @@ Always run `hcloud <Service> <Operation> --help` before constructing commands to
 
 Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance lifecycle, flavor selection, image management, networking, storage attachment, auto-scaling, and troubleshooting.
 
+## Prerequisites
+
+Before creating an ECS instance from scratch, you MUST have:
+- A VPC (see `huawei-vpc`)
+- A subnet with DNS configured (see `huawei-vpc`)
+- A security group with application ports open (see `huawei-vpc`)
+
+If these do not exist, load the `huawei-vpc` skill first and create them before returning here.
+
 ## Critical Warnings
 
 | Trap | Why |
@@ -28,12 +37,16 @@ Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance li
 
 ## Flavor Selection Guide
 
-| Scenario | Family | Example |
-|----------|--------|---------|
-| Web app / microservices | s6 (general) | s6.large.2 (2vCPU/4GB) |
-| Database / big data | m6 (memory) | m6.xlarge.8 (4vCPU/32GB) |
-| AI inference | g6 (GPU) | g6.2xlarge.8 (8vCPU/64GB+1xT4) |
-| HPC | h6 (high-IO) | h6.2xlarge.8 (8vCPU/64GB+local SSD) |
+Flavor families are **region-dependent**. Always run `hcloud ECS ListFlavors --cli-region=<r>` to discover available flavors before recommending.
+
+| Scenario | Family | What to look for |
+|----------|--------|-----------------|
+| Web app / microservices | General-purpose (ac, s, sn, c) | 2-4 vCPU, 4-8 GB RAM |
+| Database / big data | Memory-optimized (m, r) | 4-8 vCPU, 16-64 GB RAM |
+| AI inference | GPU (g, p) | 8+ vCPU, 64+ GB RAM + GPU |
+| HPC | High-IO (h, ir, i) | 8+ vCPU, local SSD |
+
+> See `references/flavors.md` for discovery workflow. **Do not hardcode flavor names** — availability changes by region and over time.
 
 ## Common Workflows
 
@@ -42,8 +55,8 @@ Domain expertise for Huawei Cloud Elastic Cloud Server (ECS). Covers instance li
 | List flavors | hcloud ECS ListFlavors --cli-region=<region> | references/flavors.md |
 | Create instance | hcloud ECS CreateServers --server.name=<n> --server.flavorRef=<id> --server.imageRef=<id> --server.nics.1.subnet_id=<id> --server.availability_zone=<az> | references/create-instance.md |
 | Find by name | See "How to search for instances" below | |
-| Bind EIP | hcloud EIP BindPublicIp --publicip_id=<id> | references/eip.md |
-| Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=ingress --protocol=tcp | references/sg.md |
+| Bind EIP | hcloud EIP AssociatePublicips --publicip_id=<id> --publicip.associate_instance_id=<port-id> --publicip.associate_instance_type=PORT | Get port ID from `hcloud ECS ListServersDetails --server_id=<id>` → `OS-EXT-IPS:port_id` |
+| Security group rule | hcloud VPC CreateSecurityGroupRule --security_group_id=<id> --direction=<direction> --protocol=<protocol> | references/sg.md |
 | Attach disk | hcloud EVS AttachVolume --volume_id=<id> --server_id=<id> | references/evs.md |
 | Delete instance | hcloud ECS DeleteServers --servers.1.id=<id> --delete_publicip=true --delete_volume=true | references/create-instance.md |
 | HC活动部署 | 按量付费购买ECS+Nginx部署后端服务 | references/hc-activity.md |
@@ -73,6 +86,8 @@ Abort if the result set is larger than `--limit` and ask the user to narrow the 
 | Flavor unavailable | Region limitation -> ListFlavors in target region |
 | Insufficient resources | Stock depleted -> Change flavor or AZ |
 | AuthFailure | Expired AK/SK -> hcloud configure init |
+| APIGW.0802 / region permission | IAM user has no access to this region -> IAM console → User → Permissions → add region, or switch to another region |
+| Cannot SSH (port 22 open) | SCP policy may be blocking SSH. Check `SYS.0403` errors in command output -> Use cloud-init/user_data for initial setup instead. See `references/create-instance.md` §Bootstrap |
 
 ## Security Considerations
 
@@ -87,8 +102,11 @@ Prefer these tools over raw hcloud CLI — they enforce safety policies:
 
 - huaweicloud_list_operations service=ECS
 - huaweicloud_run_readonly_command for discovery (auto-redacts output)
+- huaweicloud_plan_cli_command for command planning (returns command text + safety classification)
 - huaweicloud_run_approved_command for writes (requires exact command approval)
 - huaweicloud_check_cli to verify hcloud is available
+
+> **approvedCommand trap**: `huaweicloud_run_approved_command` validates that `approvedCommand` matches the planned command EXACTLY (including `<redacted>` placeholders). Always use the `command` field value returned by `huaweicloud_plan_cli_command` verbatim — never reconstruct or retype it. Mismatches cause rejection with "approvedCommand must exactly match the planned hcloud command."
 
 ## Without MCP (Fallback)
 
@@ -119,3 +137,4 @@ For Flexus X, use standard ECS CreateServers flow with `x1.*` flavors. For Flexu
 - Flavor specs: references/flavors.md
 - Create instance: references/create-instance.md
 - HC活动 ECS+Nginx部署: references/hc-activity.md
+
